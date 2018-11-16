@@ -1,0 +1,5 @@
+*.csv
+.DS*
+.idea/
+.log
+examples/*
