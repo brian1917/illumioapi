@@ -40,7 +40,7 @@ type Authentication struct {
 }
 
 // Authenticate produces a temporary auth token
-func Authenticate(pce PCE, username, password string) (Authentication, error) { // username/password are separate from user/key
+func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error) { // username/password are separate from user/key
 
 	var api APIResponse
 	var err error
@@ -49,22 +49,22 @@ func Authenticate(pce PCE, username, password string) (Authentication, error) { 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/login_users/authenticate")
 	if err != nil {
-		return auth, fmt.Errorf("authenticate error - %s", err)
+		return auth, api, fmt.Errorf("authenticate error - %s", err)
 	}
 	q := apiURL.Query()
 	q.Set("pce_fqdn", pce.FQDN)
 	apiURL.RawQuery = q.Encode()
 
 	// Call the API - Use a PCE object since that's what apicall expects
-	api, err = apicall("POST", apiURL.String(), PCE{User: username, Key: password}, nil, false)
+	api, err = apicall("POST", apiURL.String(), PCE{DisableTLSChecking: pce.DisableTLSChecking, User: username, Key: password}, nil, false)
 	if err != nil {
-		return auth, fmt.Errorf("authenticate error - %s", err)
+		return auth, api, fmt.Errorf("authenticate error - %s", err)
 	}
 
 	// Marshal the response
 	json.Unmarshal([]byte(api.RespBody), &auth)
 
-	return auth, nil
+	return auth, api, nil
 }
 
 // Login takes an auth token and returns a session token
@@ -78,11 +78,11 @@ func Login(pce PCE, authToken string) (UserLogin, error) {
 	}
 
 	// Create HTTP client and request
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	client := &http.Client{}
+	if pce.DisableTLSChecking == true {
+		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
-	client := &http.Client{Transport: tr}
-	// client := http.Client{}
+
 	req, err := http.NewRequest("GET", apiURL.String(), nil)
 	if err != nil {
 		return login, fmt.Errorf("login error - %s", err)
