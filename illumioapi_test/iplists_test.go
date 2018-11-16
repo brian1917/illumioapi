@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"stash.ilabs.io/scm/~brian.pitta/illumioapi.git"
+	"github.com/brian1917/illumioapi"
 )
 
 func TestIPLists(t *testing.T) {

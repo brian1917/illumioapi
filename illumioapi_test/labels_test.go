@@ -3,17 +3,17 @@ package illumioapi_test
 import (
 	"testing"
 
-	"stash.ilabs.io/scm/~brian.pitta/illumioapi.git"
+	"github.com/brian1917/illumioapi"
 )
 
 var pce illumioapi.PCE
 
 func init() {
-	pce.FQDN = "demo4.illum.io"
-	pce.Port = 443
-	pce.Org = 14
-	pce.User = "api_1832dadcb7683e31e"
-	pce.Key = "40f81671df413cf100d892fa044a0d3ee6dfb62a2514ab4684d985709edc6fcf"
+	pce.FQDN = "pce-snc.illumioeval.com"
+	pce.Port = 8443
+	pce.Org = 1
+	pce.User = "<api_user>"
+	pce.Key = "<api_key>"
 	pce.DisableTLSChecking = false
 }
 

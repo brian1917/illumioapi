@@ -3,7 +3,7 @@ package illumioapi_test
 import (
 	"testing"
 
-	"stash.ilabs.io/scm/~brian.pitta/illumioapi.git"
+	"github.com/brian1917/illumioapi"
 )
 
 func TestBoundServices(t *testing.T) {
