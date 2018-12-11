@@ -29,7 +29,7 @@ Full GoDoc Documentation (output of `godoc illumioapi` is avaialble in the main 
 PACKAGE DOCUMENTATION
 
 package illumioapi
-    import "/Users/brianpitta/go/src/stash.ilabs.io/scm/~brian.pitta/illumioapi.git"
+    import "/Users/brianpitta/go/src/github.com/brian1917/illumioapi"
 
 
 FUNCTIONS
@@ -126,7 +126,7 @@ type Authentication struct {
 }
     Authentication represents the response of the Authenticate API
 
-func Authenticate(pce PCE, username, password string) (Authentication, error)
+func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error)
     Authenticate produces a temporary auth token
 
 type BoundService struct {
@@ -204,11 +204,14 @@ type Dst struct {
     Dst Traffic flow endpoint details
 
 type Exclude struct {
-    Label     *Label     `json:"label,omitempty"`
-    Workload  *Workload  `json:"workload,omitempty"`
-    IPAddress *IPAddress `json:"ip_address,omitempty"`
-    Port      int        `json:"port,omitempty"`
-    Proto     int        `json:"proto,omitempty"`
+    Label          *Label     `json:"label,omitempty"`
+    Workload       *Workload  `json:"workload,omitempty"`
+    IPAddress      *IPAddress `json:"ip_address,omitempty"`
+    Port           int        `json:"port,omitempty"`
+    ToPort         int        `json:"to_port,omitempty"`
+    Proto          int        `json:"proto,omitempty"`
+    Process        string     `json:"process_name,omitempty"`
+    WindowsService string     `json:"windows_service_name,omitempty"`
 }
     Exclude represents the type of objects used in an include query.
 
@@ -220,6 +223,21 @@ type Exclude struct {
 
     Example - Port and Proto can both be non-nil (e.g., port 3306 and proto
     6)
+
+type ExpSrv struct {
+    Port           int    `json:"port,omitempty"`
+    Proto          int    `json:"proto,omitempty"`
+    Process        string `json:"process_name,omitempty"`
+    WindowsService string `json:"windows_service_name,omitempty"`
+}
+    ExpSrv is a service in the explorer response
+
+type ExplorerServices struct {
+    Include []Include `json:"include"`
+    Exclude []Exclude `json:"exclude"`
+}
+    ExplorerServices represent services to be included or excluded in the
+    explorer query
 
 type IPAddress struct {
     Value string `json:"value,omitempty"`
@@ -272,11 +290,14 @@ type IPTablesRules struct {
     IPTablesRules represent IP Table Rules
 
 type Include struct {
-    Label     *Label     `json:"label,omitempty"`
-    Workload  *Workload  `json:"workload,omitempty"`
-    IPAddress *IPAddress `json:"ip_address,omitempty"`
-    Port      int        `json:"port,omitempty"`
-    Proto     int        `json:"proto,omitempty"`
+    Label          *Label     `json:"label,omitempty"`
+    Workload       *Workload  `json:"workload,omitempty"`
+    IPAddress      *IPAddress `json:"ip_address,omitempty"`
+    Port           int        `json:"port,omitempty"`
+    ToPort         int        `json:"to_port,omitempty"`
+    Proto          int        `json:"proto,omitempty"`
+    Process        string     `json:"process_name,omitempty"`
+    WindowsService string     `json:"windows_service_name,omitempty"`
 }
     Include represents the type of objects used in an include query.
 
@@ -404,6 +425,9 @@ type PairingProfile struct {
     VisibilityLevelLock   bool       `json:"visibility_level_lock"`
 }
     PairingProfile represents a pairing profile in the Illumio PCE
+
+func GetAllPairingProfiles(pce PCE) ([]PairingProfile, APIResponse, error)
+    GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
 
 type PortProtos struct {
     Include []Include `json:"include"`
@@ -582,15 +606,13 @@ type TrafficAnalysis struct {
     Dst            *Dst            `json:"dst"`
     NumConnections int             `json:"num_connections"`
     PolicyDecision string          `json:"policy_decision"`
-    Port           int             `json:"port"`
-    Proto          int             `json:"proto"`
+    ExpSrv         *ExpSrv         `json:"service"`
     Src            *Src            `json:"src"`
     TimestampRange *TimestampRange `json:"timestamp_range"`
 }
     TrafficAnalysis represents the response from the traffic analysis api
 
-func GetTrafficAnalysis(pce PCE, sourcesInclude, sourcesExclude, destinationsInclude, destinationsExclude []string, portProtoInclude,
-    portProtoExclude [][2]int, startTime, endTime time.Time, policyStatuses []string, maxFLows int) ([]TrafficAnalysis, error)
+func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error)
     GetTrafficAnalysis gets flow data from Explorer.
 
     sourcesInclude, sourcesExclude, destinationsInclude, destinationsExclude
@@ -605,16 +627,37 @@ func GetTrafficAnalysis(pce PCE, sourcesInclude, sourcesExclude, destinationsInc
     potentially_blocked, and/or blocked.
 
 type TrafficAnalysisRequest struct {
-    Sources         Sources      `json:"sources"`
-    Destinations    Destinations `json:"destinations"`
-    PortProtos      PortProtos   `json:"port_protos"`
-    StartDate       time.Time    `json:"start_date,omitempty"`
-    EndDate         time.Time    `json:"end_date,omitempty"`
-    PolicyDecisions []string     `json:"policy_decisions"`
-    MaxResults      int          `json:"max_results,omitempty"`
+    Sources          Sources          `json:"sources"`
+    Destinations     Destinations     `json:"destinations"`
+    ExplorerServices ExplorerServices `json:"services"`
+    StartDate        time.Time        `json:"start_date,omitempty"`
+    EndDate          time.Time        `json:"end_date,omitempty"`
+    PolicyDecisions  []string         `json:"policy_decisions"`
+    MaxResults       int              `json:"max_results,omitempty"`
 }
     TrafficAnalysisRequest represents the payload object for the traffic
     analysis POST request
+
+type TrafficQuery struct {
+    SourcesInclude        []string
+    SourcesExclude        []string
+    DestinationsInclude   []string
+    DestinationsExclude   []string
+    PortProtoInclude      [][2]int
+    PortProtoExclude      [][2]int
+    PortRangeInclude      [][2]int
+    PortRangeExclude      [][2]int
+    ProcessInclude        []string
+    WindowsServiceInclude []string
+    ProcessExclude        []string
+    WindowsServiceExclude []string
+    StartTime             time.Time
+    EndTime               time.Time
+    PolicyStatuses        []string
+    MaxFLows              int
+}
+    TrafficQuery is the struct to be passed to the GetTrafficAnalysis
+    function
 
 type UpdatedBy struct {
     Href string `json:"href"`
@@ -643,7 +686,7 @@ type UserLogin struct {
 }
     UserLogin represents a user logging in via password to get a session key
 
-func Login(pce PCE, authToken string) (UserLogin, error)
+func Login(pce PCE, authToken string) (UserLogin, APIResponse, error)
     Login takes an auth token and returns a session token
 
 type VirtualServer struct {
@@ -702,7 +745,8 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error)
 
 SUBDIRECTORIES
 
-	examples
 	illumioapi_test
+
+
 
 ```
