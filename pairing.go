@@ -41,6 +41,30 @@ type PairingKey struct {
 	ActivationCode string `json:"activation_code,omitempty"`
 }
 
+// GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
+func GetAllPairingProfiles(pce PCE) ([]PairingProfile, APIResponse, error) {
+	var pairingProfiles []PairingProfile
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/pairing_profiles")
+	if err != nil {
+		return pairingProfiles, api, err
+	}
+
+	// Call the API
+	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	if err != nil {
+		return pairingProfiles, api, err
+	}
+
+	// Unmarshal response to struct
+	json.Unmarshal([]byte(api.RespBody), &pairingProfiles)
+
+	return pairingProfiles, api, nil
+}
+
 // CreatePairingProfile creates a new pairing profile in the Illumio PCE.
 func CreatePairingProfile(pce PCE, pairingProfile PairingProfile) (APIResponse, error) {
 	var api APIResponse
