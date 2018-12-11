@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // ProductVersion represents the version of the product
@@ -48,7 +49,11 @@ func Authenticate(pce PCE, username, password string) (Authentication, APIRespon
 	var auth Authentication
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/login_users/authenticate")
+	fqdn := pceSanitization(pce.FQDN)
+	if strings.Contains(pce.FQDN, "illum.io") {
+		fqdn = "login.illum.io"
+	}
+	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(pce.Port) + "/api/v1/login_users/authenticate")
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - %s", err)
 	}
