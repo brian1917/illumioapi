@@ -167,7 +167,7 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error) 
 
 		// Labels
 		if len(queryList) > 0 {
-			if strings.ContainsAny("label", queryList[0]) == true {
+			if strings.Contains(queryList[0], "label") == true {
 				for _, label := range queryLists[i] {
 					queryLabel := Label{Href: label}
 					switch i {
@@ -184,7 +184,7 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error) 
 				}
 
 				// Workloads
-			} else if strings.ContainsAny("workload", queryList[0]) == true {
+			} else if strings.Contains(queryList[0], "workload") == true {
 				for _, workload := range queryLists[i] {
 					queryWorkload := Workload{Href: workload}
 					switch i {
