@@ -33,6 +33,14 @@ type UserLogin struct {
 	SessionToken                string          `json:"session_token,omitempty"`
 	TimeZone                    string          `json:"time_zone,omitempty,omitempty"`
 	Type                        string          `json:"type,omitempty"`
+	Orgs                        []*Org          `json:"orgs,omitempty"`
+}
+
+// Org is an an organization in a SaaS PCE
+type Org struct {
+	Href        string `json:"href"`
+	DisplayName string `json:"display_name"`
+	ID          int    `json:"org_id"`
 }
 
 // Authentication represents the response of the Authenticate API
