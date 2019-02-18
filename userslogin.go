@@ -102,9 +102,15 @@ func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 		return login, response, fmt.Errorf("login error - %s", err)
 	}
 
-	// Set basic authentication and headers
+	// Set headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Token token="+authToken)
+
+	// If auth token is provided, set header. If autho token is empty, set user/key to receive org info
+	if authToken != "" {
+		req.Header.Set("Authorization", "Token token="+authToken)
+	} else {
+		req.SetBasicAuth(pce.User, pce.Key)
+	}
 
 	// Make HTTP Request
 	resp, err := client.Do(req)
