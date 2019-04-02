@@ -141,3 +141,43 @@ func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 	return login, response, nil
 
 }
+
+// PCEbuilder builds a PCE. User can be API User or email address. Password can be password or API Secret
+func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, error) {
+	var pce PCE
+	var org int
+
+	// If the user string begins with "api_", we need to get the Org using the login api
+	if user[:4] == "api_" {
+		login, _, err := Login(PCE{FQDN: fqdn, User: user, Key: password, Port: port}, "")
+		if err != nil {
+			return pce, fmt.Errorf("Error logging into the PCE to get org ID - %s", err)
+		}
+		org = login.Orgs[0].ID
+
+		// If it doesn't start with "api_", we need to authenticate and then login
+	} else {
+		auth, _, err := Authenticate(PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}, user, password)
+		if err != nil {
+			return pce, fmt.Errorf("Error - Authenticating to PCE - %s", err)
+		}
+		login, _, err := Login(PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}, auth.AuthToken)
+		if err != nil {
+			return pce, fmt.Errorf("Error - Logging in to PCE - %s", err)
+		}
+		user = login.AuthUsername
+		password = login.SessionToken
+		org = login.Orgs[0].ID
+	}
+
+	// Create the PCE
+	pce = PCE{
+		FQDN:               fqdn,
+		Port:               port,
+		Org:                org,
+		User:               user,
+		Key:                password,
+		DisableTLSChecking: disableTLS}
+
+	return pce, nil
+}
