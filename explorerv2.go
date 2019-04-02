@@ -148,7 +148,9 @@ type TrafficQuery struct {
 // portProtoInclude and portProtoExclude are an array of arrays. For example, [[3306, 6], [8080,-1]] is Port 3306 TCP and Port 8080 any protocol.
 //
 // policyStatuses is an array that contains only the values allowed, potentially_blocked, and/or blocked.
-func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error) {
+func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
+	var api APIResponse
+
 	// Initialize arrays using "make" so JSON is marshaled with empty arrays and not null values to meet Illumio API spec
 	sourceInc := make([]Include, 0)
 	destInc := make([]Include, 0)
@@ -284,7 +286,7 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error) 
 	// Create JSON Payload
 	jsonPayload, err := json.Marshal(traffic)
 	if err != nil {
-		return nil, fmt.Errorf("get traffic analysis - %s", err)
+		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
 
 	var trafficResponses []TrafficAnalysis
@@ -292,18 +294,18 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error) 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/traffic_flows/traffic_analysis_queries")
 	if err != nil {
-		return nil, fmt.Errorf("get traffic analysis - %s", err)
+		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
 
 	// Call the API
-	api, err := apicall("POST", apiURL.String(), pce, jsonPayload, false)
+	api, err = apicall("POST", apiURL.String(), pce, jsonPayload, false)
 	if err != nil {
-		return nil, fmt.Errorf("get traffic analysis - %s", err)
+		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
 
 	// Unmarshal response to struct
 	json.Unmarshal([]byte(api.RespBody), &trafficResponses)
 
-	return trafficResponses, nil
+	return trafficResponses, api, nil
 
 }
