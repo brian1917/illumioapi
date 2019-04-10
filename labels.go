@@ -73,7 +73,7 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 // GetLabel finds a specific Label based on the key and value.
 //
 // Will only return one Label that is an exact match.
-func GetLabel(pce PCE, key, value string) (Label, APIResponse, error) {
+func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) {
 	var l Label
 	var labels []Label
 	var api APIResponse
@@ -103,6 +103,32 @@ func GetLabel(pce PCE, key, value string) (Label, APIResponse, error) {
 			return label, api, nil
 		}
 	}
+
+	// If we reach here, a label doesn't exist - return an emtpy label struct and no error
+	return l, api, nil
+}
+
+// GetLabelbyHref finds a specific Label based on the key and value.
+//
+// Will only return one Label that is an exact match.
+func GetLabelbyHref(pce PCE, href string) (Label, APIResponse, error) {
+	var l Label
+	var api APIResponse
+
+	// Build the API URL and Query Parameters
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/" + href)
+	if err != nil {
+		return l, api, fmt.Errorf("get label by href - %s", err)
+	}
+
+	// Call the API
+	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	if err != nil {
+		return l, api, fmt.Errorf("get label by href- %s", err)
+	}
+
+	// Unmarshal respones to struct
+	json.Unmarshal([]byte(api.RespBody), &l)
 
 	// If we reach here, a label doesn't exist - return an emtpy label struct and no error
 	return l, api, nil
