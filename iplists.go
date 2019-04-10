@@ -33,6 +33,55 @@ type IPList struct {
 	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
 }
 
+// GetIPList queries returns the IP List based on name. Provisioned IP lists checked before draft
+func GetIPList(pce PCE, name string) (IPList, APIResponse, error) {
+	var ipList IPList
+	var api APIResponse
+	var activeIPLists, draftIPLists []IPList
+
+	// Active IP Lists
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/active/ip_lists")
+	if err != nil {
+		return ipList, api, fmt.Errorf("get iplist - %s", err)
+	}
+	q := apiURL.Query()
+	q.Set("name", name)
+	apiURL.RawQuery = q.Encode()
+	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	if err != nil {
+		return ipList, api, fmt.Errorf("get iplist - %s", err)
+	}
+	json.Unmarshal([]byte(api.RespBody), &activeIPLists)
+
+	// Draft IP Lists
+	apiURL, err = url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/ip_lists")
+	if err != nil {
+		return ipList, api, fmt.Errorf("get iplist - %s", err)
+	}
+	q = apiURL.Query()
+	q.Set("name", name)
+	apiURL.RawQuery = q.Encode()
+	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	if err != nil {
+		return ipList, api, fmt.Errorf("get iplist - %s", err)
+	}
+	json.Unmarshal([]byte(api.RespBody), &draftIPLists)
+
+	// Combine into a single slice with active first
+	ipLists := append(activeIPLists, draftIPLists...)
+
+	// Look for our match and return the first one
+	for _, ipl := range ipLists {
+		if ipl.Name == name {
+			return ipl, api, nil
+		}
+	}
+
+	// If there is no match we are going to return an empty IP List
+	return ipList, api, err
+
+}
+
 // GetAllIPLists returns a slice of all IP Lists of a
 // specific provision status in the Illumio PCE.
 //
