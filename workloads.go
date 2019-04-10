@@ -210,6 +210,16 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 	workload.UpdatedBy = nil
 	workload.Services = nil
 
+	if workload.Agent.Status != nil {
+		workload.Hostname = ""
+		workload.Interfaces = nil
+		workload.Online = false
+		workload.OsDetail = ""
+		workload.OsID = ""
+		workload.PublicIP = ""
+		workload.Agent.Status = nil
+	}
+
 	// Call the API
 	workloadJSON, err := json.Marshal(workload)
 	if err != nil {
@@ -222,6 +232,41 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 	}
 
 	return api, nil
+}
+
+// UpdateLabel updates a workload struct with new label href.
+// It does not call the Illumio API. To reflect the change in your PCE,
+// you'd use UpdateLabel method on the workload struct and then use the UpdateWorkload function
+func (w *Workload) UpdateLabel(pce PCE, key, value string) error {
+	var updatedLabels []*Label
+	for _, l := range w.Labels {
+		x, _, err := GetLabelbyHref(pce, l.Href)
+		if err != nil {
+			return fmt.Errorf("error updating workload - %s", err)
+		}
+		if x.Key == key {
+			// Get our new label's href
+			newLabel, _, err := GetLabelbyKeyValue(pce, key, value)
+			if err != nil {
+				return fmt.Errorf("error updating workload - %s", err)
+			}
+			// Create the label if it doesn't exist
+			if newLabel.Href == "" {
+				createdLabel, _, err := CreateLabel(pce, Label{Key: key, Value: value})
+				if err != nil {
+					return fmt.Errorf("error updating workload - %s", err)
+				}
+				updatedLabels = append(updatedLabels, &Label{Href: createdLabel.Href})
+				// If the new label does exist, add it to the slice
+			} else {
+				updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
+			}
+		} else {
+			updatedLabels = append(updatedLabels, &Label{Href: l.Href})
+		}
+		w.Labels = updatedLabels
+	}
+	return nil
 }
 
 // BulkWorkload on Workload updates an existing workload in the Illumio PCE
