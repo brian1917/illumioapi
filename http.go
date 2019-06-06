@@ -47,15 +47,11 @@ type asyncResults struct {
 	} `json:"requested_by"`
 }
 
-// API does the HTTP set up (including polling for async calls) and returns an APIResponse type
-//
-// httpAction must be GET, POST, PUT, or DELETE
-//
-// apiURL is the full endpoint being called
-//
-// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte
-//
-// async parameter should be set to true for any GET requests returning > 500 items
+// API does the HTTP set up (including polling for async calls) and returns an APIResponse type.
+// httpAction must be GET, POST, PUT, or DELETE.
+// apiURL is the full endpoint being called.
+// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
+// async parameter should be set to true for any GET requests returning > 500 items.
 func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
 
 	var response APIResponse

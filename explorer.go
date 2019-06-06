@@ -45,11 +45,8 @@ type PortProtos struct {
 }
 
 // Include represents the type of objects used in an include query.
-//
-// The include struct should only have the following combinations: label only, workload only, IP address only, Port and/or protocol only.
-//
+// The include struct should be label only, workload only, IP address only, Port and/or protocol only.
 // Example - Label and Workload cannot both be non-nil
-//
 // Example - Port and Proto can both be non-nil (e.g., port 3306 and proto 6)
 type Include struct {
 	Label          *Label     `json:"label,omitempty"`
@@ -63,11 +60,8 @@ type Include struct {
 }
 
 // Exclude represents the type of objects used in an include query.
-//
 // The exclude struct should only have the following combinations: label only, workload only, IP address only, Port and/or protocol only.
-//
 // Example - Label and Workload cannot both be non-nil
-//
 // Example - Port and Proto can both be non-nil (e.g., port 3306 and proto 6)
 type Exclude struct {
 	Label          *Label     `json:"label,omitempty"`
@@ -80,12 +74,12 @@ type Exclude struct {
 	WindowsService string     `json:"windows_service_name,omitempty"`
 }
 
-// IPAddress represents an IP Address used in a query
+// IPAddress represents an IP Address
 type IPAddress struct {
 	Value string `json:"value,omitempty"`
 }
 
-//TrafficAnalysis represents the response from the traffic analysis api
+// TrafficAnalysis represents the response from the explorer API
 type TrafficAnalysis struct {
 	Dst            *Dst            `json:"dst"`
 	NumConnections int             `json:"num_connections"`
@@ -103,19 +97,19 @@ type ExpSrv struct {
 	WindowsService string `json:"windows_service_name,omitempty"`
 }
 
-// Dst Traffic flow endpoint details
+// Dst is the provider workload details
 type Dst struct {
 	IP       string    `json:"ip"`
 	Workload *Workload `json:"workload,omitempty"`
 }
 
-// Src Traffic flow endpoint details
+// Src is the consumer workload details
 type Src struct {
 	IP       string    `json:"ip"`
 	Workload *Workload `json:"workload,omitempty"`
 }
 
-// TimestampRange Timestamp ranges for the flow detected
+// TimestampRange is used to limit queries ranges for the flow detected
 type TimestampRange struct {
 	FirstDetected string `json:"first_detected"`
 	LastDetected  string `json:"last_detected"`
@@ -142,12 +136,6 @@ type TrafficQuery struct {
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
-//
-// sourcesInclude, sourcesExclude, destinationsInclude, destinationsExclude are array of strings that are hrefs for labels, hrefs for workloads, or values for ip_addresses.
-//
-// portProtoInclude and portProtoExclude are an array of arrays. For example, [[3306, 6], [8080,-1]] is Port 3306 TCP and Port 8080 any protocol.
-//
-// policyStatuses is an array that contains only the values allowed, potentially_blocked, and/or blocked.
 func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
 	var api APIResponse
 

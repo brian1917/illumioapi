@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// A Label is a Label policy object in the Illumio PCE
+// A Label represents an Illumio Label.
 type Label struct {
 	CreatedAt             string     `json:"created_at,omitempty"`
 	CreatedBy             *CreatedBy `json:"created_by,omitempty"`
@@ -34,9 +34,8 @@ type UpdatedBy struct {
 }
 
 // GetAllLabels returns a slice of all Labels in the Illumio PCE.
-//
-// The first call does not use the async option.
-// If the response array length is >=500, it is re-run enabling async.
+// The first API call to the PCE does not use the async option.
+// If the array length is >=500, it re-runs with async.
 func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 	var labels []Label
 	var api APIResponse
@@ -70,9 +69,8 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 	return labels, api, nil
 }
 
-// GetLabel finds a specific Label based on the key and value.
-//
-// Will only return one Label that is an exact match.
+// GetLabelbyKeyValue finds a label based on the key and value.
+// It will only return one Label that is an exact match.
 func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) {
 	var l Label
 	var labels []Label
@@ -108,9 +106,7 @@ func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) 
 	return l, api, nil
 }
 
-// GetLabelbyHref finds a specific Label based on the key and value.
-//
-// Will only return one Label that is an exact match.
+// GetLabelbyHref returns a label based on the provided HREF.
 func GetLabelbyHref(pce PCE, href string) (Label, APIResponse, error) {
 	var l Label
 	var api APIResponse
@@ -171,9 +167,8 @@ func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
 }
 
 // UpdateLabel updates an existing label in the Illumio PCE.
-//
-// The provided label struct must include an Href. The onyl values that will put in the JSON
-// payload are Value, ExternalDataReference, and ExternalDataSet. Other values cannot be updated.
+// The provided label struct must include an Href.
+// Properties that cannot be included in the PUT method will be ignored.
 func UpdateLabel(pce PCE, label Label) (APIResponse, error) {
 	var api APIResponse
 	var err error

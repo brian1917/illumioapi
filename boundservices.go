@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// BoundService represents a Bound Service in the Illumio PCE
+// A BoundService represents a Bound Service in the Illumio PCE
 type BoundService struct {
 	ApplyTo               string     `json:"apply_to,omitempty"`
 	CreatedAt             string     `json:"created_at,omitempty"`
@@ -100,9 +100,8 @@ func CreateBoundService(pce PCE, boundService BoundService) (BoundService, APIRe
 
 // UpdateBoundService updates an existing bound service in the Illumio PCE.
 //
-// The provided BoundService struct must include an Href. The following fields will
-// be disregarded in the JSON payload because they cannot be updated: CreatedAt,
-// CreatedBy, UpdateType, UpdatedAt, UpdatedBy.
+// The provided BoundService struct must include an Href.
+// Properties that cannot be included in the PUT method will be ignored.
 func UpdateBoundService(pce PCE, boundService BoundService) (APIResponse, error) {
 	var api APIResponse
 	var err error

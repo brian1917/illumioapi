@@ -20,11 +20,11 @@ func init() {
 func TestLabels(t *testing.T) {
 
 	// Clear previous test runs
-	checkExisting1, api, _ := illumioapi.GetLabel(pce, "role", "test_role")
+	checkExisting1, api, _ := illumioapi.GetLabelbyKeyValue(pce, "role", "test_role")
 	if checkExisting1.Href != "" {
 		illumioapi.DeleteHref(pce, checkExisting1.Href)
 	}
-	checkExisting2, api, _ := illumioapi.GetLabel(pce, "role", "updated_test_role")
+	checkExisting2, api, _ := illumioapi.GetLabelbyKeyValue(pce, "role", "updated_test_role")
 	if checkExisting2.Href != "" {
 		illumioapi.DeleteHref(pce, checkExisting2.Href)
 	}
@@ -49,7 +49,7 @@ func TestLabels(t *testing.T) {
 	}
 
 	// Get a specific label
-	getLabel, api, _ := illumioapi.GetLabel(pce, "role", "updated_test_role")
+	getLabel, api, _ := illumioapi.GetLabelbyKeyValue(pce, "role", "updated_test_role")
 	if getLabel.Href != newLabel.Href {
 		t.Errorf("GetLabel is not finding the right updated label")
 	}
