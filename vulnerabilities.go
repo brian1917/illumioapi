@@ -35,7 +35,6 @@ type VulnerabilityReport struct {
 }
 
 // GetAllVulns returns a slice of all Vulnerabilities in the Illumio PCE.
-//
 // The first call does not use the async option.
 // If the response slice length is >=500, it is re-run enabling async.
 func GetAllVulns(pce PCE) ([]Vulnerability, APIResponse, error) {
@@ -72,7 +71,6 @@ func GetAllVulns(pce PCE) ([]Vulnerability, APIResponse, error) {
 }
 
 // GetAllVulnReports returns a slice of all Vulnerability Reports in the Illumio PCE.
-//
 // The first call does not use the async option.
 // If the response slice length is >=500, it is re-run enabling async.
 func GetAllVulnReports(pce PCE) ([]VulnerabilityReport, APIResponse, error) {

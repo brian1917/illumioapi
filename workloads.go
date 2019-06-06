@@ -67,7 +67,7 @@ type OpenServicePorts struct {
 	WinServiceName string `json:"win_service_name,omitempty"`
 }
 
-// A Workload is a Workload object in the PCE
+// A Workload represents a workload in the PCE
 type Workload struct {
 	Agent                 *Agent       `json:"agent,omitempty"`
 	CreatedAt             string       `json:"created_at,omitempty"`
@@ -126,7 +126,9 @@ type Status struct {
 	UptimeSeconds            int                `json:"uptime_seconds,omitempty"`
 }
 
-// GetAllWorkloads returns an slice of workloads for each workload in the Illumio PCE
+// GetAllWorkloads returns an slice of workloads in the Illumio PCE.
+// The first API call to the PCE does not use the async option.
+// If the array length is >=500, it re-runs with async.
 func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 	var workloads []Workload
 	var api APIResponse
@@ -159,7 +161,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 	return workloads, api, nil
 }
 
-// CreateWorkload creates a new workload in the Illumio PCE
+// CreateWorkload creates a new unmanaged workload in the Illumio PCE
 func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 	var newWL Workload
 	var api APIResponse
@@ -188,6 +190,8 @@ func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 }
 
 // UpdateWorkload updates an existing workload in the Illumio PCE
+// The provided workload struct must include an Href.
+// Properties that cannot be included in the PUT method will be ignored.
 func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 	var api APIResponse
 	var err error
@@ -269,8 +273,7 @@ func (w *Workload) UpdateLabel(pce PCE, key, value string) error {
 	return nil
 }
 
-// BulkWorkload on Workload updates an existing workload in the Illumio PCE
-//
+// BulkWorkload takes a bulk action on an array of workloads.
 // Method must be create, update, or delete
 func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, error) {
 	var apiResps []APIResponse

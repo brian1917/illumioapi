@@ -50,7 +50,10 @@ type WindowsService struct {
 	ToPort      int    `json:"to_port,omitempty"`
 }
 
-// GetAllServices returns a slice of Services for each Service in the Illumio PCE. provisionStatus must either be "draft" or "active"
+// GetAllServices returns a slice of Services for each Service in the Illumio PCE.
+// provisionStatus must either be "draft" or "active".
+// The first API call to the PCE does not use the async option.
+// If the array length is >=500, it re-runs with async.
 func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, error) {
 	var services []Service
 	var api APIResponse

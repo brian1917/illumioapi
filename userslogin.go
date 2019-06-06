@@ -48,8 +48,8 @@ type Authentication struct {
 	AuthToken string `json:"auth_token"`
 }
 
-// Authenticate produces a temporary auth token
-func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error) { // username/password are separate from user/key
+// Authenticate produces a temporary auth token for a valid username (email) and password
+func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error) {
 
 	var api APIResponse
 	var err error
@@ -142,7 +142,9 @@ func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 
 }
 
-// PCEbuilder builds a PCE. User can be API User or email address. Password can be password or API Secret
+// PCEbuilder builds a PCE.
+// User can be API User or email address. Password can be password or API Secret.
+// PCEbuilder will find the org.
 func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, error) {
 	var pce PCE
 	var org int
