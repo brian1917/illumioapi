@@ -158,6 +158,23 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 		json.Unmarshal([]byte(api.RespBody), &workloads)
 	}
 
+	// Get all labels and create a map
+	labels, _, err := GetAllLabels(pce)
+	if err != nil {
+		return nil, api, fmt.Errorf("get all workloads - get all labels - %s", err)
+	}
+	labelMap := make(map[string]Label)
+	for _, l := range labels {
+		labelMap[l.Href] = l
+	}
+
+	// Update the workloads array
+	for _, w := range workloads {
+		for _, l := range w.Labels {
+			*l = labelMap[l.Href]
+		}
+	}
+
 	return workloads, api, nil
 }
 
