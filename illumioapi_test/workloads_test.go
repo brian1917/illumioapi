@@ -1,7 +1,6 @@
 package illumioapi_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/brian1917/illumioapi"
@@ -39,10 +38,6 @@ func TestWorkloads(t *testing.T) {
 	// Update a workload
 	newWL.Name = "updated_go_test_workload"
 	api, err := illumioapi.UpdateWorkload(pce, newWL)
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println(api.RespBody)
-	}
 	if api.StatusCode != 204 {
 		t.Errorf("UpdateWorkload is returning a status code of %d", api.StatusCode)
 	}
@@ -51,6 +46,32 @@ func TestWorkloads(t *testing.T) {
 	deleteAPI, _ := illumioapi.DeleteHref(pce, newWL.Href)
 	if api.StatusCode != 204 {
 		t.Errorf("Delete workload is returning a status code of %d", deleteAPI.StatusCode)
+	}
+
+	// Bulk upload workloads
+	wls := []illumioapi.Workload{illumioapi.Workload{Name: "Bulk 1"}, illumioapi.Workload{Name: "Bulk 2"}}
+	createWLsAPI, err := illumioapi.BulkWorkload(pce, wls, "create")
+	for _, a := range createWLsAPI {
+		if a.StatusCode != 200 {
+			t.Errorf("Create bulk workloads is returning a status code of %d", a.StatusCode)
+		}
+	}
+
+	// Bulk update workloads
+	wls, api, err = illumioapi.GetAllWorkloads(pce)
+	updatedWLs := []illumioapi.Workload{}
+	for _, wl := range wls {
+		wl.Name = wl.Name + "-Updated"
+		updatedWLs = append(updatedWLs, wl)
+	}
+	updateAPIResps, err := illumioapi.BulkWorkload(pce, updatedWLs, "update")
+	if err != nil {
+		t.Errorf("Update bulk workloads error - %s", err)
+	}
+	for _, r := range updateAPIResps {
+		if r.StatusCode != 200 {
+			t.Errorf("Update bulk workloads is returning a status code of %d", r.StatusCode)
+		}
 	}
 
 }

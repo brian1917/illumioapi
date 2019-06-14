@@ -92,7 +92,7 @@ type Workload struct {
 	PublicIP              string       `json:"public_ip,omitempty"`
 	ServicePrincipalName  string       `json:"service_principal_name,omitempty"`
 	ServiceProvider       string       `json:"service_provider,omitempty"`
-	Services              *Services    `json:"services,omitempty"`
+	Services              []*Services  `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
 }
@@ -134,7 +134,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
 	if err != nil {
 		return nil, api, fmt.Errorf("get all workloads - %s", err)
 	}
@@ -168,7 +168,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 		labelMap[l.Href] = l
 	}
 
-	// Update the workloads array
+	// Update the workloads array to label values and keys (not just HREFs)
 	for _, w := range workloads {
 		for _, l := range w.Labels {
 			*l = labelMap[l.Href]
@@ -185,7 +185,7 @@ func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
 	}
@@ -214,32 +214,12 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + workload.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2" + workload.Href)
 	if err != nil {
 		return api, fmt.Errorf("update workload - %s", err)
 	}
 
-	// Remove fields that shouldn't be available for updating
-	workload.CreatedAt = ""
-	workload.CreatedBy = nil
-	workload.DeleteType = ""
-	workload.Deleted = nil
-	workload.DeletedAt = ""
-	workload.DeletedBy = nil
-	workload.Href = ""
-	workload.UpdatedAt = ""
-	workload.UpdatedBy = nil
-	workload.Services = nil
-
-	if workload.Agent.Status != nil {
-		workload.Hostname = ""
-		workload.Interfaces = nil
-		workload.Online = false
-		workload.OsDetail = ""
-		workload.OsID = ""
-		workload.PublicIP = ""
-		workload.Agent.Status = nil
-	}
+	workload.SanitizePut()
 
 	// Call the API
 	workloadJSON, err := json.Marshal(workload)
@@ -302,8 +282,18 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 		return apiResps, errors.New("bulk workload error - method must be create, update, or delete")
 	}
 
+	// Sanitize update
+	if method == "update" {
+		sanitizedWLs := []Workload{}
+		for _, workload := range workloads {
+			workload.SanitizeBulkUpdate()
+			sanitizedWLs = append(sanitizedWLs, workload)
+		}
+		workloads = sanitizedWLs
+	}
+
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/workloads/bulk_" + method)
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads/bulk_" + method)
 	if err != nil {
 		return apiResps, fmt.Errorf("bulk workload error - %s", err)
 	}
@@ -339,6 +329,10 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
 		}
+
+		// Uncomment this line if you want to print the JSON object
+		// fmt.Println(string(workloadsJSON))
+
 		api, err := apicall("PUT", apiURL.String(), pce, workloadsJSON, false)
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
@@ -348,4 +342,45 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 	}
 
 	return apiResps, nil
+}
+
+// SanitizeBulkUpdate removes the properites necessary for a bulk update
+func (w *Workload) SanitizeBulkUpdate() {
+
+	// All Workloads
+	w.CreatedAt = ""
+	w.CreatedBy = nil
+	w.DeleteType = ""
+	w.Deleted = nil
+	w.DeletedAt = ""
+	w.DeletedBy = nil
+	w.UpdatedAt = ""
+	w.UpdatedBy = nil
+
+	// Managed workloads
+	if w.Agent != nil && w.Agent.Status != nil {
+		w.Hostname = ""
+		w.Interfaces = nil
+		w.Online = false
+		w.OsDetail = ""
+		w.OsID = ""
+		w.PublicIP = ""
+		w.Agent.Status = nil
+		w.Services = nil
+		w.Online = false
+	}
+
+	// Replace Labels with Hrefs
+	newLabels := []*Label{}
+	for _, l := range w.Labels {
+		newLabel := Label{Href: l.Href}
+		newLabels = append(newLabels, &newLabel)
+	}
+	w.Labels = newLabels
+}
+
+// SanitizePut removes the necessary properties to update an unmanaged and managed workload
+func (w *Workload) SanitizePut() {
+	w.SanitizeBulkUpdate()
+	w.Href = ""
 }
