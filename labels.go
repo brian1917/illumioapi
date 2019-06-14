@@ -41,7 +41,7 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
 	if err != nil {
 		return labels, api, fmt.Errorf("get all labels - %s", err)
 	}
@@ -77,7 +77,7 @@ func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) 
 	var api APIResponse
 
 	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
 	if err != nil {
 		return l, api, fmt.Errorf("get label - %s", err)
 	}
@@ -112,7 +112,7 @@ func GetLabelbyHref(pce PCE, href string) (Label, APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/" + href)
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/" + href)
 	if err != nil {
 		return l, api, fmt.Errorf("get label by href - %s", err)
 	}
@@ -143,7 +143,7 @@ func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
 	if err != nil {
 		return newLabel, api, fmt.Errorf("create label - %s", err)
 	}
@@ -174,7 +174,7 @@ func UpdateLabel(pce PCE, label Label) (APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + label.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2" + label.Href)
 	if err != nil {
 		return api, fmt.Errorf("update label - %s", err)
 	}

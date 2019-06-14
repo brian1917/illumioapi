@@ -1,20 +1,21 @@
 package illumioapi_test
 
 import (
+	"log"
 	"testing"
 
 	"github.com/brian1917/illumioapi"
 )
 
 var pce illumioapi.PCE
+var err error
 
 func init() {
-	pce.FQDN = "pce-snc.illumioeval.com"
-	pce.Port = 8443
-	pce.Org = 1
-	pce.User = "<api_user>"
-	pce.Key = "<api_key>"
-	pce.DisableTLSChecking = false
+	pce, err = illumioapi.PCEbuilder("pce.lot48labs.com", "brian.pitta@illumio.com", "LocalIllumio1", 8443, true)
+	if err != nil {
+		log.Fatal("PCE Builder failed")
+	}
+
 }
 
 func TestLabels(t *testing.T) {
@@ -48,10 +49,19 @@ func TestLabels(t *testing.T) {
 		t.Errorf("UpdateLabel is returning a status code of %d", api.StatusCode)
 	}
 
+	// Get a label by HREF
+	getLabelbyHref, api, _ := illumioapi.GetLabelbyHref(pce, newLabel.Href)
+	if api.StatusCode != 200 {
+		t.Errorf("GetLabelbyHref is returning a status code of %d", api.StatusCode)
+	}
+	if getLabelbyHref.Value != newLabel.Value {
+		t.Errorf("GetLabelbyHref did not find the right label. The value returned was %s", getLabelbyHref.Value)
+	}
+
 	// Get a specific label
 	getLabel, api, _ := illumioapi.GetLabelbyKeyValue(pce, "role", "updated_test_role")
 	if getLabel.Href != newLabel.Href {
-		t.Errorf("GetLabel is not finding the right updated label")
+		t.Errorf("GetLabelbyKeyValue is not finding the right updated label")
 	}
 
 	// Delete Created label
