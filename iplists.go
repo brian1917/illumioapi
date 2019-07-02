@@ -40,7 +40,7 @@ func GetIPList(pce PCE, name string) (IPList, APIResponse, error) {
 	var activeIPLists, draftIPLists []IPList
 
 	// Active IP Lists
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/active/ip_lists")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/active/ip_lists")
 	if err != nil {
 		return ipList, api, fmt.Errorf("get iplist - %s", err)
 	}
@@ -54,7 +54,7 @@ func GetIPList(pce PCE, name string) (IPList, APIResponse, error) {
 	json.Unmarshal([]byte(api.RespBody), &activeIPLists)
 
 	// Draft IP Lists
-	apiURL, err = url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/ip_lists")
+	apiURL, err = url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/ip_lists")
 	if err != nil {
 		return ipList, api, fmt.Errorf("get iplist - %s", err)
 	}
@@ -82,13 +82,13 @@ func GetIPList(pce PCE, name string) (IPList, APIResponse, error) {
 
 }
 
-// GetAllIPLists returns a slice of all IP Lists of a
-// specific provision status in the Illumio PCE.
+// getAllIPLists is an internal function to get all IP Lists
+// of a specific provision status.
 //
-// The pvoision status must be "draft" or "active".
+// The provision status must be "draft" or "active".
 // The first call does not use the async option.
 // If the response array length is >=500, it is re-run enabling async.
-func GetAllIPLists(pce PCE, provisionStatus string) ([]IPList, APIResponse, error) {
+func getAllIPLists(pce PCE, provisionStatus string) ([]IPList, APIResponse, error) {
 	var ipLists []IPList
 	var api APIResponse
 
@@ -98,7 +98,7 @@ func GetAllIPLists(pce PCE, provisionStatus string) ([]IPList, APIResponse, erro
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/" + provisionStatus + "/ip_lists")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/" + provisionStatus + "/ip_lists")
 	if err != nil {
 		return ipLists, api, fmt.Errorf("get all iplists - %s", err)
 	}
@@ -125,14 +125,62 @@ func GetAllIPLists(pce PCE, provisionStatus string) ([]IPList, APIResponse, erro
 	return ipLists, api, nil
 }
 
+// GetAllIPLists returns a slice of all IPLists in the PCE.
+// The function combines the query to get draft and active IP Lists.
+// If there are more than 500 of either, async queries will run.
+// The []APIResponse will have two entries - first is for draft, second for active.
+// The HREF will indicate if it's active or draft.
+func GetAllIPLists(pce PCE) ([]IPList, []APIResponse, error) {
+	var allIPLists []IPList
+
+	draftIPLists, a1, err := getAllIPLists(pce, "draft")
+	if err != nil {
+		return nil, nil, fmt.Errorf("get all iplists - draft - %s", err)
+	}
+	activeIPLists, a2, err := getAllIPLists(pce, "active")
+	if err != nil {
+		return nil, nil, fmt.Errorf("get all iplists - active - %s", err)
+	}
+
+	allIPLists = append(append(allIPLists, draftIPLists...), activeIPLists...)
+
+	return allIPLists, []APIResponse{a1, a2}, nil
+}
+
+// GetAllDraftIPLists returns a slice of draft IPLists
+// If there are more than 500 IP Lists, async will run.
+func GetAllDraftIPLists(pce PCE) ([]IPList, APIResponse, error) {
+
+	i, a, err := getAllIPLists(pce, "draft")
+	if err != nil {
+		return nil, a, fmt.Errorf("get all draft iplists - %s", err)
+	}
+
+	return i, a, nil
+}
+
+// GetAllActiveIPLists returns a slice of draft IPLists
+// If there are more than 500 IP Lists, async will run.
+func GetAllActiveIPLists(pce PCE) ([]IPList, APIResponse, error) {
+
+	i, a, err := getAllIPLists(pce, "active")
+	if err != nil {
+		return nil, a, fmt.Errorf("get all active iplists - %s", err)
+	}
+
+	return i, a, nil
+}
+
 // CreateIPList creates a new IP List in the Illumio PCE.
+//
+// The function will not remove properties not in the POST schema (e.g., CreatedAt)
 func CreateIPList(pce PCE, ipList IPList) (IPList, APIResponse, error) {
 	var newIPList IPList
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/ip_lists")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/ip_lists")
 	if err != nil {
 		return newIPList, api, fmt.Errorf("create iplist - %s", err)
 	}
@@ -155,9 +203,8 @@ func CreateIPList(pce PCE, ipList IPList) (IPList, APIResponse, error) {
 
 // UpdateIPList updates an existing IP List in the Illumio PCE.
 //
-// The provided IPList struct must include an Href. The following fields will
-// be disregarded in the JSON payload because they cannot be updated: CreatedAt,
-// CreatedBy, DeletedAt, DeletedBy, UpdateType, UpdatedAt, UpdatedBy.
+// The provided IPList struct must include an Href.
+// The function will remove properties not included in the PUT schema.
 func UpdateIPList(pce PCE, iplist IPList) (APIResponse, error) {
 	var api APIResponse
 	var err error
@@ -168,7 +215,7 @@ func UpdateIPList(pce PCE, iplist IPList) (APIResponse, error) {
 		return api, fmt.Errorf("update iplist - %s", err)
 	}
 
-	// Marshall Payload without the HREF
+	// Remove fields that should be empty for the PUT schema
 	iplist.CreatedAt = ""
 	iplist.CreatedBy = nil
 	iplist.DeletedAt = ""
@@ -177,6 +224,7 @@ func UpdateIPList(pce PCE, iplist IPList) (APIResponse, error) {
 	iplist.UpdatedAt = ""
 	iplist.UpdatedBy = nil
 
+	// Marshal JSON
 	ipListJSON, err := json.Marshal(iplist)
 	if err != nil {
 		return api, fmt.Errorf("update iplist - %s", err)
