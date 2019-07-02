@@ -36,7 +36,7 @@ type AgentHealthErrors struct {
 
 // Config represents the Configuration of an Agent on a Workload
 type Config struct {
-	LogTraffic               bool   `json:"log_traffic,omitempty"`
+	LogTraffic               bool   `json:"log_traffic"`
 	Mode                     string `json:"mode,omitempty"`
 	SecurityPolicyUpdateMode string `json:"security_policy_update_mode,omitempty"`
 }
@@ -95,6 +95,10 @@ type Workload struct {
 	Services              []*Services  `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
+	App                   Label        `json:"-"`
+	Role                  Label        `json:"-"`
+	Env                   Label        `json:"-"`
+	Loc                   Label        `json:"-"`
 }
 
 // SecureConnect represents SecureConnect for an Agent on a Workload
@@ -169,13 +173,33 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 	}
 
 	// Update the workloads array to label values and keys (not just HREFs)
+	wklds := []Workload{}
 	for _, w := range workloads {
-		for _, l := range w.Labels {
-			*l = labelMap[l.Href]
-		}
+		w.RefreshLabels(labelMap)
+		wklds = append(wklds, w)
 	}
 
-	return workloads, api, nil
+	return wklds, api, nil
+}
+
+// RefreshLabels assigns the role, app, env, and loc properties based off the array of labels in the workload object
+func (w *Workload) RefreshLabels(labelMap map[string]Label) {
+	for _, l := range w.Labels {
+		// Replace the label with a full object, not just HREF
+		*l = labelMap[l.Href]
+		if l.Key == "role" {
+			w.Role = *l
+		}
+		if l.Key == "app" {
+			w.App = *l
+		}
+		if l.Key == "loc" {
+			w.Loc = *l
+		}
+		if l.Key == "env" {
+			w.Env = *l
+		}
+	}
 }
 
 // CreateWorkload creates a new unmanaged workload in the Illumio PCE
@@ -235,10 +259,10 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 	return api, nil
 }
 
-// UpdateLabel updates a workload struct with new label href.
+// ChangeLabel updates a workload struct with new label href.
 // It does not call the Illumio API. To reflect the change in your PCE,
 // you'd use UpdateLabel method on the workload struct and then use the UpdateWorkload function
-func (w *Workload) UpdateLabel(pce PCE, key, value string) error {
+func (w *Workload) ChangeLabel(pce PCE, key, value string) error {
 	var updatedLabels []*Label
 	for _, l := range w.Labels {
 		x, _, err := GetLabelbyHref(pce, l.Href)
@@ -334,11 +358,13 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 		// fmt.Println(string(workloadsJSON))
 
 		api, err := apicall("PUT", apiURL.String(), pce, workloadsJSON, false)
+
+		apiResps = append(apiResps, api)
+
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
 		}
 
-		apiResps = append(apiResps, api)
 	}
 
 	return apiResps, nil
