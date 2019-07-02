@@ -48,6 +48,17 @@ type Authentication struct {
 	AuthToken string `json:"auth_token"`
 }
 
+// APIKey represents an API Key
+type APIKey struct {
+	Href         string `json:"href,omitempty"`
+	KeyID        string `json:"key_id,omitempty"`
+	AuthUsername string `json:"auth_username,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Secret       string `json:"secret,omitempty"`
+}
+
 // Authenticate produces a temporary auth token for a valid username (email) and password
 func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error) {
 
@@ -182,4 +193,49 @@ func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, er
 		DisableTLSChecking: disableTLS}
 
 	return pce, nil
+}
+
+// CreateAPIKey creates an returns an API Key
+func CreateAPIKey(pce PCE, user, password, name, desc string) (PCE, APIResponse, error) {
+	var apiKey APIKey
+	var apiResp APIResponse
+
+	auth, _, err := Authenticate(pce, user, password)
+	if err != nil {
+		return PCE{}, apiResp, fmt.Errorf("Error - Authenticating to PCE - %s", err)
+	}
+	login, _, err := Login(pce, auth.AuthToken)
+	if err != nil {
+		return PCE{}, apiResp, fmt.Errorf("Error - Logging in to PCE - %s", err)
+	}
+
+	apiURL, err := url.Parse("https://" + pce.FQDN + ":" + strconv.Itoa(pce.Port) + "/api/v2/" + login.Href + "/api_keys")
+	if err != nil {
+		return PCE{}, apiResp, fmt.Errorf("create api key error - %s", err)
+	}
+
+	pce.User = login.AuthUsername
+	pce.Key = login.SessionToken
+	pce.Org = login.Orgs[0].ID
+
+	// Create payload
+	postJSON, err := json.Marshal(APIKey{Name: name, Description: desc})
+	if err != nil {
+		return PCE{}, apiResp, fmt.Errorf("create api key - %s", err)
+	}
+
+	// Call the API
+	apiResp, err = apicall("POST", apiURL.String(), pce, postJSON, false)
+	if err != nil {
+		return PCE{}, apiResp, fmt.Errorf("create api key error - %s", err)
+	}
+
+	// Marshal the response
+	json.Unmarshal([]byte(apiResp.RespBody), &apiKey)
+
+	pce.User = apiKey.AuthUsername
+	pce.Key = apiKey.Secret
+
+	return pce, apiResp, nil
+
 }
