@@ -1,8 +1,12 @@
 package illumioapi
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -133,6 +137,13 @@ type TrafficQuery struct {
 	EndTime               time.Time
 	PolicyStatuses        []string
 	MaxFLows              int
+}
+
+// FlowUploadResp is the response from the traffic upload API
+type FlowUploadResp struct {
+	NumFlowsReceived int       `json:"num_flows_received"`
+	NumFlowsFailed   int       `json:"num_flows_failed"`
+	FailedFlows      []*string `json:"failed_flows,omitempty"`
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
@@ -280,7 +291,7 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResp
 	var trafficResponses []TrafficAnalysis
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/traffic_flows/traffic_analysis_queries")
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/traffic_flows/traffic_analysis_queries")
 	if err != nil {
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
@@ -296,4 +307,53 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResp
 
 	return trafficResponses, api, nil
 
+}
+
+// UploadTraffic uploads a csv to the PCE with traffic flows.
+func UploadTraffic(pce PCE, filename string) (FlowUploadResp, APIResponse, error) {
+
+	// Read the CSV File
+	f, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return FlowUploadResp{}, APIResponse{}, fmt.Errorf("upload traffic - opening file - %s", err)
+	}
+	body := bytes.NewReader(f)
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/agents/bulk_traffic_flows")
+	if err != nil {
+		return FlowUploadResp{}, APIResponse{}, fmt.Errorf("upload traffic - building api url - %s", err)
+	}
+
+	// Build the Request
+	req, err := http.NewRequest("POST", apiURL.String(), body)
+	req.SetBasicAuth(pce.User, pce.Key)
+
+	// Make HTTP Request
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return FlowUploadResp{}, APIResponse{}, err
+	}
+
+	// Process response
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return FlowUploadResp{}, APIResponse{}, err
+	}
+
+	// Put relevant response info into struct
+	response := APIResponse{RespBody: string(data[:]), StatusCode: resp.StatusCode, Header: resp.Header, Request: resp.Request}
+
+	// Check for a 200 response code
+	if strconv.Itoa(resp.StatusCode)[0:1] != "2" {
+		return FlowUploadResp{}, response, errors.New("http status code of " + strconv.Itoa(response.StatusCode))
+	}
+
+	// Unmarshal response
+	var flowResults FlowUploadResp
+	json.Unmarshal([]byte(response.RespBody), &flowResults)
+
+	// Return data and nil error
+	return flowResults, response, nil
 }
