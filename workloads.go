@@ -95,10 +95,10 @@ type Workload struct {
 	Services              []*Services  `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
-	App                   Label        `json:"-"`
-	Role                  Label        `json:"-"`
-	Env                   Label        `json:"-"`
-	Loc                   Label        `json:"-"`
+	// App                   Label        `json:"-"`
+	// Role                  Label        `json:"-"`
+	// Env                   Label        `json:"-"`
+	// Loc                   Label        `json:"-"`
 }
 
 // SecureConnect represents SecureConnect for an Agent on a Workload
@@ -162,44 +162,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 		json.Unmarshal([]byte(api.RespBody), &workloads)
 	}
 
-	// Get all labels and create a map
-	labels, _, err := GetAllLabels(pce)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all workloads - get all labels - %s", err)
-	}
-	labelMap := make(map[string]Label)
-	for _, l := range labels {
-		labelMap[l.Href] = l
-	}
-
-	// Update the workloads array to label values and keys (not just HREFs)
-	wklds := []Workload{}
-	for _, w := range workloads {
-		w.RefreshLabels(labelMap)
-		wklds = append(wklds, w)
-	}
-
-	return wklds, api, nil
-}
-
-// RefreshLabels assigns the role, app, env, and loc properties based off the array of labels in the workload object
-func (w *Workload) RefreshLabels(labelMap map[string]Label) {
-	for _, l := range w.Labels {
-		// Replace the label with a full object, not just HREF
-		*l = labelMap[l.Href]
-		if l.Key == "role" {
-			w.Role = *l
-		}
-		if l.Key == "app" {
-			w.App = *l
-		}
-		if l.Key == "loc" {
-			w.Loc = *l
-		}
-		if l.Key == "env" {
-			w.Env = *l
-		}
-	}
+	return workloads, api, nil
 }
 
 // CreateWorkload creates a new unmanaged workload in the Illumio PCE
