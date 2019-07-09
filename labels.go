@@ -69,6 +69,32 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 	return labels, api, nil
 }
 
+// GetLabelMapH returns a map of labels with the HREF as the key
+func GetLabelMapH(pce PCE) (map[string]Label, error) {
+	labels, _, err := GetAllLabels(pce)
+	if err != nil {
+		return nil, fmt.Errorf("get href label map - %s", err)
+	}
+	m := make(map[string]Label)
+	for _, l := range labels {
+		m[l.Href] = l
+	}
+	return m, nil
+}
+
+// GetLabelMapKV returns a map of labels with the concatenated value of keyvalue as the key
+func GetLabelMapKV(pce PCE) (map[string]Label, error) {
+	labels, _, err := GetAllLabels(pce)
+	if err != nil {
+		return nil, fmt.Errorf("get href label map - %s", err)
+	}
+	m := make(map[string]Label)
+	for _, l := range labels {
+		m[l.Key+l.Value] = l
+	}
+	return m, nil
+}
+
 // GetLabelbyKeyValue finds a label based on the key and value.
 // It will only return one Label that is an exact match.
 func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) {
