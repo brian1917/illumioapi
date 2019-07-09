@@ -410,3 +410,43 @@ func (w *Workload) SanitizePut() {
 	w.SanitizeBulkUpdate()
 	w.Href = ""
 }
+
+// GetRole returns the role label for a workload
+func (w *Workload) GetRole(labelMap map[string]Label) Label {
+	for _, l := range w.Labels {
+		if labelMap[l.Href].Key == "role" {
+			return *l
+		}
+	}
+	return Label{}
+}
+
+// GetApp returns the application label for a workload
+func (w *Workload) GetApp(labelMap map[string]Label) Label {
+	for _, l := range w.Labels {
+		if labelMap[l.Href].Key == "app" {
+			return *l
+		}
+	}
+	return Label{}
+}
+
+// GetEnv returns the environment label for a workload
+func (w *Workload) GetEnv(labelMap map[string]Label) Label {
+	for _, l := range w.Labels {
+		if labelMap[l.Href].Key == "env" {
+			return *l
+		}
+	}
+	return Label{}
+}
+
+// GetLoc returns the location label for a workload
+func (w *Workload) GetLoc(labelMap map[string]Label) Label {
+	for _, l := range w.Labels {
+		if labelMap[l.Href].Key == "loc" {
+			return *l
+		}
+	}
+	return Label{}
+}
