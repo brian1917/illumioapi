@@ -166,6 +166,36 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 	return workloads, api, nil
 }
 
+// GetWkldHrefMap returns a map of all workloads with the Href as the key.
+func GetWkldHrefMap(pce PCE) (map[string]Workload, error) {
+
+	m := make(map[string]Workload)
+	wklds, _, err := GetAllWorkloads(pce)
+	if err != nil {
+		return nil, err
+	}
+	for _, w := range wklds {
+		m[w.Href] = w
+	}
+	return m, nil
+
+}
+
+// GetWkldHostMap returns a map of all workloads with the hostname as the key.
+func GetWkldHostMap(pce PCE) (map[string]Workload, error) {
+
+	m := make(map[string]Workload)
+	wklds, _, err := GetAllWorkloads(pce)
+	if err != nil {
+		return nil, err
+	}
+	for _, w := range wklds {
+		m[w.Hostname] = w
+	}
+	return m, nil
+
+}
+
 // CreateWorkload creates a new unmanaged workload in the Illumio PCE
 func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 	var newWL Workload
@@ -415,7 +445,8 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 	return Label{}
 }
 
-// GetMode returns the mode - unmanaged, idle, build, test, enforce - of the workload
+// GetMode returns the mode of the workloads.
+// Modes are unmanaged, idle, build, test, enforced-no, enforced-low, enforced-high.
 func (w *Workload) GetMode() string {
 	if w.Agent == nil || w.Agent.Href == "" {
 		return "unmanaged"
