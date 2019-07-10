@@ -442,45 +442,43 @@ func (w *Workload) GetMode() string {
 // Nothing is changed in the PCE.
 // To reflect the change in the PCE uset SetMode method followed by UpdateWorkload function
 //
-// 0 - idle
-//
-// 1 - build
-//
-// 2 - test
-//
-// 3 - enforced with no detail
-//
-// 4 - enforced with low detail
-//
-// 5 - enforced with high detail
-func (w *Workload) SetMode(m int) {
+// Valid options: idle, build, test, enforced-no, enforced-low, and enforced-high.
+// The enforced options represent no logging, low details, and high detail.
+func (w *Workload) SetMode(m string) error {
+
+	m = strings.ToLower(m)
+
 	switch m {
-	// idle
-	case 0:
+
+	case "idle":
 		w.Agent.Config.Mode = "idle"
-	// build
-	case 1:
+
+	case "build":
 		w.Agent.Config.Mode = "illuminated"
 		w.Agent.Config.LogTraffic = false
-	// test
-	case 2:
+
+	case "test":
 		w.Agent.Config.Mode = "illuminated"
 		w.Agent.Config.LogTraffic = true
-	//enforced with no detail
-	case 3:
+
+	case "enforced-no":
 		w.Agent.Config.Mode = "enforced"
 		w.Agent.Config.VisibilityLevel = "flow_off"
 		w.Agent.Config.LogTraffic = false
-	// enforced with low detail
-	case 4:
+
+	case "enforced-low":
 		w.Agent.Config.Mode = "enforced"
 		w.Agent.Config.VisibilityLevel = "flow_drops"
 		w.Agent.Config.LogTraffic = true
-	// enforced with high detail
-	case 5:
+
+	case "enforced-high":
 		w.Agent.Config.Mode = "enforced"
 		w.Agent.Config.VisibilityLevel = "flow_summary"
 		w.Agent.Config.LogTraffic = true
 
+	default:
+		return fmt.Errorf("%s is not a valid mode. See SetMode documentation for valid modes", m)
+
 	}
+	return nil
 }
