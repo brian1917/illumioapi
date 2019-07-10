@@ -39,6 +39,7 @@ type Config struct {
 	LogTraffic               bool   `json:"log_traffic"`
 	Mode                     string `json:"mode,omitempty"`
 	SecurityPolicyUpdateMode string `json:"security_policy_update_mode,omitempty"`
+	VisibilityLevel          string `json:"visibility_level,omitempty"`
 }
 
 // DeletedBy represents the Deleted By property of an object
@@ -412,4 +413,74 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 		}
 	}
 	return Label{}
+}
+
+// GetMode returns the mode - unmanaged, idle, build, test, enforce - of the workload
+func (w *Workload) GetMode() string {
+	if w.Agent == nil || w.Agent.Href == "" {
+		return "unmanaged"
+	}
+	if w.Agent.Config.Mode == "illuminated" && !w.Agent.Config.LogTraffic {
+		return "build"
+	}
+	if w.Agent.Config.Mode == "illuminated" && w.Agent.Config.LogTraffic {
+		return "test"
+	}
+	if w.Agent.Config.Mode == "enforced" && w.Agent.Config.VisibilityLevel == "flow_summary" {
+		return "enforced-high"
+	}
+	if w.Agent.Config.Mode == "enforced" && w.Agent.Config.VisibilityLevel == "flow_drops" {
+		return "enforced-low"
+	}
+	if w.Agent.Config.Mode == "enforced" && w.Agent.Config.VisibilityLevel == "flow_off" {
+		return "enforced-no"
+	}
+	return "idle"
+}
+
+// SetMode adjusts the workload struct to reflect the assigned mode.
+// Nothing is changed in the PCE.
+// To reflect the change in the PCE uset SetMode method followed by UpdateWorkload function
+//
+// 0 - idle
+//
+// 1 - build
+//
+// 2 - test
+//
+// 3 - enforced with no detail
+//
+// 4 - enforced with low detail
+//
+// 5 - enforced with high detail
+func (w *Workload) SetMode(m int) {
+	switch m {
+	// idle
+	case 0:
+		w.Agent.Config.Mode = "idle"
+	// build
+	case 1:
+		w.Agent.Config.Mode = "illuminated"
+		w.Agent.Config.LogTraffic = false
+	// test
+	case 2:
+		w.Agent.Config.Mode = "illuminated"
+		w.Agent.Config.LogTraffic = true
+	//enforced with no detail
+	case 3:
+		w.Agent.Config.Mode = "enforced"
+		w.Agent.Config.VisibilityLevel = "flow_off"
+		w.Agent.Config.LogTraffic = false
+	// enforced with low detail
+	case 4:
+		w.Agent.Config.Mode = "enforced"
+		w.Agent.Config.VisibilityLevel = "flow_drops"
+		w.Agent.Config.LogTraffic = true
+	// enforced with high detail
+	case 5:
+		w.Agent.Config.Mode = "enforced"
+		w.Agent.Config.VisibilityLevel = "flow_summary"
+		w.Agent.Config.LogTraffic = true
+
+	}
 }
