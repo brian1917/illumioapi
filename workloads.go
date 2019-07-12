@@ -405,7 +405,8 @@ func (w *Workload) SanitizePut() {
 	w.Href = ""
 }
 
-// GetRole returns the role label for a workload
+// GetRole takes a map of labels with the href string as the key and returns the role label for a workload.
+// To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetRole(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "role" {
@@ -415,7 +416,8 @@ func (w *Workload) GetRole(labelMap map[string]Label) Label {
 	return Label{}
 }
 
-// GetApp returns the application label for a workload
+// GetApp takes a map of labels with the href string as the key and returns the app label for a workload.
+// To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetApp(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "app" {
@@ -425,7 +427,8 @@ func (w *Workload) GetApp(labelMap map[string]Label) Label {
 	return Label{}
 }
 
-// GetEnv returns the environment label for a workload
+// GetEnv takes a map of labels with the href string as the key and returns the env label for a workload.
+// To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "env" {
@@ -435,7 +438,8 @@ func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 	return Label{}
 }
 
-// GetLoc returns the location label for a workload
+// GetLoc takes a map of labels with the href string as the key and returns the loc label for a workload.
+// To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "loc" {
