@@ -409,7 +409,7 @@ func (w *Workload) SanitizePut() {
 func (w *Workload) GetRole(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "role" {
-			return *l
+			return labelMap[l.Href]
 		}
 	}
 	return Label{}
@@ -419,7 +419,7 @@ func (w *Workload) GetRole(labelMap map[string]Label) Label {
 func (w *Workload) GetApp(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "app" {
-			return *l
+			return labelMap[l.Href]
 		}
 	}
 	return Label{}
@@ -429,7 +429,7 @@ func (w *Workload) GetApp(labelMap map[string]Label) Label {
 func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "env" {
-			return *l
+			return labelMap[l.Href]
 		}
 	}
 	return Label{}
@@ -439,7 +439,7 @@ func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 	for _, l := range w.Labels {
 		if labelMap[l.Href].Key == "loc" {
-			return *l
+			return labelMap[l.Href]
 		}
 	}
 	return Label{}
