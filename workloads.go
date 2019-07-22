@@ -449,6 +449,28 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 	return Label{}
 }
 
+// GetAppGroup returns the app group string of a workload in the format of App | Env.
+// If the workload does not have an app or env label, "NO APP GROUP" is returned.
+// Use GetAppGroupL to include the loc label in the app group.
+func (w *Workload) GetAppGroup(labelMap map[string]Label) string {
+	if w.GetApp(labelMap).Href == "" || w.GetEnv(labelMap).Href == "" {
+		return "NO APP GROUP"
+	}
+
+	return fmt.Sprintf("%s | %s", w.GetApp(labelMap).Value, w.GetEnv(labelMap).Value)
+}
+
+// GetAppGroupL returns the app group string of a workload in the format of App | Env | Loc.
+// If the workload does not have an app, env, or loc label, "NO APP GROUP" is returned.
+// Use GetAppGroup to only use app and env in App Group.
+func (w *Workload) GetAppGroupL(labelMap map[string]Label) string {
+	if w.GetApp(labelMap).Href == "" || w.GetEnv(labelMap).Href == "" || w.GetLoc(labelMap).Href == "" {
+		return "NO APP GROUP"
+	}
+
+	return fmt.Sprintf("%s | %s | %s", w.GetApp(labelMap).Value, w.GetEnv(labelMap).Value, w.GetLoc(labelMap).Value)
+}
+
 // GetMode returns the mode of the workloads.
 // Modes are unmanaged, idle, build, test, enforced-no, enforced-low, enforced-high.
 func (w *Workload) GetMode() string {
