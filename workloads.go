@@ -539,3 +539,9 @@ func (w *Workload) SetMode(m string) error {
 	}
 	return nil
 }
+
+//GetID returns the ID from the Href of an Agent
+func (a *Agent) GetID() string {
+	x := strings.Split(a.Href, "/")
+	return x[len(x)-1]
+}
