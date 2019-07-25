@@ -91,7 +91,8 @@ func Authenticate(pce PCE, username, password string) (Authentication, APIRespon
 	return auth, api, nil
 }
 
-// Login takes an auth token and returns a session token
+// Login takes an auth token and returns a session token.
+// Leave authToken blank to get user information
 func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 	var login UserLogin
 	var response APIResponse
@@ -116,7 +117,7 @@ func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 
-	// If auth token is provided, set header. If autho token is empty, set user/key to receive org info
+	// If auth token is provided, set header. If auth token is empty, set user/key to receive org info
 	if authToken != "" {
 		req.Header.Set("Authorization", "Token token="+authToken)
 	} else {
@@ -193,6 +194,35 @@ func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, er
 		DisableTLSChecking: disableTLS}
 
 	return pce, nil
+}
+
+// GetAllAPIKeys gets all the APIKeys associated with a user
+func GetAllAPIKeys(pce PCE) ([]APIKey, APIResponse, error) {
+
+	// Get user info
+	user, _, err := Login(pce, "")
+	if err != nil {
+		return []APIKey{}, APIResponse{}, fmt.Errorf("GetAllAPIKeys  - %s", err)
+	}
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pce.FQDN + ":" + strconv.Itoa(pce.Port) + "/api/v2" + user.Href + "/api_keys")
+	if err != nil {
+		return []APIKey{}, APIResponse{}, fmt.Errorf("GetAllAPIKeys - %s", err)
+	}
+
+	// Call the API
+	apiResp, err := apicall("GET", apiURL.String(), pce, nil, false)
+	if err != nil {
+		return []APIKey{}, apiResp, fmt.Errorf("GetAllAPIKeys - %s", err)
+	}
+
+	// Marshal the response
+	var apiKeys []APIKey
+	json.Unmarshal([]byte(apiResp.RespBody), &apiKeys)
+
+	return apiKeys, apiResp, nil
+
 }
 
 // CreateAPIKey creates an returns an API Key
