@@ -134,18 +134,18 @@ type Status struct {
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
-func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
+func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 	var workloads []Workload
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads")
 	if err != nil {
 		return nil, api, fmt.Errorf("get all workloads - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return nil, api, fmt.Errorf("get all workloads - %s", err)
 	}
@@ -154,7 +154,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(workloads) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return nil, api, fmt.Errorf("get all workloads - %s", err)
 		}
@@ -170,7 +170,7 @@ func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error) {
 func GetWkldHrefMap(pce PCE) (map[string]Workload, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := GetAllWorkloads(pce)
+	wklds, _, err := pce.GetAllWorkloads()
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func GetWkldHrefMap(pce PCE) (map[string]Workload, error) {
 func GetWkldHostMap(pce PCE) (map[string]Workload, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := GetAllWorkloads(pce)
+	wklds, _, err := pce.GetAllWorkloads()
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +197,13 @@ func GetWkldHostMap(pce PCE) (map[string]Workload, error) {
 }
 
 // CreateWorkload creates a new unmanaged workload in the Illumio PCE
-func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
+func (p *PCE) CreateWorkload(workload Workload) (Workload, APIResponse, error) {
 	var newWL Workload
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads")
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
 	}
@@ -213,7 +213,7 @@ func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
 	}
-	api, err = apicall("POST", apiURL.String(), pce, workloadJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, workloadJSON, false)
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
 	}
@@ -227,12 +227,12 @@ func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error) {
 // UpdateWorkload updates an existing workload in the Illumio PCE
 // The provided workload struct must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
-func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
+func (p *PCE) UpdateWorkload(workload Workload) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2" + workload.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + workload.Href)
 	if err != nil {
 		return api, fmt.Errorf("update workload - %s", err)
 	}
@@ -245,7 +245,7 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 		return api, fmt.Errorf("update workload - %s", err)
 	}
 
-	api, err = apicall("PUT", apiURL.String(), pce, workloadJSON, false)
+	api, err = apicall("PUT", apiURL.String(), *p, workloadJSON, false)
 	if err != nil {
 		return api, fmt.Errorf("update workload - %s", err)
 	}
@@ -255,7 +255,7 @@ func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error) {
 
 // ChangeLabel updates a workload struct with new label href.
 // It does not call the Illumio API. To reflect the change in your PCE,
-// you'd use UpdateLabel method on the workload struct and then use the UpdateWorkload function
+// you'd use UpdateLabel method on the workload struct and then use the PCE.UpdateWorkload method
 func (w *Workload) ChangeLabel(pce PCE, key, value string) error {
 	var updatedLabels []*Label
 	for _, l := range w.Labels {
@@ -290,7 +290,7 @@ func (w *Workload) ChangeLabel(pce PCE, key, value string) error {
 
 // BulkWorkload takes a bulk action on an array of workloads.
 // Method must be create, update, or delete
-func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, error) {
+func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, error) {
 	var apiResps []APIResponse
 	var err error
 
@@ -311,7 +311,7 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/workloads/bulk_" + method)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/bulk_" + method)
 	if err != nil {
 		return apiResps, fmt.Errorf("bulk workload error - %s", err)
 	}
@@ -351,7 +351,7 @@ func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, 
 		// Uncomment this line if you want to print the JSON object
 		// fmt.Println(string(workloadsJSON))
 
-		api, err := apicall("PUT", apiURL.String(), pce, workloadsJSON, false)
+		api, err := apicall("PUT", apiURL.String(), *p, workloadsJSON, false)
 
 		apiResps = append(apiResps, api)
 
@@ -497,7 +497,7 @@ func (w *Workload) GetMode() string {
 
 // SetMode adjusts the workload struct to reflect the assigned mode.
 // Nothing is changed in the PCE.
-// To reflect the change in the PCE uset SetMode method followed by UpdateWorkload function
+// To reflect the change in the PCE uset SetMode method followed by PCE.UpdateWorkload() method
 //
 // Valid options: idle, build, test, enforced-no, enforced-low, and enforced-high.
 // The enforced options represent no logging, low details, and high detail.
@@ -544,4 +544,23 @@ func (w *Workload) SetMode(m string) error {
 func (a *Agent) GetID() string {
 	x := strings.Split(a.Href, "/")
 	return x[len(x)-1]
+}
+
+// WorkloadUpgrade upgrades the VEN version on the workload
+func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, error) {
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + wkldHref + "/upgrade")
+	if err != nil {
+		return APIResponse{}, fmt.Errorf("upgrade workload - %s", err)
+	}
+
+	// Call the API
+	api, err := apicall("POST", apiURL.String(), *p, json.RawMessage(fmt.Sprintf("{\"release\": \"%s\"}", targetVersion)), false)
+	if err != nil {
+		return api, fmt.Errorf("upgrade workload - %s", err)
+	}
+
+	return api, nil
+
 }
