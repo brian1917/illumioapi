@@ -16,17 +16,17 @@ type Version struct {
 }
 
 // GetVersion returns the version of the PCE
-func GetVersion(pce PCE) (Version, error) {
+func (p *PCE) GetVersion() (Version, error) {
 	var version Version
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/product_version")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/product_version")
 	if err != nil {
 		return Version{}, fmt.Errorf("get version - %s", err)
 	}
 
 	// Call the API
-	api, err := apicall("GET", apiURL.String(), pce, nil, false)
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return Version{}, fmt.Errorf("get version - %s", err)
 	}

@@ -37,7 +37,7 @@ type ServiceBinding struct {
 // The pvoision status must be "draft" or "active".
 // The first call does not use the async option.
 // If the response array length is >=500, it is re-run enabling async.
-func GetAllVirtualServices(pce PCE, provisionStatus string) ([]VirtualService, APIResponse, error) {
+func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, APIResponse, error) {
 	var virtualServices []VirtualService
 	var api APIResponse
 
@@ -47,13 +47,13 @@ func GetAllVirtualServices(pce PCE, provisionStatus string) ([]VirtualService, A
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
 	if err != nil {
 		return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
 	}
@@ -62,7 +62,7 @@ func GetAllVirtualServices(pce PCE, provisionStatus string) ([]VirtualService, A
 
 	// If length is 500, re-run with async
 	if len(virtualServices) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
 		}
@@ -75,13 +75,13 @@ func GetAllVirtualServices(pce PCE, provisionStatus string) ([]VirtualService, A
 }
 
 // CreateBoundService creates a new Virtual service in the Illumio PCE.
-func CreateBoundService(pce PCE, virtualService VirtualService) (VirtualService, APIResponse, error) {
+func (p *PCE) CreateBoundService(virtualService VirtualService) (VirtualService, APIResponse, error) {
 	var newBoundService VirtualService
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/virtual_services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services")
 	if err != nil {
 		return newBoundService, api, fmt.Errorf("create Virtual service - %s", err)
 	}
@@ -91,7 +91,7 @@ func CreateBoundService(pce PCE, virtualService VirtualService) (VirtualService,
 	if err != nil {
 		return newBoundService, api, fmt.Errorf("create Virtual service - %s", err)
 	}
-	api, err = apicall("POST", apiURL.String(), pce, virtualServiceJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, virtualServiceJSON, false)
 	if err != nil {
 		return newBoundService, api, fmt.Errorf("create Virtual service - %s", err)
 	}
@@ -106,12 +106,12 @@ func CreateBoundService(pce PCE, virtualService VirtualService) (VirtualService,
 //
 // The provided BoundService struct must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
-func UpdateBoundService(pce PCE, virtualService VirtualService) (APIResponse, error) {
+func (p *PCE) UpdateBoundService(virtualService VirtualService) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + virtualService.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + virtualService.Href)
 	if err != nil {
 		return api, fmt.Errorf("update Virtual service - %s", err)
 	}
@@ -130,7 +130,7 @@ func UpdateBoundService(pce PCE, virtualService VirtualService) (APIResponse, er
 		return api, fmt.Errorf("update Virtual service - %s", err)
 	}
 
-	api, err = apicall("PUT", apiURL.String(), pce, virtualServiceJSON, false)
+	api, err = apicall("PUT", apiURL.String(), *p, virtualServiceJSON, false)
 	if err != nil {
 		return api, fmt.Errorf("update Virtual service - %s", err)
 	}

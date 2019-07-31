@@ -7,17 +7,17 @@ import (
 )
 
 // DeleteHref deletes an existing object in the PCE based on its href.
-func DeleteHref(pce PCE, href string) (APIResponse, error) {
+func (p *PCE) DeleteHref(href string) (APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + href)
 	if err != nil {
 		return api, fmt.Errorf("delete href - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("DELETE", apiURL.String(), pce, nil, false)
+	api, err = apicall("DELETE", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return api, fmt.Errorf("delete href - %s", err)
 	}

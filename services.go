@@ -54,7 +54,7 @@ type WindowsService struct {
 // provisionStatus must either be "draft" or "active".
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
-func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, error) {
+func (p *PCE) GetAllServices(provisionStatus string) ([]Service, APIResponse, error) {
 	var services []Service
 	var api APIResponse
 
@@ -64,13 +64,13 @@ func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, er
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/" + provisionStatus + "/services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/services")
 	if err != nil {
 		return services, api, fmt.Errorf("get all services - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return services, api, fmt.Errorf("get all services - %s", err)
 	}
@@ -79,7 +79,7 @@ func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, er
 
 	// If length is 500, re-run with async
 	if len(services) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return services, api, fmt.Errorf("get all services - %s", err)
 		}
@@ -92,13 +92,13 @@ func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, er
 }
 
 // CreateService creates a new service in the Illumio PCE
-func CreateService(pce PCE, service Service) (Service, APIResponse, error) {
+func (p *PCE) CreateService(service Service) (Service, APIResponse, error) {
 	var newService Service
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/draft/services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/services")
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
 	}
@@ -108,7 +108,7 @@ func CreateService(pce PCE, service Service) (Service, APIResponse, error) {
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
 	}
-	api, err = apicall("POST", apiURL.String(), pce, serviceJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, serviceJSON, false)
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
 	}
@@ -120,12 +120,12 @@ func CreateService(pce PCE, service Service) (Service, APIResponse, error) {
 }
 
 // UpdateService updates an existing service object in the Illumio PCE
-func UpdateService(pce PCE, service Service) (APIResponse, error) {
+func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + service.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + service.Href)
 	if err != nil {
 		return api, fmt.Errorf("update service - %s", err)
 	}
@@ -144,7 +144,7 @@ func UpdateService(pce PCE, service Service) (APIResponse, error) {
 		return api, fmt.Errorf("update service - %s", err)
 	}
 
-	api, err = apicall("PUT", apiURL.String(), pce, serviceJSON, false)
+	api, err = apicall("PUT", apiURL.String(), *p, serviceJSON, false)
 	if err != nil {
 		return api, fmt.Errorf("update service - %s", err)
 	}

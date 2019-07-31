@@ -147,7 +147,7 @@ type FlowUploadResp struct {
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
-func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
+func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
 	var api APIResponse
 
 	// Initialize arrays using "make" so JSON is marshaled with empty arrays and not null values to meet Illumio API spec
@@ -291,13 +291,13 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResp
 	var trafficResponses []TrafficAnalysis
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/traffic_flows/traffic_analysis_queries")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/traffic_flows/traffic_analysis_queries")
 	if err != nil {
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("POST", apiURL.String(), pce, jsonPayload, false)
+	api, err = apicall("POST", apiURL.String(), *p, jsonPayload, false)
 	if err != nil {
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
@@ -310,7 +310,7 @@ func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, APIResp
 }
 
 // UploadTraffic uploads a csv to the PCE with traffic flows.
-func UploadTraffic(pce PCE, filename string) (FlowUploadResp, APIResponse, error) {
+func (p *PCE) UploadTraffic(filename string) (FlowUploadResp, APIResponse, error) {
 
 	// Read the CSV File
 	f, err := ioutil.ReadFile(filename)
@@ -320,14 +320,14 @@ func UploadTraffic(pce PCE, filename string) (FlowUploadResp, APIResponse, error
 	body := bytes.NewReader(f)
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/agents/bulk_traffic_flows")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/agents/bulk_traffic_flows")
 	if err != nil {
 		return FlowUploadResp{}, APIResponse{}, fmt.Errorf("upload traffic - building api url - %s", err)
 	}
 
 	// Build the Request
 	req, err := http.NewRequest("POST", apiURL.String(), body)
-	req.SetBasicAuth(pce.User, pce.Key)
+	req.SetBasicAuth(p.User, p.Key)
 
 	// Make HTTP Request
 	client := http.Client{}

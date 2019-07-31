@@ -36,18 +36,18 @@ type UpdatedBy struct {
 // GetAllLabels returns a slice of all Labels in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
-func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
+func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
 	var labels []Label
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
 	if err != nil {
 		return labels, api, fmt.Errorf("get all labels - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return labels, api, fmt.Errorf("get all workloads - %s", err)
 	}
@@ -57,7 +57,7 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(labels) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return labels, api, fmt.Errorf("get all workloads - %s", err)
 		}
@@ -70,8 +70,8 @@ func GetAllLabels(pce PCE) ([]Label, APIResponse, error) {
 }
 
 // GetLabelMapH returns a map of labels with the HREF as the key
-func GetLabelMapH(pce PCE) (map[string]Label, APIResponse, error) {
-	labels, apiResp, err := GetAllLabels(pce)
+func (p *PCE) GetLabelMapH() (map[string]Label, APIResponse, error) {
+	labels, apiResp, err := p.GetAllLabels()
 	if err != nil {
 		return nil, apiResp, fmt.Errorf("get href label map - %s", err)
 	}
@@ -83,8 +83,8 @@ func GetLabelMapH(pce PCE) (map[string]Label, APIResponse, error) {
 }
 
 // GetLabelMapKV returns a map of labels with the concatenated value of keyvalue as the key
-func GetLabelMapKV(pce PCE) (map[string]Label, APIResponse, error) {
-	labels, apiResp, err := GetAllLabels(pce)
+func (p *PCE) GetLabelMapKV() (map[string]Label, APIResponse, error) {
+	labels, apiResp, err := p.GetAllLabels()
 	if err != nil {
 		return nil, apiResp, fmt.Errorf("get href label map - %s", err)
 	}
@@ -97,13 +97,13 @@ func GetLabelMapKV(pce PCE) (map[string]Label, APIResponse, error) {
 
 // GetLabelbyKeyValue finds a label based on the key and value.
 // It will only return one Label that is an exact match.
-func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) {
+func (p *PCE) GetLabelbyKeyValue(key, value string) (Label, APIResponse, error) {
 	var l Label
 	var labels []Label
 	var api APIResponse
 
 	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
 	if err != nil {
 		return l, api, fmt.Errorf("get label - %s", err)
 	}
@@ -113,7 +113,7 @@ func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) 
 	apiURL.RawQuery = q.Encode()
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return l, api, fmt.Errorf("get label - %s", err)
 	}
@@ -133,18 +133,18 @@ func GetLabelbyKeyValue(pce PCE, key, value string) (Label, APIResponse, error) 
 }
 
 // GetLabelbyHref returns a label based on the provided HREF.
-func GetLabelbyHref(pce PCE, href string) (Label, APIResponse, error) {
+func (p *PCE) GetLabelbyHref(href string) (Label, APIResponse, error) {
 	var l Label
 	var api APIResponse
 
 	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/" + href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/" + href)
 	if err != nil {
 		return l, api, fmt.Errorf("get label by href - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return l, api, fmt.Errorf("get label by href- %s", err)
 	}
@@ -157,7 +157,7 @@ func GetLabelbyHref(pce PCE, href string) (Label, APIResponse, error) {
 }
 
 // CreateLabel creates a new Label in the Illumio PCE.
-func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
+func (p *PCE) CreateLabel(label Label) (Label, APIResponse, error) {
 	var newLabel Label
 	var api APIResponse
 	var err error
@@ -169,7 +169,7 @@ func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/labels")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
 	if err != nil {
 		return newLabel, api, fmt.Errorf("create label - %s", err)
 	}
@@ -181,7 +181,7 @@ func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
 	}
 
 	// Call the API
-	api, err = apicall("POST", apiURL.String(), pce, labelJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, labelJSON, false)
 	if err != nil {
 		return newLabel, api, fmt.Errorf("create label - %s", err)
 	}
@@ -195,12 +195,12 @@ func CreateLabel(pce PCE, label Label) (Label, APIResponse, error) {
 // UpdateLabel updates an existing label in the Illumio PCE.
 // The provided label struct must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
-func UpdateLabel(pce PCE, label Label) (APIResponse, error) {
+func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2" + label.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + label.Href)
 	if err != nil {
 		return api, fmt.Errorf("update label - %s", err)
 	}
@@ -214,7 +214,7 @@ func UpdateLabel(pce PCE, label Label) (APIResponse, error) {
 		return api, fmt.Errorf("update label - %s", err)
 	}
 
-	api, err = apicall("PUT", apiURL.String(), pce, labelJSON, false)
+	api, err = apicall("PUT", apiURL.String(), *p, labelJSON, false)
 	if err != nil {
 		return api, fmt.Errorf("update label - %s", err)
 	}

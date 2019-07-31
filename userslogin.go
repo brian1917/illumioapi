@@ -60,27 +60,27 @@ type APIKey struct {
 }
 
 // Authenticate produces a temporary auth token for a valid username (email) and password
-func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error) {
+func (p *PCE) Authenticate(username, password string) (Authentication, APIResponse, error) {
 
 	var api APIResponse
 	var err error
 	var auth Authentication
 
 	// Build the API URL
-	fqdn := pceSanitization(pce.FQDN)
-	if pce.FQDN == "poc1.illum.io" || pce.FQDN == "scp1.illum.io" {
+	fqdn := pceSanitization(p.FQDN)
+	if p.FQDN == "poc1.illum.io" || p.FQDN == "scp1.illum.io" {
 		fqdn = "login.illum.io"
 	}
-	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(pce.Port) + "/api/v1/login_users/authenticate")
+	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(p.Port) + "/api/v1/login_users/authenticate")
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - %s", err)
 	}
 	q := apiURL.Query()
-	q.Set("pce_fqdn", pce.FQDN)
+	q.Set("pce_fqdn", p.FQDN)
 	apiURL.RawQuery = q.Encode()
 
 	// Call the API - Use a PCE object since that's what apicall expects
-	api, err = apicall("POST", apiURL.String(), PCE{DisableTLSChecking: pce.DisableTLSChecking, User: username, Key: password}, nil, false)
+	api, err = apicall("POST", apiURL.String(), PCE{DisableTLSChecking: p.DisableTLSChecking, User: username, Key: password}, nil, false)
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - %s", err)
 	}
@@ -93,19 +93,19 @@ func Authenticate(pce PCE, username, password string) (Authentication, APIRespon
 
 // Login takes an auth token and returns a session token.
 // Leave authToken blank to get user information
-func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
+func (p *PCE) Login(authToken string) (UserLogin, APIResponse, error) {
 	var login UserLogin
 	var response APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/users/login")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/users/login")
 	if err != nil {
 		return login, response, fmt.Errorf("login error - %s", err)
 	}
 
 	// Create HTTP client and request
 	client := &http.Client{}
-	if pce.DisableTLSChecking == true {
+	if p.DisableTLSChecking == true {
 		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 
@@ -121,7 +121,7 @@ func Login(pce PCE, authToken string) (UserLogin, APIResponse, error) {
 	if authToken != "" {
 		req.Header.Set("Authorization", "Token token="+authToken)
 	} else {
-		req.SetBasicAuth(pce.User, pce.Key)
+		req.SetBasicAuth(p.User, p.Key)
 	}
 
 	// Make HTTP Request
@@ -163,7 +163,8 @@ func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, er
 
 	// If the user string begins with "api_", we need to get the Org using the login api
 	if user[:4] == "api_" {
-		login, _, err := Login(PCE{FQDN: fqdn, User: user, Key: password, Port: port}, "")
+		pce := PCE{FQDN: fqdn, User: user, Key: password, Port: port}
+		login, _, err := pce.Login("")
 		if err != nil {
 			return pce, fmt.Errorf("Error logging into the PCE to get org ID - %s", err)
 		}
@@ -171,11 +172,13 @@ func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, er
 
 		// If it doesn't start with "api_", we need to authenticate and then login
 	} else {
-		auth, _, err := Authenticate(PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}, user, password)
+		pce := PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}
+		auth, _, err := pce.Authenticate(user, password)
 		if err != nil {
 			return pce, fmt.Errorf("Error - Authenticating to PCE - %s", err)
 		}
-		login, _, err := Login(PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}, auth.AuthToken)
+		pce = PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}
+		login, _, err := pce.Login(auth.AuthToken)
 		if err != nil {
 			return pce, fmt.Errorf("Error - Logging in to PCE - %s", err)
 		}
@@ -197,22 +200,22 @@ func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, er
 }
 
 // GetAllAPIKeys gets all the APIKeys associated with a user
-func GetAllAPIKeys(pce PCE) ([]APIKey, APIResponse, error) {
+func (p *PCE) GetAllAPIKeys() ([]APIKey, APIResponse, error) {
 
 	// Get user info
-	user, _, err := Login(pce, "")
+	user, _, err := p.Login("")
 	if err != nil {
 		return []APIKey{}, APIResponse{}, fmt.Errorf("GetAllAPIKeys  - %s", err)
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pce.FQDN + ":" + strconv.Itoa(pce.Port) + "/api/v2" + user.Href + "/api_keys")
+	apiURL, err := url.Parse("https://" + p.FQDN + ":" + strconv.Itoa(p.Port) + "/api/v2" + user.Href + "/api_keys")
 	if err != nil {
 		return []APIKey{}, APIResponse{}, fmt.Errorf("GetAllAPIKeys - %s", err)
 	}
 
 	// Call the API
-	apiResp, err := apicall("GET", apiURL.String(), pce, nil, false)
+	apiResp, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return []APIKey{}, apiResp, fmt.Errorf("GetAllAPIKeys - %s", err)
 	}
@@ -226,27 +229,27 @@ func GetAllAPIKeys(pce PCE) ([]APIKey, APIResponse, error) {
 }
 
 // CreateAPIKey creates an returns an API Key
-func CreateAPIKey(pce PCE, user, password, name, desc string) (PCE, APIResponse, error) {
+func (p *PCE) CreateAPIKey(user, password, name, desc string) (PCE, APIResponse, error) {
 	var apiKey APIKey
 	var apiResp APIResponse
 
-	auth, _, err := Authenticate(pce, user, password)
+	auth, _, err := p.Authenticate(user, password)
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("Error - Authenticating to PCE - %s", err)
 	}
-	login, _, err := Login(pce, auth.AuthToken)
+	login, _, err := p.Login(auth.AuthToken)
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("Error - Logging in to PCE - %s", err)
 	}
 
-	apiURL, err := url.Parse("https://" + pce.FQDN + ":" + strconv.Itoa(pce.Port) + "/api/v2/" + login.Href + "/api_keys")
+	apiURL, err := url.Parse("https://" + p.FQDN + ":" + strconv.Itoa(p.Port) + "/api/v2/" + login.Href + "/api_keys")
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("create api key error - %s", err)
 	}
 
-	pce.User = login.AuthUsername
-	pce.Key = login.SessionToken
-	pce.Org = login.Orgs[0].ID
+	p.User = login.AuthUsername
+	p.Key = login.SessionToken
+	p.Org = login.Orgs[0].ID
 
 	// Create payload
 	postJSON, err := json.Marshal(APIKey{Name: name, Description: desc})
@@ -255,7 +258,7 @@ func CreateAPIKey(pce PCE, user, password, name, desc string) (PCE, APIResponse,
 	}
 
 	// Call the API
-	apiResp, err = apicall("POST", apiURL.String(), pce, postJSON, false)
+	apiResp, err = apicall("POST", apiURL.String(), *p, postJSON, false)
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("create api key error - %s", err)
 	}
@@ -263,9 +266,9 @@ func CreateAPIKey(pce PCE, user, password, name, desc string) (PCE, APIResponse,
 	// Marshal the response
 	json.Unmarshal([]byte(apiResp.RespBody), &apiKey)
 
-	pce.User = apiKey.AuthUsername
-	pce.Key = apiKey.Secret
+	p.User = apiKey.AuthUsername
+	p.Key = apiKey.Secret
 
-	return pce, apiResp, nil
+	return *p, apiResp, nil
 
 }

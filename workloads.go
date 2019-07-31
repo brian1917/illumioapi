@@ -167,10 +167,10 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 }
 
 // GetWkldHrefMap returns a map of all workloads with the Href as the key.
-func GetWkldHrefMap(pce PCE) (map[string]Workload, error) {
+func (p *PCE) GetWkldHrefMap() (map[string]Workload, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := pce.GetAllWorkloads()
+	wklds, _, err := p.GetAllWorkloads()
 	if err != nil {
 		return nil, err
 	}
@@ -182,10 +182,10 @@ func GetWkldHrefMap(pce PCE) (map[string]Workload, error) {
 }
 
 // GetWkldHostMap returns a map of all workloads with the hostname as the key.
-func GetWkldHostMap(pce PCE) (map[string]Workload, error) {
+func (p *PCE) GetWkldHostMap() (map[string]Workload, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := pce.GetAllWorkloads()
+	wklds, _, err := p.GetAllWorkloads()
 	if err != nil {
 		return nil, err
 	}
@@ -256,22 +256,23 @@ func (p *PCE) UpdateWorkload(workload Workload) (APIResponse, error) {
 // ChangeLabel updates a workload struct with new label href.
 // It does not call the Illumio API. To reflect the change in your PCE,
 // you'd use UpdateLabel method on the workload struct and then use the PCE.UpdateWorkload method
+// CONSIDER RE-WORKING THIS TO A PCE-METHOD SINCE IT DOES INTERACT WITH THE ILLUMIO API
 func (w *Workload) ChangeLabel(pce PCE, key, value string) error {
 	var updatedLabels []*Label
 	for _, l := range w.Labels {
-		x, _, err := GetLabelbyHref(pce, l.Href)
+		x, _, err := pce.GetLabelbyHref(l.Href)
 		if err != nil {
 			return fmt.Errorf("error updating workload - %s", err)
 		}
 		if x.Key == key {
 			// Get our new label's href
-			newLabel, _, err := GetLabelbyKeyValue(pce, key, value)
+			newLabel, _, err := pce.GetLabelbyKeyValue(key, value)
 			if err != nil {
 				return fmt.Errorf("error updating workload - %s", err)
 			}
 			// Create the label if it doesn't exist
 			if newLabel.Href == "" {
-				createdLabel, _, err := CreateLabel(pce, Label{Key: key, Value: value})
+				createdLabel, _, err := pce.CreateLabel(Label{Key: key, Value: value})
 				if err != nil {
 					return fmt.Errorf("error updating workload - %s", err)
 				}

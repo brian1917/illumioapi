@@ -42,48 +42,44 @@ type PairingKey struct {
 }
 
 // GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
-func GetAllPairingProfiles(pce PCE) ([]PairingProfile, APIResponse, error) {
-	var pairingProfiles []PairingProfile
-	var api APIResponse
-	var err error
+func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/pairing_profiles")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
 	if err != nil {
-		return pairingProfiles, api, err
+		return []PairingProfile{}, APIResponse{}, err
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return pairingProfiles, api, err
+		return []PairingProfile{}, api, err
 	}
 
 	// Unmarshal response to struct
+	var pairingProfiles []PairingProfile
 	json.Unmarshal([]byte(api.RespBody), &pairingProfiles)
 
 	return pairingProfiles, api, nil
 }
 
 // CreatePairingProfile creates a new pairing profile in the Illumio PCE.
-func CreatePairingProfile(pce PCE, pairingProfile PairingProfile) (APIResponse, error) {
-	var api APIResponse
-	var err error
+func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1/orgs/" + strconv.Itoa(pce.Org) + "/pairing_profiles")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
 	if err != nil {
-		return api, err
+		return APIResponse{}, err
 	}
 
 	// Create the Payload
 	pairProfileJSON, err := json.Marshal(pairingProfile)
 	if err != nil {
-		return api, err
+		return APIResponse{}, err
 	}
 
 	// Call the API
-	api, err = apicall("POST", apiURL.String(), pce, pairProfileJSON, false)
+	api, err := apicall("POST", apiURL.String(), *p, pairProfileJSON, false)
 	if err != nil {
 		return api, err
 	}
@@ -92,18 +88,16 @@ func CreatePairingProfile(pce PCE, pairingProfile PairingProfile) (APIResponse, 
 }
 
 // CreatePairingKey creates a pairing key from a pairing profile.
-func CreatePairingKey(pce PCE, pairingProfile PairingProfile) (APIResponse, error) {
-	var api APIResponse
-	var err error
+func CreatePairingKey(p PCE, pairingProfile PairingProfile) (APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v1" + pairingProfile.Href + "/pairing_key")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + pairingProfile.Href + "/pairing_key")
 	if err != nil {
-		return api, err
+		return APIResponse{}, err
 	}
 
 	// Call the API
-	api, err = apicall("POST", apiURL.String(), pce, []byte("{}"), false)
+	api, err := apicall("POST", apiURL.String(), p, []byte("{}"), false)
 	if err != nil {
 		return api, err
 	}

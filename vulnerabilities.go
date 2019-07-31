@@ -37,18 +37,18 @@ type VulnerabilityReport struct {
 // GetAllVulns returns a slice of all Vulnerabilities in the Illumio PCE.
 // The first call does not use the async option.
 // If the response slice length is >=500, it is re-run enabling async.
-func GetAllVulns(pce PCE) ([]Vulnerability, APIResponse, error) {
+func (p *PCE) GetAllVulns() ([]Vulnerability, APIResponse, error) {
 	var vulns []Vulnerability
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/vulnerabilities")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vulnerabilities")
 	if err != nil {
 		return vulns, api, fmt.Errorf("get all vulnerabilities - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return vulns, api, fmt.Errorf("get all vulnerabilities - %s", err)
 	}
@@ -58,7 +58,7 @@ func GetAllVulns(pce PCE) ([]Vulnerability, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(vulns) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return vulns, api, fmt.Errorf("get all vulnerabilties - %s", err)
 		}
@@ -73,18 +73,18 @@ func GetAllVulns(pce PCE) ([]Vulnerability, APIResponse, error) {
 // GetAllVulnReports returns a slice of all Vulnerability Reports in the Illumio PCE.
 // The first call does not use the async option.
 // If the response slice length is >=500, it is re-run enabling async.
-func GetAllVulnReports(pce PCE) ([]VulnerabilityReport, APIResponse, error) {
+func (p *PCE) GetAllVulnReports() ([]VulnerabilityReport, APIResponse, error) {
 	var vulnReports []VulnerabilityReport
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/vulnerability_reports")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vulnerability_reports")
 	if err != nil {
 		return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
 	}
@@ -94,7 +94,7 @@ func GetAllVulnReports(pce PCE) ([]VulnerabilityReport, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(vulnReports) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
 		}
