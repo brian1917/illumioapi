@@ -51,13 +51,13 @@ type VirtualServices struct {
 	Href string `json:"href"`
 }
 
-// ProvisionerHref only works with IPlists right now - needs to be updated
-func ProvisionHref(pce PCE, href string) (APIResponse, error) {
+// ProvisionHref only works with IPlists right now - needs to be updated
+func (p *PCE) ProvisionHref(href string) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy")
 	if err != nil {
 		return api, fmt.Errorf("provision href - %s", err)
 	}
@@ -73,7 +73,7 @@ func ProvisionHref(pce PCE, href string) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("provision href - %s", err)
 	}
-	api, err = apicall("POST", apiURL.String(), pce, provisionJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, provisionJSON, false)
 	if err != nil {
 		return api, fmt.Errorf("provision href - %s", err)
 	}

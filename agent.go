@@ -31,8 +31,8 @@ import (
 // 	UptimeSeconds   string   `json:"uptime_seconds,omitempty"`
 // }
 
-// compatibilityReport is a compatibility report for a VEN in Idle status
-type compatibilityReport struct {
+// CompatibilityReport is a compatibility report for a VEN in Idle status
+type CompatibilityReport struct {
 	LastUpdatedAt time.Time `json:"last_updated_at"`
 	Results       Results   `json:"results"`
 	QualifyStatus string    `json:"qualify_status"`
@@ -53,22 +53,22 @@ type Results struct {
 	QualifyTests []QualifyTests `json:"qualify_tests"`
 }
 
-// GetcompatibilityReport returns the compatibility report for a VEN
-func GetcompatibilityReport(pce PCE, w Workload) (compatibilityReport, APIResponse, error) {
+// GetCompatibilityReport returns the compatibility report for a VEN
+func (p *PCE) GetCompatibilityReport(w Workload) (CompatibilityReport, APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2" + w.Agent.Href + "/compatibility_report")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + w.Agent.Href + "/compatibility_report")
 	if err != nil {
-		return compatibilityReport{}, APIResponse{}, fmt.Errorf("get compatibility report - building URL - %s", err)
+		return CompatibilityReport{}, APIResponse{}, fmt.Errorf("get compatibility report - building URL - %s", err)
 	}
 
 	// Call the API
-	api, err := apicall("GET", apiURL.String(), pce, nil, false)
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return compatibilityReport{}, APIResponse{}, fmt.Errorf("get compatibility report - calling API - %s", err)
+		return CompatibilityReport{}, APIResponse{}, fmt.Errorf("get compatibility report - calling API - %s", err)
 	}
 
-	var cr compatibilityReport
+	var cr CompatibilityReport
 	json.Unmarshal([]byte(api.RespBody), &cr)
 
 	return cr, api, nil

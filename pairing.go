@@ -88,7 +88,7 @@ func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, 
 }
 
 // CreatePairingKey creates a pairing key from a pairing profile.
-func CreatePairingKey(p PCE, pairingProfile PairingProfile) (APIResponse, error) {
+func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (APIResponse, error) {
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + pairingProfile.Href + "/pairing_key")
@@ -97,7 +97,7 @@ func CreatePairingKey(p PCE, pairingProfile PairingProfile) (APIResponse, error)
 	}
 
 	// Call the API
-	api, err := apicall("POST", apiURL.String(), p, []byte("{}"), false)
+	api, err := apicall("POST", apiURL.String(), *p, []byte("{}"), false)
 	if err != nil {
 		return api, err
 	}
