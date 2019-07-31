@@ -59,8 +59,8 @@ type APIKey struct {
 	Secret       string `json:"secret,omitempty"`
 }
 
-// Authenticate produces a temporary auth token for a valid username (email) and password
-func (p *PCE) Authenticate(username, password string) (Authentication, APIResponse, error) {
+// authenticate is a private method that produces a temporary auth token for a valid username (email) and password
+func (p *PCE) authenticate(username, password string) (Authentication, APIResponse, error) {
 
 	var api APIResponse
 	var err error
@@ -91,9 +91,9 @@ func (p *PCE) Authenticate(username, password string) (Authentication, APIRespon
 	return auth, api, nil
 }
 
-// Login takes an auth token and returns a session token.
+// login is a private method that takes an auth token and returns a session token.
 // Leave authToken blank to get user information
-func (p *PCE) Login(authToken string) (UserLogin, APIResponse, error) {
+func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 	var login UserLogin
 	var response APIResponse
 
@@ -154,56 +154,42 @@ func (p *PCE) Login(authToken string) (UserLogin, APIResponse, error) {
 
 }
 
-// PCEbuilder builds a PCE.
-// User can be API User or email address. Password can be password or API Secret.
-// PCEbuilder will find the org.
-func PCEbuilder(fqdn, user, password string, port int, disableTLS bool) (PCE, error) {
-	var pce PCE
-	var org int
+// Login authenticates to the PCE.
+// To authenticate with an email address and password, the PCE struct must have FQDN and Port and the user and pwd parameters are required.
+// If the PCE struct already has user and key, the user and password parameters can be blank and the the method will assign the org.
+func (p *PCE) Login(user, password string) (UserLogin, error) {
 
 	// If the user string begins with "api_", we need to get the Org using the login api
-	if user[:4] == "api_" {
-		pce := PCE{FQDN: fqdn, User: user, Key: password, Port: port}
-		login, _, err := pce.Login("")
+	if p.User != "" {
+		login, _, err := p.login("")
 		if err != nil {
-			return pce, fmt.Errorf("Error logging into the PCE to get org ID - %s", err)
+			return login, fmt.Errorf("Error logging into the PCE to get org ID - %s", err)
 		}
-		org = login.Orgs[0].ID
-
-		// If it doesn't start with "api_", we need to authenticate and then login
-	} else {
-		pce := PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}
-		auth, _, err := pce.Authenticate(user, password)
-		if err != nil {
-			return pce, fmt.Errorf("Error - Authenticating to PCE - %s", err)
-		}
-		pce = PCE{FQDN: fqdn, Port: port, DisableTLSChecking: disableTLS}
-		login, _, err := pce.Login(auth.AuthToken)
-		if err != nil {
-			return pce, fmt.Errorf("Error - Logging in to PCE - %s", err)
-		}
-		user = login.AuthUsername
-		password = login.SessionToken
-		org = login.Orgs[0].ID
+		p.Org = login.Orgs[0].ID
+		return login, nil
 	}
 
-	// Create the PCE
-	pce = PCE{
-		FQDN:               fqdn,
-		Port:               port,
-		Org:                org,
-		User:               user,
-		Key:                password,
-		DisableTLSChecking: disableTLS}
+	// If it doesn't start with "api_", we need to authenticate and then login
+	auth, _, err := p.authenticate(user, password)
+	if err != nil {
+		return UserLogin{}, fmt.Errorf("Error - Authenticating to PCE - %s", err)
+	}
+	login, _, err := p.login(auth.AuthToken)
+	if err != nil {
+		return login, fmt.Errorf("Error - Logging in to PCE - %s", err)
+	}
+	p.User = login.AuthUsername
+	p.Key = login.SessionToken
+	p.Org = login.Orgs[0].ID
 
-	return pce, nil
+	return login, nil
 }
 
 // GetAllAPIKeys gets all the APIKeys associated with a user
 func (p *PCE) GetAllAPIKeys() ([]APIKey, APIResponse, error) {
 
 	// Get user info
-	user, _, err := p.Login("")
+	user, _, err := p.login("")
 	if err != nil {
 		return []APIKey{}, APIResponse{}, fmt.Errorf("GetAllAPIKeys  - %s", err)
 	}
@@ -233,11 +219,11 @@ func (p *PCE) CreateAPIKey(user, password, name, desc string) (PCE, APIResponse,
 	var apiKey APIKey
 	var apiResp APIResponse
 
-	auth, _, err := p.Authenticate(user, password)
+	auth, _, err := p.authenticate(user, password)
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("Error - Authenticating to PCE - %s", err)
 	}
-	login, _, err := p.Login(auth.AuthToken)
+	login, _, err := p.login(auth.AuthToken)
 	if err != nil {
 		return PCE{}, apiResp, fmt.Errorf("Error - Logging in to PCE - %s", err)
 	}
