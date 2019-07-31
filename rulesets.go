@@ -122,18 +122,18 @@ type VirtualServer struct {
 }
 
 // GetAllRuleSets returns a slice of Rulesets for all RuleSets in the Illumio PCE
-func GetAllRuleSets(pce PCE, provisionStatus string) ([]RuleSet, APIResponse, error) {
+func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, error) {
 	var rulesets []RuleSet
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(pce.FQDN) + ":" + strconv.Itoa(pce.Port) + "/api/v2/orgs/" + strconv.Itoa(pce.Org) + "/sec_policy/" + provisionStatus + "/rule_sets")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/rule_sets")
 	if err != nil {
 		return rulesets, api, fmt.Errorf("get all rulesets - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), pce, nil, false)
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return rulesets, api, fmt.Errorf("get all rulesets - %s", err)
 	}
@@ -142,7 +142,7 @@ func GetAllRuleSets(pce PCE, provisionStatus string) ([]RuleSet, APIResponse, er
 
 	// If length is 500, re-run with async
 	if len(rulesets) >= 500 {
-		api, err = apicall("GET", apiURL.String(), pce, nil, true)
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return rulesets, api, fmt.Errorf("get all rulesets - %s", err)
 		}
