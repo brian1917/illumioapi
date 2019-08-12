@@ -451,8 +451,8 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 }
 
 // LabelMatch checks if the workload matches the provided labels.
-// Blank values ("") for role, app, env, or loc mean no provided label.
-// A single asterisk (*) can be used to represent any in a particular category.
+// Blank values ("") for role, app, env, or loc mean no label assigned for that key.
+// A single asterisk (*) can be used to represent any in a particular key.
 // For example, using "*" for role will return true as long as the app, env, and loc match.
 func (w *Workload) LabelMatch(role, app, env, loc string, labelMap map[string]Label) bool {
 	if (role == "*" || w.GetRole(labelMap).Value == role) &&
