@@ -450,6 +450,20 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 	return Label{}
 }
 
+// LabelMatch checks if the workload matches the provided labels.
+// Blank values ("") for role, app, env, or loc mean no provided label.
+// A single asterisk (*) can be used to represent any in a particular category.
+// For example, using "*" for role will return true as long as the app, env, and loc match.
+func (w *Workload) LabelMatch(role, app, env, loc string, labelMap map[string]Label) bool {
+	if (role == "*" || w.GetRole(labelMap).Value == role) &&
+		(app == "*" || w.GetApp(labelMap).Value == app) &&
+		(env == "*" || w.GetEnv(labelMap).Value == env) &&
+		(loc == "*" || w.GetLoc(labelMap).Value == loc) {
+		return true
+	}
+	return false
+}
+
 // GetAppGroup returns the app group string of a workload in the format of App | Env.
 // If the workload does not have an app or env label, "NO APP GROUP" is returned.
 // Use GetAppGroupL to include the loc label in the app group.
