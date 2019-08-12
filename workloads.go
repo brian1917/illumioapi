@@ -454,7 +454,7 @@ func (w *Workload) GetLoc(labelMap map[string]Label) Label {
 // Blank values ("") for role, app, env, or loc mean no label assigned for that key.
 // A single asterisk (*) can be used to represent any in a particular key.
 // For example, using "*" for role will return true as long as the app, env, and loc match.
-func (w *Workload) LabelMatch(role, app, env, loc string, labelMap map[string]Label) bool {
+func (w *Workload) LabelsMatch(role, app, env, loc string, labelMap map[string]Label) bool {
 	if (role == "*" || w.GetRole(labelMap).Value == role) &&
 		(app == "*" || w.GetApp(labelMap).Value == app) &&
 		(env == "*" || w.GetEnv(labelMap).Value == env) &&
