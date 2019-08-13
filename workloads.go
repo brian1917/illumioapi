@@ -167,17 +167,17 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 }
 
 // GetWkldHrefMap returns a map of all workloads with the Href as the key.
-func (p *PCE) GetWkldHrefMap() (map[string]Workload, error) {
+func (p *PCE) GetWkldHrefMap() (map[string]Workload, APIResponse, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := p.GetAllWorkloads()
+	wklds, a, err := p.GetAllWorkloads()
 	if err != nil {
-		return nil, err
+		return nil, a, err
 	}
 	for _, w := range wklds {
 		m[w.Href] = w
 	}
-	return m, nil
+	return m, a, nil
 
 }
 
