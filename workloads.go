@@ -182,17 +182,17 @@ func (p *PCE) GetWkldHrefMap() (map[string]Workload, error) {
 }
 
 // GetWkldHostMap returns a map of all workloads with the hostname as the key.
-func (p *PCE) GetWkldHostMap() (map[string]Workload, error) {
+func (p *PCE) GetWkldHostMap() (map[string]Workload, APIResponse, error) {
 
 	m := make(map[string]Workload)
-	wklds, _, err := p.GetAllWorkloads()
+	wklds, a, err := p.GetAllWorkloads()
 	if err != nil {
-		return nil, err
+		return nil, a, err
 	}
 	for _, w := range wklds {
 		m[w.Hostname] = w
 	}
-	return m, nil
+	return m, a, nil
 
 }
 
