@@ -50,7 +50,7 @@ type DeletedBy struct {
 // An Interface represent the Interfaces of a Workload
 type Interface struct {
 	Address               string `json:"address,omitempty"`
-	CidrBlock             int    `json:"cidr_block,omitempty"`
+	CidrBlock             *int   `json:"cidr_block,omitempty"`
 	DefaultGatewayAddress string `json:"default_gateway_address,omitempty"`
 	FriendlyName          string `json:"friendly_name,omitempty"`
 	LinkState             string `json:"link_state,omitempty"`
