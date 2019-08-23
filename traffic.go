@@ -2,6 +2,7 @@ package illumioapi
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -331,6 +332,9 @@ func (p *PCE) UploadTraffic(filename string) (FlowUploadResp, APIResponse, error
 
 	// Make HTTP Request
 	client := http.Client{}
+	if p.DisableTLSChecking == true {
+		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return FlowUploadResp{}, APIResponse{}, err
