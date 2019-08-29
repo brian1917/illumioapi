@@ -135,7 +135,6 @@ type Status struct {
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
 func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
-	var workloads []Workload
 	var api APIResponse
 
 	// Build the API URL
@@ -150,21 +149,25 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 		return nil, api, fmt.Errorf("get all workloads - %s", err)
 	}
 
+	var workloads []Workload
 	json.Unmarshal([]byte(api.RespBody), &workloads)
 
 	// If length is 500, re-run with async
 	if len(workloads) >= 500 {
 		// Release memory from the previous slice
 		workloads = nil
+		// Call async
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return nil, api, fmt.Errorf("get all workloads - %s", err)
 		}
-
-		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &workloads)
+		// Unmarshal response to asyncWklds and return
+		var asyncWklds []Workload
+		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
+		return asyncWklds, api, nil
 	}
 
+	// Return if not async
 	return workloads, api, nil
 }
 
