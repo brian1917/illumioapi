@@ -154,6 +154,8 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(workloads) >= 500 {
+		// Release memory from the previous slice
+		workloads = nil
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
 			return nil, api, fmt.Errorf("get all workloads - %s", err)
