@@ -154,8 +154,6 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 
 	// If length is 500, re-run with async
 	if len(workloads) >= 500 {
-		// Release memory from the previous slice
-		workloads = nil
 		// Call async
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
@@ -164,10 +162,11 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 		// Unmarshal response to asyncWklds and return
 		var asyncWklds []Workload
 		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
+
 		return asyncWklds, api, nil
 	}
 
-	// Return if not async
+	// Return if less than 500
 	return workloads, api, nil
 }
 

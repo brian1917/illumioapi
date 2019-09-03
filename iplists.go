@@ -89,39 +89,42 @@ func (p *PCE) GetIPList(name string) (IPList, APIResponse, error) {
 // The first call does not use the async option.
 // If the response array length is >=500, it is re-run enabling async.
 func (p *PCE) getAllIPLists(provisionStatus string) ([]IPList, APIResponse, error) {
-	var ipLists []IPList
-	var api APIResponse
 
 	provisionStatus = strings.ToLower(provisionStatus)
 	if provisionStatus != "active" && provisionStatus != "draft" {
-		return ipLists, api, errors.New("get all iplists - provisionStatus must be active or draft")
+		return nil, APIResponse{}, errors.New("get all iplists - provisionStatus must be active or draft")
 	}
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/ip_lists")
 	if err != nil {
-		return ipLists, api, fmt.Errorf("get all iplists - %s", err)
+		return nil, APIResponse{}, fmt.Errorf("get all iplists - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return ipLists, api, fmt.Errorf("get all iplists - %s", err)
+		return nil, api, fmt.Errorf("get all iplists - %s", err)
 	}
 
+	var ipLists []IPList
 	json.Unmarshal([]byte(api.RespBody), &ipLists)
 
 	// If length is 500, re-run with async
 	if len(ipLists) >= 500 {
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
-			return ipLists, api, fmt.Errorf("get all iplists - %s", err)
+			return nil, api, fmt.Errorf("get all iplists - %s", err)
 		}
 
 		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &ipLists)
+		var asyncIPLists []IPList
+		json.Unmarshal([]byte(api.RespBody), &asyncIPLists)
+
+		return asyncIPLists, api, nil
 	}
 
+	// Return if less than 500
 	return ipLists, api, nil
 }
 

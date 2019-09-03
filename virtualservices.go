@@ -38,39 +38,43 @@ type ServiceBinding struct {
 // The first call does not use the async option.
 // If the response array length is >=500, it is re-run enabling async.
 func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, APIResponse, error) {
-	var virtualServices []VirtualService
 	var api APIResponse
 
 	provisionStatus = strings.ToLower(provisionStatus)
 	if provisionStatus != "active" && provisionStatus != "draft" {
-		return virtualServices, api, errors.New("get all Virtual services - provisionStatus must be active or draft")
+		return nil, api, errors.New("get all Virtual services - provisionStatus must be active or draft")
 	}
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
 	if err != nil {
-		return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
+		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
 	}
 
 	// Call the API
 	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
+		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
 	}
 
+	var virtualServices []VirtualService
 	json.Unmarshal([]byte(api.RespBody), &virtualServices)
 
 	// If length is 500, re-run with async
 	if len(virtualServices) >= 500 {
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
-			return virtualServices, api, fmt.Errorf("get all Virtual services - %s", err)
+			return nil, api, fmt.Errorf("get all Virtual services - %s", err)
 		}
 
 		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &virtualServices)
+		var asyncVirtualServices []VirtualService
+		json.Unmarshal([]byte(api.RespBody), &asyncVirtualServices)
+
+		return asyncVirtualServices, api, nil
 	}
 
+	// Return if there are less than 500
 	return virtualServices, api, nil
 }
 

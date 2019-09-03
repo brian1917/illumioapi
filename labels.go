@@ -37,35 +37,38 @@ type UpdatedBy struct {
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
 func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
-	var labels []Label
-	var api APIResponse
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
 	if err != nil {
-		return labels, api, fmt.Errorf("get all labels - %s", err)
+		return nil, APIResponse{}, fmt.Errorf("get all labels - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return labels, api, fmt.Errorf("get all workloads - %s", err)
+		return nil, api, fmt.Errorf("get all workloads - %s", err)
 	}
 
 	// Unmarshal response to struct
+	var labels []Label
 	json.Unmarshal([]byte(api.RespBody), &labels)
 
 	// If length is 500, re-run with async
 	if len(labels) >= 500 {
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
-			return labels, api, fmt.Errorf("get all workloads - %s", err)
+			return nil, api, fmt.Errorf("get all workloads - %s", err)
 		}
 
 		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &labels)
+		var asyncLabels []Label
+		json.Unmarshal([]byte(api.RespBody), &asyncLabels)
+
+		return asyncLabels, api, nil
 	}
 
+	// Return if less than 500
 	return labels, api, nil
 }
 

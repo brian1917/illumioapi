@@ -55,39 +55,43 @@ type WindowsService struct {
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
 func (p *PCE) GetAllServices(provisionStatus string) ([]Service, APIResponse, error) {
-	var services []Service
 	var api APIResponse
 
 	provisionStatus = strings.ToLower(provisionStatus)
 	if provisionStatus != "active" && provisionStatus != "draft" {
-		return services, api, errors.New("provisionStatus must be active or draft")
+		return nil, api, errors.New("provisionStatus must be active or draft")
 	}
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/services")
 	if err != nil {
-		return services, api, fmt.Errorf("get all services - %s", err)
+		return nil, api, fmt.Errorf("get all services - %s", err)
 	}
 
 	// Call the API
 	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return services, api, fmt.Errorf("get all services - %s", err)
+		return nil, api, fmt.Errorf("get all services - %s", err)
 	}
 
+	var services []Service
 	json.Unmarshal([]byte(api.RespBody), &services)
 
 	// If length is 500, re-run with async
 	if len(services) >= 500 {
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
-			return services, api, fmt.Errorf("get all services - %s", err)
+			return nil, api, fmt.Errorf("get all services - %s", err)
 		}
 
 		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &services)
+		var asyncServices []Service
+		json.Unmarshal([]byte(api.RespBody), &asyncServices)
+
+		return asyncServices, api, nil
 	}
 
+	// Return if there is less than 500
 	return services, api, nil
 }
 

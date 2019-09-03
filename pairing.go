@@ -2,6 +2,7 @@ package illumioapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -47,19 +48,34 @@ func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error) {
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
 	if err != nil {
-		return []PairingProfile{}, APIResponse{}, err
+		return nil, APIResponse{}, err
 	}
 
 	// Call the API
 	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return []PairingProfile{}, api, err
+		return nil, api, err
 	}
 
 	// Unmarshal response to struct
 	var pairingProfiles []PairingProfile
 	json.Unmarshal([]byte(api.RespBody), &pairingProfiles)
 
+	// Check if we need to re-run with async
+	if len(pairingProfiles) >= 500 {
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
+		if err != nil {
+			return nil, api, fmt.Errorf("get all pairing profiles - %s", err)
+		}
+
+		// Unmarshal response to struct
+		var asyncPairingProfiles []PairingProfile
+		json.Unmarshal([]byte(api.RespBody), &asyncPairingProfiles)
+
+		return asyncPairingProfiles, api, nil
+	}
+
+	// Return if less than 500
 	return pairingProfiles, api, nil
 }
 

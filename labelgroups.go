@@ -46,19 +46,19 @@ func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIRespon
 
 	provisionStatus = strings.ToLower(provisionStatus)
 	if provisionStatus != "active" && provisionStatus != "draft" {
-		return []LabelGroup{}, APIResponse{}, errors.New("get all label groups - provisionStatus must be active or draft")
+		return nil, APIResponse{}, errors.New("get all label groups - provisionStatus must be active or draft")
 	}
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/label_groups")
 	if err != nil {
-		return []LabelGroup{}, APIResponse{}, fmt.Errorf("get all label groups - %s", err)
+		return nil, APIResponse{}, fmt.Errorf("get all label groups - %s", err)
 	}
 
 	// Call the API
 	api, err := apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
-		return []LabelGroup{}, api, fmt.Errorf("get all label groups - %s", err)
+		return nil, api, fmt.Errorf("get all label groups - %s", err)
 	}
 
 	var labelGroups []LabelGroup
@@ -68,12 +68,16 @@ func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIRespon
 	if len(labelGroups) >= 500 {
 		api, err = apicall("GET", apiURL.String(), *p, nil, true)
 		if err != nil {
-			return []LabelGroup{}, api, fmt.Errorf("get all label groups - %s", err)
+			return nil, api, fmt.Errorf("get all label groups - %s", err)
 		}
 
 		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &labelGroups)
+		var asyncLabelGroups []LabelGroup
+		json.Unmarshal([]byte(api.RespBody), &asyncLabelGroups)
+
+		return asyncLabelGroups, api, nil
 	}
 
+	// Return if less than 500
 	return labelGroups, api, nil
 }
