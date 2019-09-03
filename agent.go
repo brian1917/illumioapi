@@ -14,7 +14,9 @@ type CompatibilityReport struct {
 	Results       Results   `json:"results"`
 	QualifyStatus string    `json:"qualify_status"`
 }
-type QualifyTests struct {
+
+// QualifyTest is part of compatibility report
+type QualifyTest struct {
 	RequiredPackages          []string `json:"required_packages"`
 	RequiredPackagesInstalled bool     `json:"required_packages_installed"`
 	Status                    string   `json:"status"`
@@ -26,8 +28,10 @@ type QualifyTests struct {
 	Ipv6ActiveConnCnt         int      `json:"ipv6_active_conn_cnt"`
 	IP6TablesRuleCnt          int      `json:"ip6tables_rule_cnt"`
 }
+
+// Results are the list of qualify tests
 type Results struct {
-	QualifyTests []QualifyTests `json:"qualify_tests"`
+	QualifyTests []QualifyTest `json:"qualify_tests"`
 }
 
 // GetCompatibilityReport returns the compatibility report for a VEN
