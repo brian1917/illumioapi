@@ -213,7 +213,7 @@ func (p *PCE) UpdateIPList(iplist IPList) (APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + iplist.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + iplist.Href)
 	if err != nil {
 		return api, fmt.Errorf("update iplist - %s", err)
 	}

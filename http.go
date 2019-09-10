@@ -66,7 +66,7 @@ func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIRe
 
 	// Get the base URL
 	u, err := url.Parse(apiURL)
-	baseURL := "https://" + u.Host + "/api/v1"
+	baseURL := "https://" + u.Host + "/api/v2"
 
 	// Create body
 	httpBody = bytes.NewBuffer(body)

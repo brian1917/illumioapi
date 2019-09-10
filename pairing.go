@@ -46,7 +46,7 @@ type PairingKey struct {
 func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
 	if err != nil {
 		return nil, APIResponse{}, err
 	}
@@ -83,7 +83,7 @@ func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error) {
 func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
 	if err != nil {
 		return APIResponse{}, err
 	}
@@ -107,7 +107,7 @@ func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, 
 func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + pairingProfile.Href + "/pairing_key")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + pairingProfile.Href + "/pairing_key")
 	if err != nil {
 		return APIResponse{}, err
 	}

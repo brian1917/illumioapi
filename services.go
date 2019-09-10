@@ -63,7 +63,7 @@ func (p *PCE) GetAllServices(provisionStatus string) ([]Service, APIResponse, er
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/services")
 	if err != nil {
 		return nil, api, fmt.Errorf("get all services - %s", err)
 	}
@@ -102,7 +102,7 @@ func (p *PCE) CreateService(service Service) (Service, APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/services")
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
 	}
@@ -129,7 +129,7 @@ func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + service.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + service.Href)
 	if err != nil {
 		return api, fmt.Errorf("update service - %s", err)
 	}

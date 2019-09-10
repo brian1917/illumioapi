@@ -50,7 +50,7 @@ func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIRespon
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/label_groups")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/label_groups")
 	if err != nil {
 		return nil, APIResponse{}, fmt.Errorf("get all label groups - %s", err)
 	}

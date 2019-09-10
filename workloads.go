@@ -170,6 +170,26 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 	return workloads, api, nil
 }
 
+// GetWkldByHref returns the workload with a specific href
+func (p *PCE) GetWkldByHref(href string) (Workload, APIResponse, error) {
+	// Build the API URL
+	apiURL, err := url.Parse(fmt.Sprintf("https://%s:%d/api/v2%s", pceSanitization(p.FQDN), p.Port, href))
+	if err != nil {
+		return Workload{}, APIResponse{}, fmt.Errorf("get workload by href - %s", err)
+	}
+
+	// Call the API
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
+	if err != nil {
+		return Workload{}, api, fmt.Errorf("get workload by href - %s", err)
+	}
+
+	var wkld Workload
+	json.Unmarshal([]byte(api.RespBody), &wkld)
+
+	return wkld, api, nil
+}
+
 // GetWkldHrefMap returns a map of all workloads with the Href as the key.
 func (p *PCE) GetWkldHrefMap() (map[string]Workload, APIResponse, error) {
 

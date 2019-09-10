@@ -103,20 +103,20 @@ type Rule struct {
 	UpdateType                  string                       `json:"update_type,omitempty"`
 }
 
-// Scopes
+// Scope
 type Scopes struct {
 	Label      *Label      `json:"label,omitempty"`
 	LabelGroup *LabelGroup `json:"label_group,omitempty"`
 }
 
-// Statements
+// Statements are part of a custom IPTables rule
 type Statements struct {
 	ChainName  string `json:"chain_name"`
 	Parameters string `json:"parameters"`
 	TableName  string `json:"table_name"`
 }
 
-// VirtualServer
+// VirtualServer represents a Virtual Server in the Illumio PCE
 type VirtualServer struct {
 	Href string `json:"href"`
 }

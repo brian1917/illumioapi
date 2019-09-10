@@ -46,7 +46,7 @@ func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, A
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
 	if err != nil {
 		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
 	}
@@ -85,7 +85,7 @@ func (p *PCE) CreateBoundService(virtualService VirtualService) (VirtualService,
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services")
 	if err != nil {
 		return newBoundService, api, fmt.Errorf("create Virtual service - %s", err)
 	}
@@ -115,7 +115,7 @@ func (p *PCE) UpdateBoundService(virtualService VirtualService) (APIResponse, er
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + virtualService.Href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + virtualService.Href)
 	if err != nil {
 		return api, fmt.Errorf("update Virtual service - %s", err)
 	}

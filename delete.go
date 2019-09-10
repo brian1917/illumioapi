@@ -11,7 +11,7 @@ func (p *PCE) DeleteHref(href string) (APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v1" + href)
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
 	if err != nil {
 		return api, fmt.Errorf("delete href - %s", err)
 	}
