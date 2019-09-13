@@ -72,30 +72,20 @@ func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
 	return labels, api, nil
 }
 
-// GetLabelMapH returns a map of labels with the HREF as the key
-func (p *PCE) GetLabelMapH() (map[string]Label, APIResponse, error) {
+// GetLabelMaps returns a map of labels with the HREF as the key
+func (p *PCE) GetLabelMaps() (APIResponse, error) {
 	labels, apiResp, err := p.GetAllLabels()
 	if err != nil {
-		return nil, apiResp, fmt.Errorf("get href label map - %s", err)
+		return apiResp, fmt.Errorf("get href label map - %s", err)
 	}
-	m := make(map[string]Label)
+	p.LabelMapH = make(map[string]Label)
+	p.LabelMapKV = make(map[string]Label)
 	for _, l := range labels {
-		m[l.Href] = l
+		p.LabelMapH[l.Href] = l
+		p.LabelMapKV[l.Key+l.Value] = l
 	}
-	return m, apiResp, nil
-}
 
-// GetLabelMapKV returns a map of labels with the concatenated value of keyvalue as the key
-func (p *PCE) GetLabelMapKV() (map[string]Label, APIResponse, error) {
-	labels, apiResp, err := p.GetAllLabels()
-	if err != nil {
-		return nil, apiResp, fmt.Errorf("get href label map - %s", err)
-	}
-	m := make(map[string]Label)
-	for _, l := range labels {
-		m[l.Key+l.Value] = l
-	}
-	return m, apiResp, nil
+	return apiResp, nil
 }
 
 // GetLabelbyKeyValue finds a label based on the key and value.
