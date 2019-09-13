@@ -280,62 +280,41 @@ func (p *PCE) UpdateWorkload(workload Workload) (APIResponse, error) {
 // ChangeLabel updates a workload struct with new label href.
 // It does not call the Illumio API to update the workload in the PCE. Use pce.UpdateWorkload() or bulk update for that.
 // The method returns the labelMapH in case it needs to create a new label.
-func (w *Workload) ChangeLabel(pce PCE, labelMapH map[string]Label, targetKey, newValue string) (map[string]Label, error) {
+func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error) {
 	var updatedLabels []*Label
 	var newLabel Label
-	var ok bool
 	var err error
-
-	// Build our own lablelKVmap to save api call
-	labelMapKV := make(map[string]Label)
-	for _, l := range labelMapH {
-		labelMapKV[l.Key+l.Value] = l
-	}
+	var ok bool
 
 	// Iterate through each of the workloads labels
-	for i, l := range w.Labels {
-		// If they key isn't the target key, we can just put the label in the updatedLabels slice and move on to next label
-		if labelMapH[l.Href].Key != targetKey {
+	for _, l := range w.Labels {
+		// If they key isn't the target key, we add it to the updated labels
+		if pce.LabelMapH[l.Href].Key != targetKey {
 			updatedLabels = append(updatedLabels, &Label{Href: l.Href})
-			// if we are on the last label, we don't want to continue
-			if i != len(w.Labels)-1 {
-				continue
-			}
 		}
-
-		// If this is our target label, get the value from our labelMap
-		if newLabel, ok = labelMapKV[targetKey+newValue]; !ok {
-			// If the label isn't in the map, create it
-			newLabel, _, err = pce.CreateLabel(Label{Key: targetKey, Value: newValue})
-			if err != nil {
-				return labelMapH, err
-			}
-			// Add the new label to the labelMaps
-			labelMapH[newLabel.Href] = newLabel
-			labelMapKV[newLabel.Key+newLabel.Value] = newLabel
-		}
-		updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
 	}
 
-	// If there are no labels, take action
-	if len(w.Labels) == 0 {
-		// If this is our target label, get the value from our labelMap
-		if newLabel, ok = labelMapKV[targetKey+newValue]; !ok {
-			// If the label isn't in the map, create it
-			newLabel, _, err = pce.CreateLabel(Label{Key: targetKey, Value: newValue})
-			if err != nil {
-				return labelMapH, err
-			}
-			// Add the new label to the labelMaps
-			labelMapH[newLabel.Href] = newLabel
-			labelMapKV[newLabel.Key+newLabel.Value] = newLabel
-		}
-		updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
-
+	// If our new label isn't blank, we need to get it's href and attach to array
+	if newValue == "" {
+		w.Labels = updatedLabels
+		return pce, nil
 	}
+
+	// If our new label is not blank, we need to get it's href and add it to the array
+	if newLabel, ok = pce.LabelMapKV[targetKey+newValue]; !ok {
+		// If it doesn't exist, we create it and put it back into the label maps
+		newLabel, _, err = pce.CreateLabel(Label{Key: targetKey, Value: newValue})
+		if err != nil {
+			return pce, err
+		}
+		pce.LabelMapH[newLabel.Href] = newLabel
+		pce.LabelMapKV[newLabel.Key+newLabel.Value] = newLabel
+	}
+	// Append the new label to our label slice
+	updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
 
 	w.Labels = updatedLabels
-	return labelMapH, nil
+	return pce, nil
 }
 
 // BulkWorkload takes a bulk action on an array of workloads.
