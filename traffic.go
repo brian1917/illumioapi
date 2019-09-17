@@ -324,7 +324,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 		MaxFLows:       100000}
 	t, a, _ := p.GetTrafficAnalysis(tq)
 	if stdout {
-		fmt.Printf("Initial traffic query: %d\r\n", len(t))
+		fmt.Printf("Initial traffic query: %d records\r\n", len(t))
 	}
 
 	// If the length is under threshold return it and be done
@@ -347,7 +347,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("TCP: %d\r\n", len(tcpT))
+		fmt.Printf("TCP traffic query: %d records\r\n", len(tcpT))
 	}
 	// UDP
 	tq.PortProtoInclude = [][2]int{[2]int{0, 17}}
@@ -356,7 +356,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("UDP: %d\r\n", len(udpT))
+		fmt.Printf("UDP traffic query: %d records\r\n", len(udpT))
 	}
 	// Other Protos
 	tq.PortProtoInclude = nil
@@ -366,7 +366,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("Other: %d\r\n", len(otherProtoT))
+		fmt.Printf("Other traffic query: %d records\r\n", len(otherProtoT))
 	}
 
 	// Create a variable to hold final JSON strings and start with other protocols
@@ -409,7 +409,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 	s := combineTrafficBodies(finalJSONSet)
 	json.Unmarshal([]byte(s), &FinalSet)
 	if stdout {
-		fmt.Printf("Final combined data set: %d\r\n", len(FinalSet))
+		fmt.Printf("Final combined traffic export: %d records\r\n", len(FinalSet))
 	}
 
 	// Combine sets and return
