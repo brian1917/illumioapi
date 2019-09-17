@@ -314,7 +314,7 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 
 	// Threshold to query deeper
-	threshold := 727
+	threshold := 90000
 
 	// Get all explorer data to see where we are starting
 	tq := TrafficQuery{
