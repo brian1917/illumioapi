@@ -528,15 +528,16 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 	for {
 		// Increment the counter
 		i++
-		// Skip the headerline if we need to
-		if headerLine && i == 1 {
-			continue
-		}
 		// Read the line
 		line, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
+		// Skip the headerline if we need to
+		if headerLine && i == 1 {
+			continue
+		}
+
 		if err != nil {
 			return UploadFlowResults{}, err
 		}
@@ -566,7 +567,11 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 	}
 
 	// Build response struct
-	results := UploadFlowResults{TotalFlowsInCSV: i}
+	t := i
+	if headerLine {
+		t = i - 1
+	}
+	results := UploadFlowResults{TotalFlowsInCSV: t}
 
 	for _, fs := range flowSlices {
 
