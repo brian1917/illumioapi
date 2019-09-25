@@ -49,12 +49,7 @@ type asyncResults struct {
 	} `json:"requested_by"`
 }
 
-// API does the HTTP set up (including polling for async calls) and returns an APIResponse type.
-// httpAction must be GET, POST, PUT, or DELETE.
-// apiURL is the full endpoint being called.
-// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
-// async parameter should be set to true for any GET requests returning > 500 items.
-func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
+func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, headers [][2]string) (APIResponse, error) {
 
 	var response APIResponse
 	var httpBody *bytes.Buffer
@@ -86,7 +81,13 @@ func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIRe
 
 	// Set basic authentication and headers
 	req.SetBasicAuth(pce.User, pce.Key)
-	req.Header.Set("Content-Type", "application/json")
+
+	// Set the user provided headers
+	for _, h := range headers {
+		req.Header.Set(h[0], h[1])
+	}
+
+	// Set headers for async
 	if async == true {
 		req.Header.Set("Prefer", "respond-async")
 	}
@@ -143,6 +144,7 @@ func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIRe
 	return response, nil
 }
 
+// polling is used in async requests to check when the data is ready
 func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, error) {
 
 	var asyncResults asyncResults
@@ -185,6 +187,24 @@ func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, er
 	json.Unmarshal(data[:], &asyncResults)
 
 	return asyncResults, err
+}
+
+// apicall uses the httpSetup function with the header ContentType set to application/json header
+// httpAction must be GET, POST, PUT, or DELETE.
+// apiURL is the full endpoint being called.
+// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
+// async parameter should be set to true for any GET requests returning > 500 items.
+func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
+	return httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+}
+
+// apicallNoContentType uses the httpSetup function without setting the header ContentType
+// httpAction must be GET, POST, PUT, or DELETE.
+// apiURL is the full endpoint being called.
+// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
+// async parameter should be set to true for any GET requests returning > 500 items.
+func apicallNoContentType(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
+	return httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
 }
 
 // pceSanitization cleans up the provided PCE FQDN in case of common errors
