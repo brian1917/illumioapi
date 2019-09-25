@@ -96,10 +96,6 @@ type Workload struct {
 	Services              []*Services  `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
-	// App                   Label        `json:"-"`
-	// Role                  Label        `json:"-"`
-	// Env                   Label        `json:"-"`
-	// Loc                   Label        `json:"-"`
 }
 
 // SecureConnect represents SecureConnect for an Agent on a Workload
@@ -121,12 +117,14 @@ type Status struct {
 	AgentVersion             string             `json:"agent_version,omitempty"`
 	FirewallRuleCount        int                `json:"firewall_rule_count,omitempty"`
 	FwConfigCurrent          bool               `json:"fw_config_current,omitempty"`
+	InstanceID               string             `json:"instance_id,omitempty"`
 	LastHeartbeatOn          string             `json:"last_heartbeat_on,omitempty"`
 	ManagedSince             string             `json:"managed_since,omitempty"`
 	SecurityPolicyAppliedAt  string             `json:"security_policy_applied_at,omitempty"`
 	SecurityPolicyReceivedAt string             `json:"security_policy_received_at,omitempty"`
 	SecurityPolicyRefreshAt  string             `json:"security_policy_refresh_at,omitempty"`
 	SecurityPolicySyncState  string             `json:"security_policy_sync_state,omitempty"`
+	Status                   string             `json:"status,omitempty"`
 	UID                      string             `json:"uid,omitempty"`
 	UptimeSeconds            int                `json:"uptime_seconds,omitempty"`
 }
