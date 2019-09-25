@@ -1,14 +1,14 @@
 package illumioapi
 
 import (
-	"bytes"
-	"crypto/tls"
+	"bufio"
+	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"io"
+	"math"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -145,6 +145,13 @@ type FlowUploadResp struct {
 	NumFlowsReceived int       `json:"num_flows_received"`
 	NumFlowsFailed   int       `json:"num_flows_failed"`
 	FailedFlows      []*string `json:"failed_flows,omitempty"`
+}
+
+// UploadFlowResults is the struct returned to the user when using the pce.UploadTraffic() method
+type UploadFlowResults struct {
+	FlowResps       []FlowUploadResp
+	APIResps        []APIResponse
+	TotalFlowsInCSV int
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
@@ -498,53 +505,98 @@ func iterateOverPorts(p PCE, tq TrafficQuery, protoResults []TrafficAnalysis, st
 }
 
 // UploadTraffic uploads a csv to the PCE with traffic flows.
-func (p *PCE) UploadTraffic(filename string) (FlowUploadResp, APIResponse, error) {
+// filename should be the path to a csv file with 4 cols: src_ip, dst_ip, port, protocol (IANA numerical format 6=TCP, 17=UDP)
+// When headerLine = true, the first line of the CSV is skipped.
+// If there are more than 999 entries in the CSV, it creates chunks of 999
+func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults, error) {
 
-	// Read the CSV File
-	f, err := ioutil.ReadFile(filename)
+	// Open CSV File
+	file, err := os.Open(filename)
 	if err != nil {
-		return FlowUploadResp{}, APIResponse{}, fmt.Errorf("upload traffic - opening file - %s", err)
+		return UploadFlowResults{}, err
 	}
-	body := bytes.NewReader(f)
+	defer file.Close()
+	reader := csv.NewReader(clearBom(bufio.NewReader(file)))
+
+	// Start the counters
+	i := 0
+
+	// flows slice will contain each entry from the csv. the entries will be comma separated and we'll eventually join them with line break (/n)
+	var flows []string
+
+	// Iterate through CSV entries
+	for {
+		// Increment the counter
+		i++
+		// Skip the headerline if we need to
+		if headerLine && i == 1 {
+			continue
+		}
+		// Read the line
+		line, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return UploadFlowResults{}, err
+		}
+		// Append line to flows
+		flows = append(flows, fmt.Sprintf("%s,%s,%s,%s", line[0], line[1], line[2], line[3]))
+	}
+
+	// Figure out how many API calls we need to make
+	numAPICalls := int(math.Ceil(float64(len(flows)) / 1000))
+	flowSlices := [][]string{}
+
+	// Build the array to be passed to the API
+	for i := 0; i < numAPICalls; i++ {
+		// Get 1,000 elements if this is not the last array
+		if (i + 1) != numAPICalls {
+			flowSlices = append(flowSlices, flows[i*1000:(1+i)*1000])
+			// If it's the last call, get the rest of the entries
+		} else {
+			flowSlices = append(flowSlices, flows[i*1000:])
+		}
+	}
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/agents/bulk_traffic_flows")
 	if err != nil {
-		return FlowUploadResp{}, APIResponse{}, fmt.Errorf("upload traffic - building api url - %s", err)
+		return UploadFlowResults{}, err
 	}
 
-	// Build the Request
-	req, err := http.NewRequest("POST", apiURL.String(), body)
-	req.SetBasicAuth(p.User, p.Key)
+	// Build response struct
+	results := UploadFlowResults{TotalFlowsInCSV: i}
 
-	// Make HTTP Request
-	client := http.Client{}
-	if p.DisableTLSChecking == true {
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	for _, fs := range flowSlices {
+
+		// Call the API
+		api, err := apicallNoContentType("POST", apiURL.String(), *p, []byte(strings.Join(fs, "\n")), false)
+		results.APIResps = append(results.APIResps, api)
+		if err != nil {
+			return results, err
+		}
+
+		// Unmarshal response
+		flowResults := FlowUploadResp{}
+		json.Unmarshal([]byte(api.RespBody), &flowResults)
+		results.FlowResps = append(results.FlowResps, flowResults)
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return FlowUploadResp{}, APIResponse{}, err
-	}
-
-	// Process response
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return FlowUploadResp{}, APIResponse{}, err
-	}
-
-	// Put relevant response info into struct
-	response := APIResponse{RespBody: string(data[:]), StatusCode: resp.StatusCode, Header: resp.Header, Request: resp.Request}
-
-	// Check for a 200 response code
-	if strconv.Itoa(resp.StatusCode)[0:1] != "2" {
-		return FlowUploadResp{}, response, errors.New("http status code of " + strconv.Itoa(response.StatusCode))
-	}
-
-	// Unmarshal response
-	var flowResults FlowUploadResp
-	json.Unmarshal([]byte(response.RespBody), &flowResults)
 
 	// Return data and nil error
-	return flowResults, response, nil
+	return results, nil
+}
+
+// clearBOM returns an io.Reader that will skip over initial UTF-8 byte order marks.
+func clearBom(r io.Reader) io.Reader {
+	buf := bufio.NewReader(r)
+	b, err := buf.Peek(3)
+	if err != nil {
+		// not enough bytes
+		return buf
+	}
+	if b[0] == 0xef && b[1] == 0xbb && b[2] == 0xbf {
+		buf.Discard(3)
+	}
+	return buf
 }
