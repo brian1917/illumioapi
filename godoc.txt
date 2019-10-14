@@ -1,7 +1,7 @@
 PACKAGE DOCUMENTATION
 
 package illumioapi
-    import "/Users/brianpitta/go/src/github.com/brian1917/illumioapi"
+    import "/Users/brianpitta/go/src/github.com/brian1917/illumioapi/"
 
 
 FUNCTIONS
@@ -11,6 +11,17 @@ func ProtocolList() map[int]string
 
 TYPES
 
+type APIKey struct {
+    Href         string `json:"href,omitempty"`
+    KeyID        string `json:"key_id,omitempty"`
+    AuthUsername string `json:"auth_username,omitempty"`
+    CreatedAt    string `json:"created_at,omitempty"`
+    Name         string `json:"name,omitempty"`
+    Description  string `json:"description,omitempty"`
+    Secret       string `json:"secret,omitempty"`
+}
+    APIKey represents an API Key
+
 type APIResponse struct {
     RespBody   string
     StatusCode int
@@ -19,55 +30,13 @@ type APIResponse struct {
 }
     APIResponse contains the information from the response of the API
 
-func BulkWorkload(pce PCE, workloads []Workload, method string) ([]APIResponse, error)
-    BulkWorkload on Workload updates an existing workload in the Illumio PCE
-
-    Method must be create, update, or delete
-
-func CreatePairingKey(pce PCE, pairingProfile PairingProfile) (APIResponse, error)
-    CreatePairingKey creates a pairing key from a pairing profile.
-
-func CreatePairingProfile(pce PCE, pairingProfile PairingProfile) (APIResponse, error)
-    CreatePairingProfile creates a new pairing profile in the Illumio PCE.
-
-func DeleteHref(pce PCE, href string) (APIResponse, error)
-    DeleteHref deletes an existing object in the PCE based on its href.
-
-func UpdateBoundService(pce PCE, boundService BoundService) (APIResponse, error)
-    UpdateBoundService updates an existing bound service in the Illumio PCE.
-
-    The provided BoundService struct must include an Href. The following
-    fields will be disregarded in the JSON payload because they cannot be
-    updated: CreatedAt, CreatedBy, UpdateType, UpdatedAt, UpdatedBy.
-
-func UpdateIPList(pce PCE, iplist IPList) (APIResponse, error)
-    UpdateIPList updates an existing IP List in the Illumio PCE.
-
-    The provided IPList struct must include an Href. The following fields
-    will be disregarded in the JSON payload because they cannot be updated:
-    CreatedAt, CreatedBy, DeletedAt, DeletedBy, UpdateType, UpdatedAt,
-    UpdatedBy.
-
-func UpdateLabel(pce PCE, label Label) (APIResponse, error)
-    UpdateLabel updates an existing label in the Illumio PCE.
-
-    The provided label struct must include an Href. The onyl values that
-    will put in the JSON payload are Value, ExternalDataReference, and
-    ExternalDataSet. Other values cannot be updated.
-
-func UpdateService(pce PCE, service Service) (APIResponse, error)
-    UpdateService updates an existing service object in the Illumio PCE
-
-func UpdateWorkload(pce PCE, workload Workload) (APIResponse, error)
-    UpdateWorkload updates an existing workload in the Illumio PCE
-
 type Actors struct {
     Actors     string      `json:"actors,omitempty"`
     Label      *Label      `json:"label,omitempty"`
     LabelGroup *LabelGroup `json:"label_group,omitempty"`
     Workload   *Workload   `json:"workload,omitempty"`
 }
-    Actors represent Actors
+    Actors
 
 type Agent struct {
     ActivePceFqdn string         `json:"active_pce_fqdn,omitempty"`
@@ -78,6 +47,9 @@ type Agent struct {
     TargetPceFqdn string         `json:"target_pce_fqdn,omitempty"`
 }
     An Agent is an Agent on a Workload
+
+func (a *Agent) GetID() string
+    GetID returns the ID from the Href of an Agent
 
 type AgentHealth struct {
     AuditEvent string `json:"audit_event,omitempty"`
@@ -98,59 +70,52 @@ type Authentication struct {
 }
     Authentication represents the response of the Authenticate API
 
-func Authenticate(pce PCE, username, password string) (Authentication, APIResponse, error)
-    Authenticate produces a temporary auth token
-
-type BoundService struct {
-    ApplyTo               string     `json:"apply_to,omitempty"`
-    CreatedAt             string     `json:"created_at,omitempty"`
-    CreatedBy             *CreatedBy `json:"created_by,omitempty"`
-    Description           string     `json:"description,omitempty"`
-    ExternalDataReference string     `json:"external_data_reference,omitempty"`
-    ExternalDataSet       string     `json:"external_data_set,omitempty"`
-    Href                  string     `json:"href,omitempty"`
-    IPOverrides           []string   `json:"ip_overrides,omitempty"`
-    Labels                []*Label   `json:"labels,omitempty"`
-    Name                  string     `json:"name,omitempty"`
-    Service               *Service   `json:"service,omitempty"`
-    UpdateType            string     `json:"update_type,omitempty"`
-    UpdatedAt             string     `json:"updated_at,omitempty"`
-    UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
+type ChangeSubset struct {
+    FirewallSettings      []*FirewallSettings      `json:"firewall_settings,omitempty"`
+    IPLists               []*IPList                `json:"ip_lists,omitempty"`
+    LabelGroups           []*LabelGroup            `json:"label_groups,omitempty"`
+    RuleSets              []*RuleSets              `json:"rule_sets,omitempty"`
+    SecureConnectGateways []*SecureConnectGateways `json:"secure_connect_gateways,omitempty"`
+    Services              []*Services              `json:"services,omitempty"`
+    VirtualServers        []*VirtualServers        `json:"virtual_servers,omitempty"`
+    VirtualServices       []*VirtualServices       `json:"virtual_services,omitempty"`
 }
-    BoundService represents a Bound Service in the Illumio PCE
+    ChangeSubset Hash of pending hrefs, organized by model
 
-func CreateBoundService(pce PCE, boundService BoundService) (BoundService, APIResponse, error)
-    CreateBoundService creates a new bound service in the Illumio PCE.
-
-func GetAllBoundServices(pce PCE, provisionStatus string) ([]BoundService, APIResponse, error)
-    GetAllBoundServices returns a slice of all bound services of a specific
-    provision status in the Illumio PCE.
-
-    The pvoision status must be "draft" or "active". The first call does not
-    use the async option. If the response array length is >=500, it is
-    re-run enabling async.
+type CompatibilityReport struct {
+    LastUpdatedAt time.Time `json:"last_updated_at"`
+    Results       Results   `json:"results"`
+    QualifyStatus string    `json:"qualify_status"`
+}
+    CompatibilityReport is a compatibility report for a VEN in Idle status
 
 type Config struct {
-    LogTraffic               bool   `json:"log_traffic,omitempty"`
+    LogTraffic               bool   `json:"log_traffic"`
     Mode                     string `json:"mode,omitempty"`
     SecurityPolicyUpdateMode string `json:"security_policy_update_mode,omitempty"`
+    VisibilityLevel          string `json:"visibility_level,omitempty"`
 }
     Config represents the Configuration of an Agent on a Workload
 
 type Consumers struct {
-    Actors       string        `json:"actors,omitempty"`
-    BoundService *BoundService `json:"bound_service,omitempty"`
-    IPList       *IPList       `json:"ip_list,omitempty"`
-    Label        *Label        `json:"label,omitempty"`
-    LabelGroup   *LabelGroup   `json:"label_group,omitempty"`
-    Workload     *Workload     `json:"workload,omitempty"`
+    Actors         string          `json:"actors,omitempty"`
+    IPList         *IPList         `json:"ip_list,omitempty"`
+    Label          *Label          `json:"label,omitempty"`
+    LabelGroup     *LabelGroup     `json:"label_group,omitempty"`
+    VirtualService *VirtualService `json:"virtual_service,omitempty"`
+    Workload       *Workload       `json:"workload,omitempty"`
 }
-    Consumers represent a consumer in an Illumio rule
+    Consumers
 
 type ConsumingSecurityPrincipals struct {
-    Href string `json:"href,omitempty"`
+    Actors      []*Actors     `json:"actors"`
+    Description string        `json:"description,omitempty"`
+    Enabled     bool          `json:"enabled"`
+    Href        string        `json:"href"`
+    IPVersion   string        `json:"ip_version"`
+    Statements  []*Statements `json:"statements"`
 }
-    ConsumingSecurityPrincipals represent Consuming Security Principals
+    ConsumingSecurityPrincipals
 
 type CreatedBy struct {
     Href string `json:"href"`
@@ -173,7 +138,7 @@ type Dst struct {
     IP       string    `json:"ip"`
     Workload *Workload `json:"workload,omitempty"`
 }
-    Dst Traffic flow endpoint details
+    Dst is the provider workload details
 
 type Exclude struct {
     Label          *Label     `json:"label,omitempty"`
@@ -185,16 +150,11 @@ type Exclude struct {
     Process        string     `json:"process_name,omitempty"`
     WindowsService string     `json:"windows_service_name,omitempty"`
 }
-    Exclude represents the type of objects used in an include query.
-
-    The exclude struct should only have the following combinations: label
-    only, workload only, IP address only, Port and/or protocol only.
-
-
-    Example - Label and Workload cannot both be non-nil
-
-    Example - Port and Proto can both be non-nil (e.g., port 3306 and proto
-    6)
+    Exclude represents the type of objects used in an include query. The
+    exclude struct should only have the following combinations: label only,
+    workload only, IP address only, Port and/or protocol only. Example -
+    Label and Workload cannot both be non-nil Example - Port and Proto can
+    both be non-nil (e.g., port 3306 and proto 6)
 
 type ExpSrv struct {
     Port           int    `json:"port,omitempty"`
@@ -211,10 +171,22 @@ type ExplorerServices struct {
     ExplorerServices represent services to be included or excluded in the
     explorer query
 
+type FirewallSettings struct {
+    Href string `json:"href"`
+}
+    FirewallSettings
+
+type FlowUploadResp struct {
+    NumFlowsReceived int       `json:"num_flows_received"`
+    NumFlowsFailed   int       `json:"num_flows_failed"`
+    FailedFlows      []*string `json:"failed_flows,omitempty"`
+}
+    FlowUploadResp is the response from the traffic upload API
+
 type IPAddress struct {
     Value string `json:"value,omitempty"`
 }
-    IPAddress represents an IP Address used in a query
+    IPAddress represents an IP Address
 
 type IPList struct {
     CreatedAt             string     `json:"created_at,omitempty"`
@@ -232,17 +204,6 @@ type IPList struct {
 }
     IPList represents an IP List in the Illumio PCE.
 
-func CreateIPList(pce PCE, ipList IPList) (IPList, APIResponse, error)
-    CreateIPList creates a new IP List in the Illumio PCE.
-
-func GetAllIPLists(pce PCE, provisionStatus string) ([]IPList, APIResponse, error)
-    GetAllIPLists returns a slice of all IP Lists of a specific provision
-    status in the Illumio PCE.
-
-    The pvoision status must be "draft" or "active". The first call does not
-    use the async option. If the response array length is >=500, it is
-    re-run enabling async.
-
 type IPRange struct {
     Description string `json:"description,omitempty"`
     Exclusion   bool   `json:"exclusion,omitempty"`
@@ -256,10 +217,10 @@ type IPTablesRules struct {
     Description string        `json:"description,omitempty"`
     Enabled     bool          `json:"enabled"`
     Href        string        `json:"href"`
-    IPVersion   string        `json:"ip_version"`
+    IpVersion   string        `json:"ip_version"`
     Statements  []*Statements `json:"statements"`
 }
-    IPTablesRules represent IP Table Rules
+    IpTablesRules
 
 type Include struct {
     Label          *Label     `json:"label,omitempty"`
@@ -271,20 +232,19 @@ type Include struct {
     Process        string     `json:"process_name,omitempty"`
     WindowsService string     `json:"windows_service_name,omitempty"`
 }
-    Include represents the type of objects used in an include query.
+    Include represents the type of objects used in an include query. The
+    include struct should be label only, workload only, IP address only,
+    Port and/or protocol only. Example - Label and Workload cannot both be
+    non-nil Example - Port and Proto can both be non-nil (e.g., port 3306
+    and proto 6)
 
-    The include struct should only have the following combinations: label
-    only, workload only, IP address only, Port and/or protocol only.
-
-
-    Example - Label and Workload cannot both be non-nil
-
-    Example - Port and Proto can both be non-nil (e.g., port 3306 and proto
-    6)
+type IngressServices struct {
+}
+    IngressServices
 
 type Interface struct {
     Address               string `json:"address,omitempty"`
-    CidrBlock             int    `json:"cidr_block,omitempty"`
+    CidrBlock             *int   `json:"cidr_block,omitempty"`
     DefaultGatewayAddress string `json:"default_gateway_address,omitempty"`
     FriendlyName          string `json:"friendly_name,omitempty"`
     LinkState             string `json:"link_state,omitempty"`
@@ -304,21 +264,7 @@ type Label struct {
     UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
     Value                 string     `json:"value,omitempty"`
 }
-    A Label is a Label policy object in the Illumio PCE
-
-func CreateLabel(pce PCE, label Label) (Label, APIResponse, error)
-    CreateLabel creates a new Label in the Illumio PCE.
-
-func GetAllLabels(pce PCE) ([]Label, APIResponse, error)
-    GetAllLabels returns a slice of all Labels in the Illumio PCE.
-
-    The first call does not use the async option. If the response array
-    length is >=500, it is re-run enabling async.
-
-func GetLabel(pce PCE, key, value string) (Label, APIResponse, error)
-    GetLabel finds a specific Label based on the key and value.
-
-    Will only return one Label that is an exact match.
+    A Label represents an Illumio Label.
 
 type LabelGroup struct {
     Description           string       `json:"description,omitempty"`
@@ -333,14 +279,6 @@ type LabelGroup struct {
 }
     LabelGroup represents a Label Group in the Illumio PCE
 
-func GetAllLabelGroups(pce PCE, provisionStatus string) ([]LabelGroup, APIResponse, error)
-    GetAllLabelGroups returns a slice of all Label Groups of a specific
-    provision status in the Illumio PCE.
-
-    The pvoision status must be "draft" or "active". The first call does not
-    use the async option. If the response array length is >=500, it is
-    re-run enabling async.
-
 type OpenServicePorts struct {
     Address        string `json:"address,omitempty"`
     Package        string `json:"package,omitempty"`
@@ -353,6 +291,13 @@ type OpenServicePorts struct {
     OpenServicePorts represents open ports for a service running on a
     workload
 
+type Org struct {
+    Href        string `json:"href"`
+    DisplayName string `json:"display_name"`
+    ID          int    `json:"org_id"`
+}
+    Org is an an organization in a SaaS PCE
+
 type PCE struct {
     FQDN               string
     Port               int
@@ -360,8 +305,194 @@ type PCE struct {
     User               string
     Key                string
     DisableTLSChecking bool
+    LabelMapH          map[string]Label
+    LabelMapKV         map[string]Label
 }
     PCE represents an Illumio PCE and the necessary info to authenticate
+
+func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, error)
+    BulkWorkload takes a bulk action on an array of workloads. Method must
+    be create, update, or delete
+
+func (p *PCE) CreateBoundService(virtualService VirtualService) (VirtualService, APIResponse, error)
+    CreateBoundService creates a new Virtual service in the Illumio PCE.
+
+func (p *PCE) CreateIPList(ipList IPList) (IPList, APIResponse, error)
+    CreateIPList creates a new IP List in the Illumio PCE.
+
+    The function will not remove properties not in the POST schema (e.g.,
+    CreatedAt)
+
+func (p *PCE) CreateLabel(label Label) (Label, APIResponse, error)
+    CreateLabel creates a new Label in the Illumio PCE.
+
+func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (APIResponse, error)
+    CreatePairingKey creates a pairing key from a pairing profile.
+
+func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, error)
+    CreatePairingProfile creates a new pairing profile in the Illumio PCE.
+
+func (p *PCE) CreateService(service Service) (Service, APIResponse, error)
+    CreateService creates a new service in the Illumio PCE
+
+func (p *PCE) CreateWorkload(workload Workload) (Workload, APIResponse, error)
+    CreateWorkload creates a new unmanaged workload in the Illumio PCE
+
+func (p *PCE) DeleteHref(href string) (APIResponse, error)
+    DeleteHref deletes an existing object in the PCE based on its href.
+
+func (p *PCE) GetAllAPIKeys(userHref string) ([]APIKey, APIResponse, error)
+    GetAllAPIKeys gets all the APIKeys associated with a user
+
+func (p *PCE) GetAllActiveIPLists() ([]IPList, APIResponse, error)
+    GetAllActiveIPLists returns a slice of draft IPLists If there are more
+    than 500 IP Lists, async will run.
+
+func (p *PCE) GetAllDraftIPLists() ([]IPList, APIResponse, error)
+    GetAllDraftIPLists returns a slice of draft IPLists If there are more
+    than 500 IP Lists, async will run.
+
+func (p *PCE) GetAllIPLists() ([]IPList, []APIResponse, error)
+    GetAllIPLists returns a slice of all IPLists in the PCE. The function
+    combines the query to get draft and active IP Lists. If there are more
+    than 500 of either, async queries will run. The []APIResponse will have
+    two entries - first is for draft, second for active. The HREF will
+    indicate if it's active or draft.
+
+func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIResponse, error)
+    GetAllLabelGroups returns a slice of all Label Groups of a specific
+    provision status in the Illumio PCE.
+
+    The pvoision status must be "draft" or "active". The first call does not
+    use the async option. If the response array length is >=500, it is
+    re-run enabling async.
+
+func (p *PCE) GetAllLabels() ([]Label, APIResponse, error)
+    GetAllLabels returns a slice of all Labels in the Illumio PCE. The first
+    API call to the PCE does not use the async option. If the array length
+    is >=500, it re-runs with async.
+
+func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error)
+    GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
+
+func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, error)
+    GetAllRuleSets returns a slice of Rulesets for all RuleSets in the
+    Illumio PCE
+
+func (p *PCE) GetAllServices(provisionStatus string) ([]Service, APIResponse, error)
+    GetAllServices returns a slice of Services for each Service in the
+    Illumio PCE. provisionStatus must either be "draft" or "active". The
+    first API call to the PCE does not use the async option. If the array
+    length is >=500, it re-runs with async.
+
+func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, APIResponse, error)
+    GetAllVirtualServices returns a slice of all Virtual services of a
+    specific provision status in the Illumio PCE.
+
+    The pvoision status must be "draft" or "active". The first call does not
+    use the async option. If the response array length is >=500, it is
+    re-run enabling async.
+
+func (p *PCE) GetAllVulnReports() ([]VulnerabilityReport, APIResponse, error)
+    GetAllVulnReports returns a slice of all Vulnerability Reports in the
+    Illumio PCE. The first call does not use the async option. If the
+    response slice length is >=500, it is re-run enabling async.
+
+func (p *PCE) GetAllVulns() ([]Vulnerability, APIResponse, error)
+    GetAllVulns returns a slice of all Vulnerabilities in the Illumio PCE.
+    The first call does not use the async option. If the response slice
+    length is >=500, it is re-run enabling async.
+
+func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error)
+    GetAllWorkloads returns an slice of workloads in the Illumio PCE. The
+    first API call to the PCE does not use the async option. If the array
+    length is >=500, it re-runs with async.
+
+func (p *PCE) GetCompatibilityReport(w Workload) (CompatibilityReport, APIResponse, error)
+    GetCompatibilityReport returns the compatibility report for a VEN
+
+func (p *PCE) GetIPList(name string) (IPList, APIResponse, error)
+    GetIPList queries returns the IP List based on name. Provisioned IP
+    lists checked before draft
+
+func (p *PCE) GetLabelMaps() (APIResponse, error)
+    GetLabelMaps returns a map of labels with the HREF as the key
+
+func (p *PCE) GetLabelbyHref(href string) (Label, APIResponse, error)
+    GetLabelbyHref returns a label based on the provided HREF.
+
+func (p *PCE) GetLabelbyKeyValue(key, value string) (Label, APIResponse, error)
+    GetLabelbyKeyValue finds a label based on the key and value. It will
+    only return one Label that is an exact match.
+
+func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResponse, error)
+    GetTrafficAnalysis gets flow data from Explorer.
+
+func (p *PCE) GetVersion() (Version, error)
+    GetVersion returns the version of the PCE
+
+func (p *PCE) GetWkldByHref(href string) (Workload, APIResponse, error)
+    GetWkldByHref returns the workload with a specific href
+
+func (p *PCE) GetWkldHostMap() (map[string]Workload, APIResponse, error)
+    GetWkldHostMap returns a map of all workloads with the hostname as the
+    key.
+
+func (p *PCE) GetWkldHrefMap() (map[string]Workload, APIResponse, error)
+    GetWkldHrefMap returns a map of all workloads with the Href as the key.
+
+func (p *PCE) IterateTrafficJString(stdout bool) (string, error)
+    IterateTrafficJString iterates over each workload in a PCE to get all
+    traffic data
+
+func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error)
+    Login authenticates to the PCE. Login will populate the User, Key, and
+    Org fields in the PCE instance. Login will use a temporary session token
+    that expires after 10 minutes.
+
+func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIResponse, error)
+    LoginAPIKey authenticates to the PCE. Login will populate the User, Key,
+    and Org fields in the PCE instance. LoginAPIKey will create a permanent
+    API Key with the provided name and description fields.
+
+func (p *PCE) ProvisionHref(href string) (APIResponse, error)
+    ProvisionHref only works with IPlists right now - needs to be updated
+
+func (p *PCE) UpdateBoundService(virtualService VirtualService) (APIResponse, error)
+    UpdateBoundService updates an existing Virtual service in the Illumio
+    PCE.
+
+    The provided BoundService struct must include an Href. Properties that
+    cannot be included in the PUT method will be ignored.
+
+func (p *PCE) UpdateIPList(iplist IPList) (APIResponse, error)
+    UpdateIPList updates an existing IP List in the Illumio PCE.
+
+    The provided IPList struct must include an Href. The function will
+    remove properties not included in the PUT schema.
+
+func (p *PCE) UpdateLabel(label Label) (APIResponse, error)
+    UpdateLabel updates an existing label in the Illumio PCE. The provided
+    label struct must include an Href. Properties that cannot be included in
+    the PUT method will be ignored.
+
+func (p *PCE) UpdateService(service Service) (APIResponse, error)
+    UpdateService updates an existing service object in the Illumio PCE
+
+func (p *PCE) UpdateWorkload(workload Workload) (APIResponse, error)
+    UpdateWorkload updates an existing workload in the Illumio PCE The
+    provided workload struct must include an Href. Properties that cannot be
+    included in the PUT method will be ignored.
+
+func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults, error)
+    UploadTraffic uploads a csv to the PCE with traffic flows. filename
+    should be the path to a csv file with 4 cols: src_ip, dst_ip, port,
+    protocol (IANA numerical format 6=TCP, 17=UDP) When headerLine = true,
+    the first line of the CSV is skipped. If there are more than 999 entries
+    in the CSV, it creates chunks of 999
+
+func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, error)
+    WorkloadUpgrade upgrades the VEN version on the workload
 
 type PairingKey struct {
     ActivationCode string `json:"activation_code,omitempty"`
@@ -398,9 +529,6 @@ type PairingProfile struct {
 }
     PairingProfile represents a pairing profile in the Illumio PCE
 
-func GetAllPairingProfiles(pce PCE) ([]PairingProfile, APIResponse, error)
-    GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
-
 type PortProtos struct {
     Include []Include `json:"include"`
     Exclude []Exclude `json:"exclude"`
@@ -419,67 +547,104 @@ type ProductVersion struct {
     ProductVersion represents the version of the product
 
 type Providers struct {
-    Actors        string         `json:"actors,omitempty"`
-    BoundService  *BoundService  `json:"bound_service,omitempty"`
-    IPList        *IPList        `json:"ip_list,omitempty"`
-    Label         *Label         `json:"label,omitempty"`
-    LabelGroup    *LabelGroup    `json:"label_group,omitempty"`
-    VirtualServer *VirtualServer `json:"virtual_server,omitempty"`
-    Workload      *Workload      `json:"workload,omitempty"`
+    Actors         string          `json:"actors,omitempty"`
+    IPList         *IPList         `json:"ip_list,omitempty"`
+    Label          *Label          `json:"label,omitempty"`
+    LabelGroup     *LabelGroup     `json:"label_group,omitempty"`
+    VirtualServer  *VirtualServer  `json:"virtual_server,omitempty"`
+    VirtualService *VirtualService `json:"virtual_service,omitempty"`
+    Workload       *Workload       `json:"workload,omitempty"`
 }
-    Providers represent providers in an Illumio ruleset
+    Providers
 
-type Rules struct {
-    Consumers                   []*Consumers                   `json:"consumers"`
-    ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
-    Description                 string                         `json:"description,omitempty"`
-    Enabled                     bool                           `json:"enabled"`
-    ExternalDataReference       interface{}                    `json:"external_data_reference,omitempty"`
-    ExternalDataSet             interface{}                    `json:"external_data_set,omitempty"`
-    Href                        string                         `json:"href,omitempty"`
-    Providers                   []*Providers                   `json:"providers"`
-    SecConnect                  bool                           `json:"sec_connect,omitempty"`
-    Service                     *Service                       `json:"service"`
-    UnscopedConsumers           bool                           `json:"unscoped_consumers,omitempty"`
-    UpdateType                  string                         `json:"update_type,omitempty"`
+type Provision struct {
+    ChangeSubset      *ChangeSubset `json:"change_subset,omitempty"`
+    UpdateDescription string        `json:"update_description,omitempty"`
 }
-    Rules represent Illumio Rules
+    Provision
 
-type Ruleset struct {
+type QualifyTest struct {
+    RequiredPackages          []string `json:"required_packages"`
+    RequiredPackagesInstalled bool     `json:"required_packages_installed"`
+    Status                    string   `json:"status"`
+    RequiredPackagesMissing   []string `json:"required_packages_missing"`
+    Ipv4ForwardingEnabled     string   `json:"ipv4_forwarding_enabled"`
+    Ipv4ForwardingPktCnt      int      `json:"ipv4_forwarding_pkt_cnt"`
+    IptablesRuleCnt           int      `json:"iptables_rule_cnt"`
+    Ipv6GlobalScope           string   `json:"ipv6_global_scope"`
+    Ipv6ActiveConnCnt         int      `json:"ipv6_active_conn_cnt"`
+    IP6TablesRuleCnt          int      `json:"ip6tables_rule_cnt"`
+}
+    QualifyTest is part of compatibility report
+
+type ResolveLabelsAs struct {
+    Consumers []string `json:"consumers"`
+    Providers []string `json:"providers"`
+}
+    ResolveLabelsAs
+
+type Results struct {
+    QualifyTests []QualifyTest `json:"qualify_tests"`
+}
+    Results are the list of qualify tests
+
+type Rule struct {
+    Consumers                   []*Consumers                 `json:"consumers"`
+    ConsumingSecurityPrincipals *ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
+    Description                 string                       `json:"description,omitempty"`
+    Enabled                     bool                         `json:"enabled"`
+    ExternalDataReference       interface{}                  `json:"external_data_reference,omitempty"`
+    ExternalDataSet             interface{}                  `json:"external_data_set,omitempty"`
+    Href                        string                       `json:"href,omitempty"`
+    IngressServices             []*IngressServices           `json:"ingress_services"`
+    Providers                   []*Providers                 `json:"providers"`
+    ResolveLabelsAs             *ResolveLabelsAs             `json:"resolve_labels_as"`
+    SecConnect                  bool                         `json:"sec_connect,omitempty"`
+    UnscopedConsumers           bool                         `json:"unscoped_consumers,omitempty"`
+    UpdateType                  string                       `json:"update_type,omitempty"`
+}
+    Rules
+
+type RuleSet struct {
     CreatedAt             string           `json:"created_at"`
     CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
     DeletedAt             string           `json:"deleted_at"`
     DeletedBy             *DeletedBy       `json:"deleted_by,omitempty"`
     Description           string           `json:"description"`
     Enabled               bool             `json:"enabled"`
-    ExternalDataReference string           `json:"external_data_reference,omitempty"`
-    ExternalDataSet       string           `json:"external_data_set,omitempty"`
+    ExternalDataReference interface{}      `json:"external_data_reference,omitempty"`
+    ExternalDataSet       interface{}      `json:"external_data_set,omitempty"`
     Href                  string           `json:"href,omitempty"`
     IPTablesRules         []*IPTablesRules `json:"ip_tables_rules,omitempty"`
     Name                  string           `json:"name"`
-    Rules                 []*Rules         `json:"rules"`
+    Rules                 []*Rule          `json:"rules"`
     Scopes                [][]*Scopes      `json:"scopes"`
     UpdateType            string           `json:"update_type,omitempty"`
     UpdatedAt             string           `json:"updated_at"`
     UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
-    PolicySecStatus       string
 }
-    Ruleset represents an Illumio RuleSet
+    Ruleset
 
-func GetAllRuleSets(pce PCE, provisionStatus string) ([]Ruleset, APIResponse, error)
-    GetAllRuleSets returns a slice of Rulesets for all RuleSets in the
-    Illumio PCE
+type RuleSets struct {
+    Href string `json:"href"`
+}
+    RuleSets
 
 type Scopes struct {
     Label      *Label      `json:"label,omitempty"`
     LabelGroup *LabelGroup `json:"label_group,omitempty"`
 }
-    Scopes represent the scope of an Illumio Rule
+    Scope
 
 type SecureConnect struct {
     MatchingIssuerName string `json:"matching_issuer_name,omitempty"`
 }
     SecureConnect represents SecureConnect for an Agent on a Workload
+
+type SecureConnectGateways struct {
+    Href string `json:"href"`
+}
+    SecureConnectGateways
 
 type Service struct {
     CreatedAt             string            `json:"created_at,omitempty"`
@@ -501,12 +666,9 @@ type Service struct {
 }
     Service represent a service in the Illumio PCE
 
-func CreateService(pce PCE, service Service) (Service, APIResponse, error)
-    CreateService creates a new service in the Illumio PCE
-
-func GetAllServices(pce PCE, provisionStatus string) ([]Service, APIResponse, error)
-    GetAllServices returns a slice of Services for each Service in the
-    Illumio PCE. provisionStatus must either be "draft" or "active"
+type ServiceBinding struct {
+}
+    A ServiceBinding represents a Service Binding in the Illumio PCE
 
 type ServicePort struct {
     IcmpCode int `json:"icmp_code,omitempty"`
@@ -536,14 +698,14 @@ type Src struct {
     IP       string    `json:"ip"`
     Workload *Workload `json:"workload,omitempty"`
 }
-    Src Traffic flow endpoint details
+    Src is the consumer workload details
 
 type Statements struct {
     ChainName  string `json:"chain_name"`
     Parameters string `json:"parameters"`
     TableName  string `json:"table_name"`
 }
-    Statements represent statements
+    Statements are part of a custom IPTables rule
 
 type Status struct {
     AgentHealth              []*AgentHealth     `json:"agent_health,omitempty"`
@@ -551,12 +713,14 @@ type Status struct {
     AgentVersion             string             `json:"agent_version,omitempty"`
     FirewallRuleCount        int                `json:"firewall_rule_count,omitempty"`
     FwConfigCurrent          bool               `json:"fw_config_current,omitempty"`
+    InstanceID               string             `json:"instance_id,omitempty"`
     LastHeartbeatOn          string             `json:"last_heartbeat_on,omitempty"`
     ManagedSince             string             `json:"managed_since,omitempty"`
     SecurityPolicyAppliedAt  string             `json:"security_policy_applied_at,omitempty"`
     SecurityPolicyReceivedAt string             `json:"security_policy_received_at,omitempty"`
     SecurityPolicyRefreshAt  string             `json:"security_policy_refresh_at,omitempty"`
     SecurityPolicySyncState  string             `json:"security_policy_sync_state,omitempty"`
+    Status                   string             `json:"status,omitempty"`
     UID                      string             `json:"uid,omitempty"`
     UptimeSeconds            int                `json:"uptime_seconds,omitempty"`
 }
@@ -572,7 +736,7 @@ type TimestampRange struct {
     FirstDetected string `json:"first_detected"`
     LastDetected  string `json:"last_detected"`
 }
-    TimestampRange Timestamp ranges for the flow detected
+    TimestampRange is used to limit queries ranges for the flow detected
 
 type TrafficAnalysis struct {
     Dst            *Dst            `json:"dst"`
@@ -582,21 +746,7 @@ type TrafficAnalysis struct {
     Src            *Src            `json:"src"`
     TimestampRange *TimestampRange `json:"timestamp_range"`
 }
-    TrafficAnalysis represents the response from the traffic analysis api
-
-func GetTrafficAnalysis(pce PCE, query TrafficQuery) ([]TrafficAnalysis, error)
-    GetTrafficAnalysis gets flow data from Explorer.
-
-    sourcesInclude, sourcesExclude, destinationsInclude, destinationsExclude
-    are array of strings that are hrefs for labels, hrefs for workloads, or
-    values for ip_addresses.
-
-    portProtoInclude and portProtoExclude are an array of arrays. For
-    example, [[3306, 6], [8080,-1]] is Port 3306 TCP and Port 8080 any
-    protocol.
-
-    policyStatuses is an array that contains only the values allowed,
-    potentially_blocked, and/or blocked.
+    TrafficAnalysis represents the response from the explorer API
 
 type TrafficAnalysisRequest struct {
     Sources          Sources          `json:"sources"`
@@ -636,6 +786,14 @@ type UpdatedBy struct {
 }
     UpdatedBy represents the UpdatedBy property of an object
 
+type UploadFlowResults struct {
+    FlowResps       []FlowUploadResp
+    APIResps        []APIResponse
+    TotalFlowsInCSV int
+}
+    UploadFlowResults is the struct returned to the user when using the
+    pce.UploadTraffic() method
+
 type Usage struct {
     LabelGroup         bool `json:"label_group"`
     Rule               bool `json:"rule"`
@@ -655,16 +813,77 @@ type UserLogin struct {
     SessionToken                string          `json:"session_token,omitempty"`
     TimeZone                    string          `json:"time_zone,omitempty,omitempty"`
     Type                        string          `json:"type,omitempty"`
+    Orgs                        []*Org          `json:"orgs,omitempty"`
 }
     UserLogin represents a user logging in via password to get a session key
 
-func Login(pce PCE, authToken string) (UserLogin, APIResponse, error)
-    Login takes an auth token and returns a session token
+type Version struct {
+    Version      string `json:"version"`
+    Build        int    `json:"build"`
+    LongDisplay  string `json:"long_display"`
+    ShortDisplay string `json:"short_display"`
+}
+    Version represents the version of the PCE
 
 type VirtualServer struct {
     Href string `json:"href"`
 }
-    VirtualServer represent Virtual Servers
+    VirtualServer represents a Virtual Server in the Illumio PCE
+
+type VirtualServers struct {
+    Href string `json:"href"`
+}
+    VirtualServers
+
+type VirtualService struct {
+    ApplyTo               string     `json:"apply_to,omitempty"`
+    CreatedAt             string     `json:"created_at,omitempty"`
+    CreatedBy             *CreatedBy `json:"created_by,omitempty"`
+    Description           string     `json:"description,omitempty"`
+    ExternalDataReference string     `json:"external_data_reference,omitempty"`
+    ExternalDataSet       string     `json:"external_data_set,omitempty"`
+    Href                  string     `json:"href,omitempty"`
+    IPOverrides           []string   `json:"ip_overrides,omitempty"`
+    Labels                []*Label   `json:"labels,omitempty"`
+    Name                  string     `json:"name,omitempty"`
+    Service               *Service   `json:"service,omitempty"`
+    UpdateType            string     `json:"update_type,omitempty"`
+    UpdatedAt             string     `json:"updated_at,omitempty"`
+    UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
+}
+    A VirtualService represents a Virtual Service in the Illumio PCE
+
+type VirtualServices struct {
+    Href string `json:"href"`
+}
+    VirtualServices
+
+type Vulnerability struct {
+    CreatedAt   string     `json:"created_at,omitempty"`
+    CreatedBy   *CreatedBy `json:"created_by,omitempty"`
+    CveIds      []string   `json:"cve_ids,omitempty"`
+    Description string     `json:"description,omitempty"`
+    Href        string     `json:"href,omitempty"`
+    Name        string     `json:"name,omitempty"`
+    Score       int        `json:"score,omitempty"`
+    UpdatedAt   string     `json:"updated_at,omitempty"`
+    UpdatedBy   *UpdatedBy `json:"updated_by,omitempty"`
+}
+    Vulnerability represents a vulnerability in the Illumio PCE
+
+type VulnerabilityReport struct {
+    Authoritative      bool       `json:"authoritative,omitempty"`
+    CreatedAt          string     `json:"created_at,omitempty"`
+    CreatedBy          *CreatedBy `json:"created_by,omitempty"`
+    Href               string     `json:"href,omitempty"`
+    Name               string     `json:"name,omitempty"`
+    NumVulnerabilities int        `json:"num_vulnerabilities,omitempty"`
+    ReportType         string     `json:"report_type,omitempty"`
+    ScannedIps         []string   `json:"scanned_ips,omitempty,omitempty"`
+    UpdatedAt          string     `json:"updated_at,omitempty"`
+    UpdatedBy          *UpdatedBy `json:"updated_by,omitempty"`
+}
+    VulnerabilityReport represents a vulnerability report in the Illumio PCE
 
 type WindowsService struct {
     IcmpCode    int    `json:"icmp_code,omitempty"`
@@ -702,18 +921,73 @@ type Workload struct {
     PublicIP              string       `json:"public_ip,omitempty"`
     ServicePrincipalName  string       `json:"service_principal_name,omitempty"`
     ServiceProvider       string       `json:"service_provider,omitempty"`
-    Services              *Services    `json:"services,omitempty"`
+    Services              []*Services  `json:"services,omitempty"`
     UpdatedAt             string       `json:"updated_at,omitempty"`
     UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
 }
-    A Workload is a Workload object in the PCE
+    A Workload represents a workload in the PCE
 
-func CreateWorkload(pce PCE, workload Workload) (Workload, APIResponse, error)
-    CreateWorkload creates a new workload in the Illumio PCE
+func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
+    ChangeLabel updates a workload struct with new label href. It does not
+    call the Illumio API to update the workload in the PCE. Use
+    pce.UpdateWorkload() or bulk update for that. The method returns the
+    labelMapH in case it needs to create a new label.
 
-func GetAllWorkloads(pce PCE) ([]Workload, APIResponse, error)
-    GetAllWorkloads returns an slice of workloads for each workload in the
-    Illumio PCE
+func (w *Workload) GetApp(labelMap map[string]Label) Label
+    GetApp takes a map of labels with the href string as the key and returns
+    the app label for a workload. To get the LabelMap call GetLabelMapH.
+
+func (w *Workload) GetAppGroup(labelMap map[string]Label) string
+    GetAppGroup returns the app group string of a workload in the format of
+    App | Env. If the workload does not have an app or env label, "NO APP
+    GROUP" is returned. Use GetAppGroupL to include the loc label in the app
+    group.
+
+func (w *Workload) GetAppGroupL(labelMap map[string]Label) string
+    GetAppGroupL returns the app group string of a workload in the format of
+    App | Env | Loc. If the workload does not have an app, env, or loc
+    label, "NO APP GROUP" is returned. Use GetAppGroup to only use app and
+    env in App Group.
+
+func (w *Workload) GetEnv(labelMap map[string]Label) Label
+    GetEnv takes a map of labels with the href string as the key and returns
+    the env label for a workload. To get the LabelMap call GetLabelMapH.
+
+func (w *Workload) GetLoc(labelMap map[string]Label) Label
+    GetLoc takes a map of labels with the href string as the key and returns
+    the loc label for a workload. To get the LabelMap call GetLabelMapH.
+
+func (w *Workload) GetMode() string
+    GetMode returns the mode of the workloads. Modes are unmanaged, idle,
+    build, test, enforced-no, enforced-low, enforced-high.
+
+func (w *Workload) GetRole(labelMap map[string]Label) Label
+    GetRole takes a map of labels with the href string as the key and
+    returns the role label for a workload. To get the LabelMap call
+    GetLabelMapH.
+
+func (w *Workload) LabelsMatch(role, app, env, loc string, labelMap map[string]Label) bool
+    LabelsMatch checks if the workload matches the provided labels. Blank
+    values ("") for role, app, env, or loc mean no label assigned for that
+    key. A single asterisk (*) can be used to represent any in a particular
+    key. For example, using "*" for role will return true as long as the
+    app, env, and loc match.
+
+func (w *Workload) SanitizeBulkUpdate()
+    SanitizeBulkUpdate removes the properites necessary for a bulk update
+
+func (w *Workload) SanitizePut()
+    SanitizePut removes the necessary properties to update an unmanaged and
+    managed workload
+
+func (w *Workload) SetMode(m string) error
+    SetMode adjusts the workload struct to reflect the assigned mode.
+    Nothing is changed in the PCE. To reflect the change in the PCE uset
+    SetMode method followed by PCE.UpdateWorkload() method
+
+    Valid options: idle, build, test, enforced-no, enforced-low, and
+    enforced-high. The enforced options represent no logging, low details,
+    and high detail.
 
 SUBDIRECTORIES
 
