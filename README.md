@@ -4,7 +4,7 @@
 
 Go package to easily interact with the Illumio API.
 
-## Included
+## Example Code
 Nearly all functions that interact with your PCE are methods on the PCE type. For example, the code below prints all workloadss hostnames:
 ```
 // Create PCE
