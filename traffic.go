@@ -317,7 +317,26 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 
 }
 
-//IterateTrafficJString iterates over each workload in a PCE to get all traffic data
+// IterateTraffic returns an array of traffic analysis .
+// The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
+// If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
+func (p *PCE) IterateTraffic(stdout bool) ([]TrafficAnalysis, error) {
+	i, err := p.IterateTrafficJString(stdout)
+	if err != nil {
+		return nil, err
+	}
+	var t []TrafficAnalysis
+	json.Unmarshal([]byte(i), &t)
+	if stdout {
+		fmt.Printf("Final combined traffic export: %d records\r\n", len(t))
+	}
+	return t, nil
+
+}
+
+// IterateTrafficJString returns the combined JSON output from an iterative exlplorer query.
+// The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
+// If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
 func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 
 	// Threshold to query deeper
