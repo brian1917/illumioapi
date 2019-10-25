@@ -605,3 +605,30 @@ func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, erro
 	return api, nil
 
 }
+
+// GetDefaultGW returns the default gateway for a workload.
+// If the workload does not have a default gateway (many unmanaged workloads) it will return "NA"
+func (w *Workload) GetDefaultGW() string {
+	for _, i := range w.Interfaces {
+		if i.DefaultGatewayAddress != "" {
+			return i.DefaultGatewayAddress
+		}
+	}
+	return "NA"
+}
+
+// GetCIDR returns the CIDR Block for a workloads IP address
+// The CIDR value is returned as a string (e.g., "/24").
+// If the CIDR value is not known (e.g., unmanaged workloads) it returns "NA"
+// If the provided IP address is not attached to the workload, GetCIDR returns "NA".
+func (w *Workload) GetCIDR(ip string) string {
+	for _, i := range w.Interfaces {
+		if i.Address == ip {
+			if i.CidrBlock != nil {
+				return fmt.Sprintf("/%d", *i.CidrBlock)
+			}
+			return "NA"
+		}
+	}
+	return "NA"
+}
