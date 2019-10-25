@@ -35,7 +35,7 @@ type ServicePort struct {
 	IcmpType int `json:"icmp_type,omitempty"`
 	ID       int `json:"id,omitempty"`
 	Port     int `json:"port,omitempty"`
-	Protocol int `json:"protocol"`
+	Protocol int `json:"proto"`
 	ToPort   int `json:"to_port,omitempty"`
 }
 
