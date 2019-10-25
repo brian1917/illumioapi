@@ -122,14 +122,18 @@ type TimestampRange struct {
 
 // TrafficQuery is the struct to be passed to the GetTrafficAnalysis function
 type TrafficQuery struct {
-	SourcesInclude        []string
-	SourcesExclude        []string
-	DestinationsInclude   []string
-	DestinationsExclude   []string
-	PortProtoInclude      [][2]int
-	PortProtoExclude      [][2]int
-	PortRangeInclude      [][2]int
-	PortRangeExclude      [][2]int
+	SourcesInclude      []string
+	SourcesExclude      []string
+	DestinationsInclude []string
+	DestinationsExclude []string
+	// PortProtoInclude and PortProtoExclude entries should be in the format of [port, protocol]
+	// Example [80, 6] is Port 80 TCP.
+	PortProtoInclude [][2]int
+	PortProtoExclude [][2]int
+	// PortRangeInclude and PortRangeExclude entries should be of the format [fromPort, toPort, protocol]
+	// Example - [1000, 2000, 6] is Ports 1000-2000 TCP.
+	PortRangeInclude      [][3]int
+	PortRangeExclude      [][3]int
 	ProcessInclude        []string
 	WindowsServiceInclude []string
 	ProcessExclude        []string
@@ -155,7 +159,7 @@ type UploadFlowResults struct {
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
-func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
+func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
 	var api APIResponse
 
 	// Initialize arrays using "make" so JSON is marshaled with empty arrays and not null values to meet Illumio API spec
@@ -166,7 +170,7 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 	destExcl := make([]Exclude, 0)
 
 	// Process source include, destination include, source exclude, and destination exclude
-	queryLists := [][]string{query.SourcesInclude, query.DestinationsInclude, query.SourcesExclude, query.DestinationsExclude}
+	queryLists := [][]string{q.SourcesInclude, q.DestinationsInclude, q.SourcesExclude, q.DestinationsExclude}
 
 	// Start counter
 	i := 0
@@ -235,42 +239,42 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 	serviceExclude := make([]Exclude, 0)
 
 	// Port and protocol - include
-	for _, portProto := range query.PortProtoInclude {
+	for _, portProto := range q.PortProtoInclude {
 		serviceInclude = append(serviceInclude, Include{Port: portProto[0], Proto: portProto[1]})
 	}
 
 	// Port and protocol - exclude
-	for _, portProto := range query.PortProtoExclude {
+	for _, portProto := range q.PortProtoExclude {
 		serviceExclude = append(serviceExclude, Exclude{Port: portProto[0], Proto: portProto[1]})
 	}
 
 	// Port Range - include
-	for _, portRange := range query.PortRangeInclude {
-		serviceInclude = append(serviceInclude, Include{Port: portRange[0], ToPort: portRange[1]})
+	for _, portRange := range q.PortRangeInclude {
+		serviceInclude = append(serviceInclude, Include{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
 	}
 
 	// Port Range - exclude
-	for _, portRange := range query.PortRangeExclude {
-		serviceExclude = append(serviceExclude, Exclude{Port: portRange[0], ToPort: portRange[1]})
+	for _, portRange := range q.PortRangeExclude {
+		serviceExclude = append(serviceExclude, Exclude{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
 	}
 
 	// Process - include
-	for _, process := range query.ProcessInclude {
+	for _, process := range q.ProcessInclude {
 		serviceInclude = append(serviceInclude, Include{Process: process})
 	}
 
 	// Process - exclude
-	for _, process := range query.ProcessExclude {
+	for _, process := range q.ProcessExclude {
 		serviceExclude = append(serviceExclude, Exclude{Process: process})
 	}
 
 	// Windows Service - include
-	for _, winSrv := range query.WindowsServiceInclude {
+	for _, winSrv := range q.WindowsServiceInclude {
 		serviceInclude = append(serviceInclude, Include{WindowsService: winSrv})
 	}
 
 	// Windows Service - exclude
-	for _, winSrv := range query.WindowsServiceExclude {
+	for _, winSrv := range q.WindowsServiceExclude {
 		serviceExclude = append(serviceExclude, Exclude{WindowsService: winSrv})
 	}
 
@@ -285,10 +289,10 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 		ExplorerServices: ExplorerServices{
 			Include: serviceInclude,
 			Exclude: serviceExclude},
-		PolicyDecisions: query.PolicyStatuses,
-		StartDate:       query.StartTime,
-		EndDate:         query.EndTime,
-		MaxResults:      query.MaxFLows}
+		PolicyDecisions: q.PolicyStatuses,
+		StartDate:       q.StartTime,
+		EndDate:         q.EndTime,
+		MaxResults:      q.MaxFLows}
 
 	// Create JSON Payload
 	jsonPayload, err := json.Marshal(traffic)
@@ -320,15 +324,15 @@ func (p *PCE) GetTrafficAnalysis(query TrafficQuery) ([]TrafficAnalysis, APIResp
 // IterateTraffic returns an array of traffic analysis .
 // The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
 // If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
-func (p *PCE) IterateTraffic(stdout bool) ([]TrafficAnalysis, error) {
-	i, err := p.IterateTrafficJString(stdout)
+func (p *PCE) IterateTraffic(q TrafficQuery, stdout bool) ([]TrafficAnalysis, error) {
+	i, err := p.IterateTrafficJString(q, stdout)
 	if err != nil {
 		return nil, err
 	}
 	var t []TrafficAnalysis
 	json.Unmarshal([]byte(i), &t)
 	if stdout {
-		fmt.Printf("Final combined traffic export: %d records\r\n", len(t))
+		fmt.Printf("[INFO] - Final combined traffic export: %d records\r\n", len(t))
 	}
 	return t, nil
 
@@ -337,62 +341,57 @@ func (p *PCE) IterateTraffic(stdout bool) ([]TrafficAnalysis, error) {
 // IterateTrafficJString returns the combined JSON output from an iterative exlplorer query.
 // The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
 // If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
-func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
+func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error) {
 
 	// Threshold to query deeper
 	threshold := 90000
 
 	// Get all explorer data to see where we are starting
-	tq := TrafficQuery{
-		StartTime:      time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC),
-		EndTime:        time.Date(2020, 12, 30, 0, 0, 0, 0, time.UTC),
-		PolicyStatuses: []string{"allowed", "potentially_blocked", "blocked"},
-		MaxFLows:       100000}
-	t, a, _ := p.GetTrafficAnalysis(tq)
+	t, a, _ := p.GetTrafficAnalysis(q)
 	if stdout {
-		fmt.Printf("Initial traffic query: %d records\r\n", len(t))
+		fmt.Printf("[INFO] - Initial traffic query: %d records\r\n", len(t))
 	}
 
 	// If the length is under threshold return it and be done
 	if len(t) < threshold {
 		if stdout {
-			fmt.Println("Done")
+			fmt.Println("[INFO] - Traffic querying completed")
 		}
 		return a.RespBody, nil
 	}
 
 	if stdout {
-		fmt.Println("Traffic records close to limit - querying by protocol...")
+		fmt.Printf("[INFO] - Traffic records close to threshold (%d) - beginning query by protocol...\r\n", threshold)
 	}
 
 	// If we are over threshold, run the query again for TCP, UDP, and everything else.
 	// TCP
-	tq.PortProtoInclude = [][2]int{[2]int{0, 6}}
-	tcpT, tcpA, err := p.GetTrafficAnalysis(tq)
+	q.PortProtoInclude = [][2]int{[2]int{0, 6}}
+	tcpT, tcpA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("TCP traffic query: %d records\r\n", len(tcpT))
+		fmt.Printf("[INFO] - TCP traffic query: %d records\r\n", len(tcpT))
 	}
 	// UDP
-	tq.PortProtoInclude = [][2]int{[2]int{0, 17}}
-	udpT, udpA, err := p.GetTrafficAnalysis(tq)
+	q.PortProtoInclude = [][2]int{[2]int{0, 17}}
+	udpT, udpA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("UDP traffic query: %d records\r\n", len(udpT))
+		fmt.Printf("[INFO] - UDP traffic query: %d records\r\n", len(udpT))
 	}
 	// Other Protos
-	tq.PortProtoInclude = nil
-	tq.PortProtoExclude = [][2]int{[2]int{0, 6}, [2]int{0, 17}}
-	otherProtoT, otherProtoA, err := p.GetTrafficAnalysis(tq)
+	q.PortProtoInclude = nil
+	q.PortProtoExclude = [][2]int{[2]int{0, 6}, [2]int{0, 17}}
+	otherProtoT, otherProtoA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("Other traffic query: %d records\r\n", len(otherProtoT))
+		fmt.Printf("[INFO] - Other traffic query: %d records\r\n", len(otherProtoT))
 	}
 
 	// Create a variable to hold final JSON strings and start with other protocols
@@ -401,11 +400,11 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 	// Process if TCP is over threshold
 	if len(tcpT) > threshold {
 		if stdout {
-			fmt.Printf("TCP entries close to threshold (%d), querying by TCP port...\r\n", threshold)
+			fmt.Printf("[INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", threshold)
 		}
-		tq.PortProtoInclude = [][2]int{[2]int{0, 6}}
-		tq.PortProtoExclude = nil
-		s, err := iterateOverPorts(*p, tq, tcpT, stdout)
+		q.PortProtoInclude = [][2]int{[2]int{0, 6}}
+		q.PortProtoExclude = nil
+		s, err := iterateOverPorts(*p, q, tcpT, stdout)
 		if err != nil {
 			return "", err
 		}
@@ -417,11 +416,11 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 	// Process if UDP is over threshold
 	if len(udpT) > threshold {
 		if stdout {
-			fmt.Printf("UDP entries close to threshold (%d), querying by UDP port...\r\n", threshold)
+			fmt.Printf("[INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", threshold)
 		}
-		tq.PortProtoInclude = [][2]int{[2]int{0, 17}}
-		tq.PortProtoExclude = nil
-		s, err := iterateOverPorts(*p, tq, udpT, stdout)
+		q.PortProtoInclude = [][2]int{[2]int{0, 17}}
+		q.PortProtoExclude = nil
+		s, err := iterateOverPorts(*p, q, udpT, stdout)
 		if err != nil {
 			return "", err
 		}
@@ -435,7 +434,7 @@ func (p *PCE) IterateTrafficJString(stdout bool) (string, error) {
 	s := combineTrafficBodies(finalJSONSet)
 	json.Unmarshal([]byte(s), &FinalSet)
 	if stdout {
-		fmt.Printf("Final combined traffic export: %d records\r\n", len(FinalSet))
+		fmt.Printf("[INFO] - Final combined traffic export: %d records\r\n", len(FinalSet))
 	}
 
 	// Combine sets and return
