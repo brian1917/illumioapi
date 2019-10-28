@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -617,7 +618,7 @@ func (w *Workload) GetDefaultGW() string {
 	return "NA"
 }
 
-// GetCIDR returns the CIDR Block for a workloads IP address
+// GetCIDR returns the CIDR Block for a workload's IP address
 // The CIDR value is returned as a string (e.g., "/24").
 // If the CIDR value is not known (e.g., unmanaged workloads) it returns "NA"
 // If the provided IP address is not attached to the workload, GetCIDR returns "NA".
@@ -626,6 +627,23 @@ func (w *Workload) GetCIDR(ip string) string {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				return fmt.Sprintf("/%d", *i.CidrBlock)
+			}
+			return "NA"
+		}
+	}
+	return "NA"
+}
+
+// GetNetMask returns the netmask for a workload's IP address
+// The value is returned as a string (e.g., "255.0.0.0")
+// If the value is not known (e.g., unmanaged workloads) it returns "NA"
+// If the provided IP address is not attached to the workload, GetNetMask returns "NA".
+func (w *Workload) GetNetMask(ip string) string {
+	for _, i := range w.Interfaces {
+		if i.Address == ip {
+			if i.CidrBlock != nil {
+				_, ipv4Net, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+				return fmt.Sprintf("%d.%d.%d.%d", ipv4Net.Mask[0], ipv4Net.Mask[1], ipv4Net.Mask[2], ipv4Net.Mask[3])
 			}
 			return "NA"
 		}
