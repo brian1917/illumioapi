@@ -618,6 +618,40 @@ func (w *Workload) GetDefaultGW() string {
 	return "NA"
 }
 
+// GetIPWithDefaultGW returns the IP address of the interface that has the default gateway
+// If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
+func (w *Workload) GetIPWithDefaultGW() string {
+	for _, i := range w.Interfaces {
+		if i.DefaultGatewayAddress != "" {
+			return i.Address
+		}
+	}
+	return "NA"
+}
+
+// GetNetMaskWithDefaultGW returns the netmask of the ip address that has the default gateway
+// If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
+func (w *Workload) GetNetMaskWithDefaultGW() string {
+	for _, i := range w.Interfaces {
+		if i.DefaultGatewayAddress != "" {
+			return w.GetNetMask(i.Address)
+		}
+	}
+	return "NA"
+}
+
+// GetNetworkWithDefaultGateway returns the CIDR notation of the network of the interface with the default gateway.
+// If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
+func (w *Workload) GetNetworkWithDefaultGateway() string {
+	for _, i := range w.Interfaces {
+		if i.DefaultGatewayAddress != "" {
+			_, net, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+			return net.String()
+		}
+	}
+	return "NA"
+}
+
 // GetCIDR returns the CIDR Block for a workload's IP address
 // The CIDR value is returned as a string (e.g., "/24").
 // If the CIDR value is not known (e.g., unmanaged workloads) it returns "NA"
