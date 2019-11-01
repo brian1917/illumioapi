@@ -338,13 +338,18 @@ func (p *PCE) IterateTraffic(q TrafficQuery, stdout bool) ([]TrafficAnalysis, er
 
 }
 
+// Threshold is the value set to iterate
+var Threshold int
+
 // IterateTrafficJString returns the combined JSON output from an iterative exlplorer query.
 // The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
 // If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
 func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error) {
 
-	// Threshold to query deeper
-	threshold := 90000
+	// If the threshold isn't set by app, use 90000
+	if Threshold == 0 {
+		Threshold = 90000
+	}
 
 	// Get all explorer data to see where we are starting
 	t, a, _ := p.GetTrafficAnalysis(q)
@@ -352,8 +357,8 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		fmt.Printf("[INFO] - Initial traffic query: %d records\r\n", len(t))
 	}
 
-	// If the length is under threshold return it and be done
-	if len(t) < threshold {
+	// If the length is under Threshold return it and be done
+	if len(t) < Threshold {
 		if stdout {
 			fmt.Println("[INFO] - Traffic querying completed")
 		}
@@ -361,10 +366,10 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	}
 
 	if stdout {
-		fmt.Printf("[INFO] - Traffic records close to threshold (%d) - beginning query by protocol...\r\n", threshold)
+		fmt.Printf("[INFO] - Traffic records close to threshold (%d) - beginning query by protocol...\r\n", Threshold)
 	}
 
-	// If we are over threshold, run the query again for TCP, UDP, and everything else.
+	// If we are over Threshold, run the query again for TCP, UDP, and everything else.
 	// TCP
 	q.PortProtoInclude = [][2]int{[2]int{0, 6}}
 	tcpT, tcpA, err := p.GetTrafficAnalysis(q)
@@ -397,10 +402,10 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	// Create a variable to hold final JSON strings and start with other protocols
 	finalJSONSet := []string{otherProtoA.RespBody}
 
-	// Process if TCP is over threshold
-	if len(tcpT) > threshold {
+	// Process if TCP is over Threshold
+	if len(tcpT) > Threshold {
 		if stdout {
-			fmt.Printf("[INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", threshold)
+			fmt.Printf("[INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", Threshold)
 		}
 		q.PortProtoInclude = [][2]int{[2]int{0, 6}}
 		q.PortProtoExclude = nil
@@ -413,10 +418,10 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		finalJSONSet = append(finalJSONSet, tcpA.RespBody)
 	}
 
-	// Process if UDP is over threshold
-	if len(udpT) > threshold {
+	// Process if UDP is over Threshold
+	if len(udpT) > Threshold {
 		if stdout {
-			fmt.Printf("[INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", threshold)
+			fmt.Printf("[INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", Threshold)
 		}
 		q.PortProtoInclude = [][2]int{[2]int{0, 17}}
 		q.PortProtoExclude = nil
