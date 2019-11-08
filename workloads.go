@@ -668,6 +668,17 @@ func (w *Workload) GetCIDR(ip string) string {
 	return "NA"
 }
 
+// GetInterfaceName returns the interface name for a workload's IP address
+// If the provided IP address is not attached to the workload, GetInterfaceName returns "NA".
+func (w *Workload) GetInterfaceName(ip string) string {
+	for _, i := range w.Interfaces {
+		if i.Address == ip {
+			return i.Name
+		}
+	}
+	return "NA"
+}
+
 // GetNetMask returns the netmask for a workload's IP address
 // The value is returned as a string (e.g., "255.0.0.0")
 // If the value is not known (e.g., unmanaged workloads) it returns "NA"
