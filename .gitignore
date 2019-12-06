@@ -4,3 +4,4 @@
 .log
 examples/*
 _playground/
+.VSCodeCounter/*

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // An Agent is an Agent on a Workload
@@ -128,6 +129,12 @@ type Status struct {
 	Status                   string             `json:"status,omitempty"`
 	UID                      string             `json:"uid,omitempty"`
 	UptimeSeconds            int                `json:"uptime_seconds,omitempty"`
+}
+
+// Unpair is the payload for using the API to unpair workloads.
+type Unpair struct {
+	Workloads      []Workload `json:"workloads"`
+	IPTableRestore string     `json:"ip_table_restore"`
 }
 
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
@@ -607,6 +614,57 @@ func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, erro
 
 }
 
+// WorkloadsUnpair unpairs workloads. There is no limit to the length of []Workloads. The method
+// chunks the API calls into groups of 1,000 to conform to the Illumio API.
+func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIResponse, error) {
+
+	// Build the payload
+	var targetWklds []Workload
+	for _, w := range wklds {
+		targetWklds = append(targetWklds, Workload{Href: w.Href})
+	}
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/unpair")
+	if err != nil {
+		return nil, fmt.Errorf("unpair error - %s", err)
+	}
+
+	// Figure out how many API calls we need to make
+	numAPICalls := int(math.Ceil(float64(len(targetWklds)) / 1000))
+
+	// Build the array to be passed to the API
+	apiArrays := [][]Workload{}
+	for i := 0; i < numAPICalls; i++ {
+		// Get 1,000 elements if this is not the last array
+		if (i + 1) != numAPICalls {
+			apiArrays = append(apiArrays, targetWklds[i*1000:(1+i)*1000])
+			// Get the rest on the last array
+		} else {
+			apiArrays = append(apiArrays, targetWklds[i*1000:])
+		}
+	}
+
+	// Call the API for each array
+	var apiResps []APIResponse
+	for _, apiArray := range apiArrays {
+		// Marshal the payload
+		unpair := Unpair{IPTableRestore: ipTablesRestore, Workloads: apiArray}
+		payload, err := json.Marshal(unpair)
+		fmt.Println(string(payload))
+		if err != nil {
+			return nil, fmt.Errorf("unpair error - %s", err)
+		}
+		// Make the API call and append the response to the results
+		api, err := apicall("PUT", apiURL.String(), *p, payload, false)
+		apiResps = append(apiResps, api)
+		if err != nil {
+			return apiResps, fmt.Errorf("unpair error - %s", err)
+		}
+	}
+	return apiResps, nil
+}
+
 // GetDefaultGW returns the default gateway for a workload.
 // If the workload does not have a default gateway (many unmanaged workloads) it will return "NA"
 func (w *Workload) GetDefaultGW() string {
@@ -687,11 +745,50 @@ func (w *Workload) GetNetMask(ip string) string {
 	for _, i := range w.Interfaces {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
-				_, ipv4Net, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
-				return fmt.Sprintf("%d.%d.%d.%d", ipv4Net.Mask[0], ipv4Net.Mask[1], ipv4Net.Mask[2], ipv4Net.Mask[3])
+				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+				// IPv4
+				if len(ipNet.Mask) == 4 {
+					return fmt.Sprintf("%d.%d.%d.%d", ipNet.Mask[0], ipNet.Mask[1], ipNet.Mask[2], ipNet.Mask[3])
+				}
+				if len(ipNet.Mask) > 4 {
+					return ipNet.Mask.String()
+				}
 			}
 			return "NA"
 		}
 	}
 	return "NA"
+}
+
+// GetNetwork returns the network of a workload's IP address.
+func (w *Workload) GetNetwork(ip string) string {
+	for _, i := range w.Interfaces {
+		if i.Address == ip {
+			if i.CidrBlock != nil {
+				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+				// IPv4
+				if len(ipNet.Mask) == 4 {
+					return fmt.Sprintf("%d.%d.%d.%d", ipNet.Mask[0], ipNet.Mask[1], ipNet.Mask[2], ipNet.Mask[3])
+				}
+				if len(ipNet.Mask) > 4 {
+					return ipNet.Mask.String()
+				}
+			}
+			return "NA"
+		}
+	}
+	return "NA"
+}
+
+// HoursSinceLastHeartBeat returns the hours since the last beat.
+// -9999 is returned for unmanaged workloads or when it cannot be calculated.
+func (w *Workload) HoursSinceLastHeartBeat() float64 {
+	if w.GetMode() == "unmanaged" {
+		return -9999
+	}
+	t, err := time.Parse(time.RFC3339, w.Agent.Status.LastHeartbeatOn)
+	if err != nil {
+		return -9999
+	}
+	return time.Now().UTC().Sub(t).Hours()
 }
