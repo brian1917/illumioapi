@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -195,7 +196,24 @@ func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, er
 // PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
 // async parameter should be set to true for any GET requests returning > 500 items.
 func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
-	return httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+	retry := 0
+
+	for a.StatusCode == 429 {
+		// If we have already tried 3 times, exit
+		if retry > 2 {
+			return a, fmt.Errorf("received three 429 errors with 30 second pauses between attempts")
+		}
+		// Increment the retry counter
+		retry++
+		// Sleep for 30 seconds
+		time.Sleep(30 * time.Second)
+		// Retry the API call
+		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+	}
+
+	// Return once response code isn't 429 or if we've exceeded our attempts.
+	return a, e
 }
 
 // apicallNoContentType uses the httpSetup function without setting the header ContentType
@@ -204,7 +222,26 @@ func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIRe
 // PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
 // async parameter should be set to true for any GET requests returning > 500 items.
 func apicallNoContentType(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
-	return httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
+	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
+
+	retry := 0
+
+	for a.StatusCode == 429 {
+		// If we have already tried 3 times, exit
+		if retry > 2 {
+			return a, fmt.Errorf("received three 429 errors with 30 second pauses between attempts")
+		}
+		// Increment the retry counter
+		retry++
+		// Sleep for 30 seconds
+		time.Sleep(30 * time.Second)
+		// Retry the API call
+		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
+	}
+
+	// Return once response code isn't 429 or if we've exceeded our attempts.
+	return a, e
+
 }
 
 // pceSanitization cleans up the provided PCE FQDN in case of common errors
