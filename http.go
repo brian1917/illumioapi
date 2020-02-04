@@ -32,6 +32,7 @@ type PCE struct {
 	DisableTLSChecking bool
 	LabelMapH          map[string]Label
 	LabelMapKV         map[string]Label
+	LabelGroupMapName  map[string]LabelGroup
 }
 
 // Unexported struct for handling the asyncResults

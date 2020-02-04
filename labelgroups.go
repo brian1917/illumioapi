@@ -81,3 +81,20 @@ func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIRespon
 	// Return if less than 500
 	return labelGroups, api, nil
 }
+
+// GetLabelGroupMapName sets the LabelGroupMapName parameter of the PCE
+func (p *PCE) GetLabelGroupMapName() (APIResponse, error) {
+	lgs, a, err := p.GetAllLabelGroups("draft")
+	if err != nil {
+		return a, err
+	}
+
+	lgMap := make(map[string]LabelGroup)
+	for _, lg := range lgs {
+		lgMap[lg.Name] = lg
+	}
+
+	p.LabelGroupMapName = lgMap
+
+	return a, nil
+}
