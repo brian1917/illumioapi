@@ -69,7 +69,7 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 
 	// Build the API URL
 	fqdn := pceSanitization(p.FQDN)
-	if p.FQDN == "poc1.illum.io" || p.FQDN == "scp1.illum.io" || p.FQDN == "sca1.illum.io" {
+	if p.FQDN == "poc1.illum.io" || p.FQDN == "scp1.illum.io" || p.FQDN == "sca1.illum.io" || p.FQDN == "scp3.illum.io" {
 		fqdn = "login.illum.io"
 	}
 	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(p.Port) + "/api/v2/login_users/authenticate")
