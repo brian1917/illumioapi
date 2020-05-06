@@ -702,7 +702,7 @@ func (w *Workload) GetNetMaskWithDefaultGW() string {
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetworkWithDefaultGateway() string {
 	for _, i := range w.Interfaces {
-		if i.DefaultGatewayAddress != "" {
+		if i.DefaultGatewayAddress != "" && i.CidrBlock != nil {
 			_, net, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
 			return net.String()
 		}
