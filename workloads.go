@@ -703,7 +703,10 @@ func (w *Workload) GetNetMaskWithDefaultGW() string {
 func (w *Workload) GetNetworkWithDefaultGateway() string {
 	for _, i := range w.Interfaces {
 		if i.DefaultGatewayAddress != "" && i.CidrBlock != nil {
-			_, net, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+			_, net, err := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
+			if err != nil {
+				return "NA"
+			}
 			return net.String()
 		}
 	}
