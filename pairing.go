@@ -104,19 +104,23 @@ func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, 
 }
 
 // CreatePairingKey creates a pairing key from a pairing profile.
-func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (APIResponse, error) {
+func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (PairingKey, APIResponse, error) {
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + pairingProfile.Href + "/pairing_key")
 	if err != nil {
-		return APIResponse{}, err
+		return PairingKey{}, APIResponse{}, err
 	}
 
 	// Call the API
 	api, err := apicall("POST", apiURL.String(), *p, []byte("{}"), false)
 	if err != nil {
-		return api, err
+		return PairingKey{}, api, err
 	}
 
-	return api, nil
+	// Unmarshal response to struct
+	var pairingKey PairingKey
+	json.Unmarshal([]byte(api.RespBody), &pairingKey)
+
+	return pairingKey, api, nil
 }
