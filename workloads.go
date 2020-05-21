@@ -423,6 +423,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.Agent.Status = nil
 		w.Services = nil
 		w.Online = false
+		w.Agent.ActivePceFqdn = "" // For supercluster-paired workloads
 	}
 
 	// Replace Labels with Hrefs
