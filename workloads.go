@@ -420,10 +420,12 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.OsDetail = ""
 		w.OsID = ""
 		w.PublicIP = ""
-		w.Agent.Status = nil
 		w.Services = nil
 		w.Online = false
+		w.Agent.Status = nil
+		w.Agent.SecureConnect = nil
 		w.Agent.ActivePceFqdn = "" // For supercluster-paired workloads
+		w.Agent.TargetPceFqdn = "" // For supercluster-paired workloads
 	}
 
 	// Replace Labels with Hrefs
