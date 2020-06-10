@@ -87,7 +87,7 @@ type Workload struct {
 	Hostname              string       `json:"hostname,omitempty"`
 	Href                  string       `json:"href,omitempty"`
 	Interfaces            []*Interface `json:"interfaces,omitempty"`
-	Labels                []*Label     `json:"labels,omitempty"`
+	Labels                []*Label     `json:"labels"` // No omitempty so we can send empty label slice to clear labels
 	Name                  string       `json:"name,omitempty"`
 	Online                bool         `json:"online,omitempty"`
 	OsDetail              string       `json:"os_detail,omitempty"`
