@@ -16,13 +16,14 @@ import (
 
 // TrafficAnalysisRequest represents the payload object for the traffic analysis POST request
 type TrafficAnalysisRequest struct {
-	Sources          Sources          `json:"sources"`
-	Destinations     Destinations     `json:"destinations"`
-	ExplorerServices ExplorerServices `json:"services"`
-	StartDate        time.Time        `json:"start_date,omitempty"`
-	EndDate          time.Time        `json:"end_date,omitempty"`
-	PolicyDecisions  []string         `json:"policy_decisions"`
-	MaxResults       int              `json:"max_results,omitempty"`
+	Sources                    Sources          `json:"sources"`
+	Destinations               Destinations     `json:"destinations"`
+	ExplorerServices           ExplorerServices `json:"services"`
+	StartDate                  time.Time        `json:"start_date,omitempty"`
+	EndDate                    time.Time        `json:"end_date,omitempty"`
+	PolicyDecisions            []string         `json:"policy_decisions"`
+	MaxResults                 int              `json:"max_results,omitempty"`
+	SourcesDestinationsQueryOp string           `json:"sources_destinations_query_op,omitempty"`
 }
 
 // Sources represents the sources query portion of the explorer API
@@ -77,6 +78,7 @@ type Exclude struct {
 	Proto          int        `json:"proto,omitempty"`
 	Process        string     `json:"process_name,omitempty"`
 	WindowsService string     `json:"windows_service_name,omitempty"`
+	Transmission   string     `json:"transmission,omitempty"`
 }
 
 // IPAddress represents an IP Address
@@ -92,6 +94,7 @@ type TrafficAnalysis struct {
 	ExpSrv         *ExpSrv         `json:"service"`
 	Src            *Src            `json:"src"`
 	TimestampRange *TimestampRange `json:"timestamp_range"`
+	Transmission   string          `json:"transmission"`
 }
 
 // ExpSrv is a service in the explorer response
@@ -99,6 +102,7 @@ type ExpSrv struct {
 	Port           int    `json:"port,omitempty"`
 	Proto          int    `json:"proto,omitempty"`
 	Process        string `json:"process_name,omitempty"`
+	User           string `json:"user_name,omitempty"`
 	WindowsService string `json:"windows_service_name,omitempty"`
 }
 
@@ -142,6 +146,8 @@ type TrafficQuery struct {
 	EndTime               time.Time
 	PolicyStatuses        []string
 	MaxFLows              int
+	TransmissionExcludes  []string // Example: []string{"broadcast", "multicast"} will only get unicast traffic
+	QueryOperator         string   // Value should be "and" or "or". "and" is used by default
 }
 
 // FlowUploadResp is the response from the traffic upload API
@@ -278,6 +284,11 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 		serviceExclude = append(serviceExclude, Exclude{WindowsService: winSrv})
 	}
 
+	// Traffic transmission type
+	for _, excl := range q.TransmissionExcludes {
+		destExcl = append(destExcl, Exclude{Transmission: excl})
+	}
+
 	// Build the TrafficAnalysisRequest struct
 	traffic := TrafficAnalysisRequest{
 		Sources: Sources{
@@ -293,6 +304,11 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 		StartDate:       q.StartTime,
 		EndDate:         q.EndTime,
 		MaxResults:      q.MaxFLows}
+
+	// We are going to edit it here so we can omit if necessary
+	if strings.ToLower(q.QueryOperator) == "or" || strings.ToLower(q.QueryOperator) == "and" {
+		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
+	}
 
 	// Create JSON Payload
 	jsonPayload, err := json.Marshal(traffic)
