@@ -20,34 +20,24 @@ type ChangeSubset struct {
 	VirtualServices       []*VirtualService        `json:"virtual_services,omitempty"`
 }
 
-// FirewallSettings
+// FirewallSettings are a provisionable object
 type FirewallSettings struct {
 	Href string `json:"href"`
 }
 
-// Provision
+// Provision is sent to the PCE to provision policy objects
 type Provision struct {
 	ChangeSubset      *ChangeSubset `json:"change_subset,omitempty"`
 	UpdateDescription string        `json:"update_description,omitempty"`
 }
 
-// RuleSets
-type RuleSets struct {
-	Href string `json:"href"`
-}
-
-// SecureConnectGateways
+// SecureConnectGateways represent SecureConnectGateways in provisioning
 type SecureConnectGateways struct {
 	Href string `json:"href"`
 }
 
-// VirtualServers
+// VirtualServers reresent virtual servers in provisioning
 type VirtualServers struct {
-	Href string `json:"href"`
-}
-
-// VirtualServices
-type VirtualServices struct {
 	Href string `json:"href"`
 }
 
