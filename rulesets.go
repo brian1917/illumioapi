@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Actors
+// Actors - more info to follow
 type Actors struct {
 	Actors     string      `json:"actors,omitempty"`
 	Label      *Label      `json:"label,omitempty"`
@@ -15,7 +15,7 @@ type Actors struct {
 	Workload   *Workload   `json:"workload,omitempty"`
 }
 
-// Consumers
+// Consumers - more info to follow
 type Consumers struct {
 	Actors         string          `json:"actors,omitempty"`
 	IPList         *IPList         `json:"ip_list,omitempty"`
@@ -25,7 +25,7 @@ type Consumers struct {
 	Workload       *Workload       `json:"workload,omitempty"`
 }
 
-// ConsumingSecurityPrincipals
+// ConsumingSecurityPrincipals - more info to follow
 type ConsumingSecurityPrincipals struct {
 	Actors      []*Actors     `json:"actors"`
 	Description string        `json:"description,omitempty"`
@@ -35,11 +35,11 @@ type ConsumingSecurityPrincipals struct {
 	Statements  []*Statements `json:"statements"`
 }
 
-// IngressServices
+// IngressServices - more info to follow
 type IngressServices struct {
 }
 
-// IpTablesRules
+// IpTablesRules - more info to follow
 type IPTablesRules struct {
 	Actors      []*Actors     `json:"actors"`
 	Description string        `json:"description,omitempty"`
@@ -49,7 +49,7 @@ type IPTablesRules struct {
 	Statements  []*Statements `json:"statements"`
 }
 
-// Providers
+// Providers - more info to follow
 type Providers struct {
 	Actors         string          `json:"actors,omitempty"`
 	IPList         *IPList         `json:"ip_list,omitempty"`
@@ -60,13 +60,13 @@ type Providers struct {
 	Workload       *Workload       `json:"workload,omitempty"`
 }
 
-// ResolveLabelsAs
+// ResolveLabelsAs - more info to follow
 type ResolveLabelsAs struct {
 	Consumers []string `json:"consumers"`
 	Providers []string `json:"providers"`
 }
 
-// Ruleset
+// Ruleset - more info to follow
 type RuleSet struct {
 	CreatedAt             string           `json:"created_at"`
 	CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
@@ -86,7 +86,7 @@ type RuleSet struct {
 	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
 }
 
-// Rules
+// Rules - more info to follow
 type Rule struct {
 	Consumers                   []*Consumers                 `json:"consumers"`
 	ConsumingSecurityPrincipals *ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
@@ -103,7 +103,7 @@ type Rule struct {
 	UpdateType                  string                       `json:"update_type,omitempty"`
 }
 
-// Scope
+// Scope - more info to follow
 type Scopes struct {
 	Label      *Label      `json:"label,omitempty"`
 	LabelGroup *LabelGroup `json:"label_group,omitempty"`
