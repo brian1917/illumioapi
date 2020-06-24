@@ -39,13 +39,13 @@ type ConsumingSecurityPrincipals struct {
 type IngressServices struct {
 }
 
-// IpTablesRules - more info to follow
+// IPTablesRules - more info to follow
 type IPTablesRules struct {
 	Actors      []*Actors     `json:"actors"`
 	Description string        `json:"description,omitempty"`
 	Enabled     bool          `json:"enabled"`
 	Href        string        `json:"href"`
-	IpVersion   string        `json:"ip_version"`
+	IPVersion   string        `json:"ip_version"`
 	Statements  []*Statements `json:"statements"`
 }
 
@@ -66,7 +66,7 @@ type ResolveLabelsAs struct {
 	Providers []string `json:"providers"`
 }
 
-// Ruleset - more info to follow
+// RuleSet - more info to follow
 type RuleSet struct {
 	CreatedAt             string           `json:"created_at"`
 	CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
@@ -86,7 +86,7 @@ type RuleSet struct {
 	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
 }
 
-// Rules - more info to follow
+// Rule - more info to follow
 type Rule struct {
 	Consumers                   []*Consumers                 `json:"consumers"`
 	ConsumingSecurityPrincipals *ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
@@ -103,7 +103,7 @@ type Rule struct {
 	UpdateType                  string                       `json:"update_type,omitempty"`
 }
 
-// Scope - more info to follow
+// Scopes - more info to follow
 type Scopes struct {
 	Label      *Label      `json:"label,omitempty"`
 	LabelGroup *LabelGroup `json:"label_group,omitempty"`
