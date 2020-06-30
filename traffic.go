@@ -110,12 +110,14 @@ type ExpSrv struct {
 type Dst struct {
 	IP       string    `json:"ip"`
 	Workload *Workload `json:"workload,omitempty"`
+	FQDN     string    `json:"fqdn,omitempty"`
 }
 
 // Src is the consumer workload details
 type Src struct {
 	IP       string    `json:"ip"`
 	Workload *Workload `json:"workload,omitempty"`
+	FQDN     string    `json:"fqdn,omitempty"`
 }
 
 // TimestampRange is used to limit queries ranges for the flow detected
