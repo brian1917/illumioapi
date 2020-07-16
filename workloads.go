@@ -95,7 +95,7 @@ type Workload struct {
 	PublicIP              string       `json:"public_ip,omitempty"`
 	ServicePrincipalName  string       `json:"service_principal_name,omitempty"`
 	ServiceProvider       string       `json:"service_provider,omitempty"`
-	Services              []*Services  `json:"services,omitempty"`
+	Services              *Services    `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
 }
