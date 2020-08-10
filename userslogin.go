@@ -72,6 +72,9 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	if p.FQDN == "poc1.illum.io" || p.FQDN == "scp1.illum.io" || p.FQDN == "scp2.illum.io" || p.FQDN == "scp3.illum.io" || p.FQDN == "scp4.illum.io" || p.FQDN == "scp5.illum.io" || p.FQDN == "sca1.illum.io" {
 		fqdn = "login.illum.io"
 	}
+	if p.FQDN == "xpress1.ilabs.io" {
+		fqdn = "loginpce-dfdev1.ilabs.io"
+	}
 	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(p.Port) + "/api/v2/login_users/authenticate")
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - %s", err)
