@@ -57,6 +57,7 @@ type PortProtos struct {
 type Include struct {
 	Label          *Label     `json:"label,omitempty"`
 	Workload       *Workload  `json:"workload,omitempty"`
+	IPList         *IPList    `json:"ip_list,omitempty"`
 	IPAddress      *IPAddress `json:"ip_address,omitempty"`
 	Port           int        `json:"port,omitempty"`
 	ToPort         int        `json:"to_port,omitempty"`
@@ -72,6 +73,7 @@ type Include struct {
 type Exclude struct {
 	Label          *Label     `json:"label,omitempty"`
 	Workload       *Workload  `json:"workload,omitempty"`
+	IPList         *IPList    `json:"ip_list,omitempty"`
 	IPAddress      *IPAddress `json:"ip_address,omitempty"`
 	Port           int        `json:"port,omitempty"`
 	ToPort         int        `json:"to_port,omitempty"`
@@ -217,6 +219,23 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 						sourceExcl = append(sourceExcl, Exclude{Workload: &queryWorkload})
 					case 3:
 						destExcl = append(destExcl, Exclude{Workload: &queryWorkload})
+					}
+
+				}
+
+				// IP Lists
+			} else if strings.Contains(queryList[0], "iplist") == true {
+				for _, iplist := range queryLists[i] {
+					queryIPList := IPList{Href: iplist}
+					switch i {
+					case 0:
+						sourceInc = append(sourceInc, Include{IPList: &queryIPList})
+					case 1:
+						destInc = append(destInc, Include{IPList: &queryIPList})
+					case 2:
+						sourceExcl = append(sourceExcl, Exclude{IPList: &queryIPList})
+					case 3:
+						destExcl = append(destExcl, Exclude{IPList: &queryIPList})
 					}
 
 				}
