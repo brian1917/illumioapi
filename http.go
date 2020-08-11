@@ -20,6 +20,7 @@ type APIResponse struct {
 	StatusCode int
 	Header     http.Header
 	Request    *http.Request
+	ReqBody    string
 }
 
 // PCE represents an Illumio PCE and the necessary info to authenticate

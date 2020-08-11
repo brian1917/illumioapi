@@ -351,6 +351,8 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
 
+	api.ReqBody = string(jsonPayload)
+
 	// Unmarshal response to struct
 	json.Unmarshal([]byte(api.RespBody), &trafficResponses)
 
