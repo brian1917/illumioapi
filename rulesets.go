@@ -88,6 +88,10 @@ type RuleSet struct {
 
 // Rule - more info to follow
 type Rule struct {
+	CreatedAt                   string                       `json:"created_at"`
+	CreatedBy                   *CreatedBy                   `json:"created_by,omitempty"`
+	DeletedAt                   string                       `json:"deleted_at"`
+	DeletedBy                   *DeletedBy                   `json:"deleted_by,omitempty"`
 	Consumers                   []*Consumers                 `json:"consumers"`
 	ConsumingSecurityPrincipals *ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
 	Description                 string                       `json:"description,omitempty"`
@@ -99,8 +103,12 @@ type Rule struct {
 	Providers                   []*Providers                 `json:"providers"`
 	ResolveLabelsAs             *ResolveLabelsAs             `json:"resolve_labels_as"`
 	SecConnect                  bool                         `json:"sec_connect,omitempty"`
+	Stateless                   bool                         `json:"stateless,omitempty"`
+	MachineAuth                 bool                         `json:"machine_auth,omitempty"`
 	UnscopedConsumers           bool                         `json:"unscoped_consumers,omitempty"`
 	UpdateType                  string                       `json:"update_type,omitempty"`
+	UpdatedAt                   string                       `json:"updated_at"`
+	UpdatedBy                   *UpdatedBy                   `json:"updated_by,omitempty"`
 }
 
 // Scopes - more info to follow
@@ -152,4 +160,72 @@ func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, er
 	}
 
 	return rulesets, api, nil
+}
+
+// CreateRuleSetRule adds a rule to a RuleSet in the Illumio PCE.
+//
+// The provided RuleSet struct must include an Href.
+func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIResponse, error) {
+	var newRule Rule
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + rulesetHref + "/sec_rules")
+	if err != nil {
+		return newRule, api, fmt.Errorf("create rule - %s", err)
+	}
+
+	// Call the API
+	ruleJSON, err := json.Marshal(rule)
+	if err != nil {
+		return newRule, api, fmt.Errorf("create rule - %s", err)
+	}
+	api, err = apicall("POST", apiURL.String(), *p, ruleJSON, false)
+	if err != nil {
+		return newRule, api, fmt.Errorf("create rule - %s", err)
+	}
+
+	// Unmarshal response to struct
+	json.Unmarshal([]byte(api.RespBody), &newRule)
+
+	return newRule, api, nil
+}
+
+// UpdateRules updates a rule in the Illumio PCE.
+//
+// The provided Rule struct must include an Href.
+// The function will remove properties not included in the PUT schema.
+func (p *PCE) UpdateRules(rule Rule) (APIResponse, error) {
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + rule.Href)
+	if err != nil {
+		return api, fmt.Errorf("update Rule - %s", err)
+	}
+
+	// Remove fields that should be empty for the PUT schema
+	rule.CreatedAt = ""
+	rule.CreatedBy = nil
+	rule.DeletedAt = ""
+	rule.DeletedBy = nil
+	//iplist.Href = ""
+	rule.UpdatedAt = ""
+	rule.UpdatedBy = nil
+
+	// Marshal JSON
+	ruleJSON, err := json.Marshal(rule)
+	if err != nil {
+		return api, fmt.Errorf("update rule - %s", err)
+	}
+
+	// Call the API
+	api, err = apicall("PUT", apiURL.String(), *p, ruleJSON, false)
+	if err != nil {
+		return api, fmt.Errorf("update rule - %s", err)
+	}
+
+	return api, nil
 }
