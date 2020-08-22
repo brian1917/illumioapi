@@ -27,16 +27,20 @@ type Consumers struct {
 
 // ConsumingSecurityPrincipals - more info to follow
 type ConsumingSecurityPrincipals struct {
-	Actors      []*Actors     `json:"actors"`
+	Actors      []*Actors     `json:"actors,omitempty"`
 	Description string        `json:"description,omitempty"`
-	Enabled     bool          `json:"enabled"`
-	Href        string        `json:"href"`
-	IPVersion   string        `json:"ip_version"`
-	Statements  []*Statements `json:"statements"`
+	Enabled     bool          `json:"enabled,omitempty"`
+	Href        string        `json:"href,omitempty"`
+	IPVersion   string        `json:"ip_version,omitempty"`
+	Statements  []*Statements `json:"statements,omitempty"`
 }
 
 // IngressServices - more info to follow
 type IngressServices struct {
+	Port     int    `json:"port,omitempty"`
+	Protocol int    `json:"proto,omitempty"`
+	ToPort   int    `json:"to_port,omitempty"`
+	Href     string `json:"href,omitempty"`
 }
 
 // IPTablesRules - more info to follow
@@ -68,9 +72,9 @@ type ResolveLabelsAs struct {
 
 // RuleSet - more info to follow
 type RuleSet struct {
-	CreatedAt             string           `json:"created_at"`
+	CreatedAt             string           `json:"created_at,omitempty"`
 	CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
-	DeletedAt             string           `json:"deleted_at"`
+	DeletedAt             string           `json:"deleted_at,omitempty"`
 	DeletedBy             *DeletedBy       `json:"deleted_by,omitempty"`
 	Description           string           `json:"description"`
 	Enabled               bool             `json:"enabled"`
@@ -82,33 +86,33 @@ type RuleSet struct {
 	Rules                 []*Rule          `json:"rules"`
 	Scopes                [][]*Scopes      `json:"scopes"`
 	UpdateType            string           `json:"update_type,omitempty"`
-	UpdatedAt             string           `json:"updated_at"`
+	UpdatedAt             string           `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
 }
 
 // Rule - more info to follow
 type Rule struct {
-	CreatedAt                   string                       `json:"created_at"`
-	CreatedBy                   *CreatedBy                   `json:"created_by,omitempty"`
-	DeletedAt                   string                       `json:"deleted_at"`
-	DeletedBy                   *DeletedBy                   `json:"deleted_by,omitempty"`
-	Consumers                   []*Consumers                 `json:"consumers"`
-	ConsumingSecurityPrincipals *ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
-	Description                 string                       `json:"description,omitempty"`
-	Enabled                     bool                         `json:"enabled"`
-	ExternalDataReference       interface{}                  `json:"external_data_reference,omitempty"`
-	ExternalDataSet             interface{}                  `json:"external_data_set,omitempty"`
-	Href                        string                       `json:"href,omitempty"`
-	IngressServices             []*IngressServices           `json:"ingress_services"`
-	Providers                   []*Providers                 `json:"providers"`
-	ResolveLabelsAs             *ResolveLabelsAs             `json:"resolve_labels_as"`
-	SecConnect                  bool                         `json:"sec_connect,omitempty"`
-	Stateless                   bool                         `json:"stateless,omitempty"`
-	MachineAuth                 bool                         `json:"machine_auth,omitempty"`
-	UnscopedConsumers           bool                         `json:"unscoped_consumers,omitempty"`
-	UpdateType                  string                       `json:"update_type,omitempty"`
-	UpdatedAt                   string                       `json:"updated_at"`
-	UpdatedBy                   *UpdatedBy                   `json:"updated_by,omitempty"`
+	CreatedAt                   string                         `json:"created_at,omitempty"`
+	CreatedBy                   *CreatedBy                     `json:"created_by,omitempty"`
+	DeletedAt                   string                         `json:"deleted_at,omitempty"`
+	DeletedBy                   *DeletedBy                     `json:"deleted_by,omitempty"`
+	Consumers                   []*Consumers                   `json:"consumers"`
+	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
+	Description                 string                         `json:"description,omitempty"`
+	Enabled                     bool                           `json:"enabled"`
+	ExternalDataReference       interface{}                    `json:"external_data_reference,omitempty"`
+	ExternalDataSet             interface{}                    `json:"external_data_set,omitempty"`
+	Href                        string                         `json:"href,omitempty"`
+	IngressServices             []*IngressServices             `json:"ingress_services"`
+	Providers                   []*Providers                   `json:"providers"`
+	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as"`
+	SecConnect                  bool                           `json:"sec_connect,omitempty"`
+	Stateless                   bool                           `json:"stateless,omitempty"`
+	MachineAuth                 bool                           `json:"machine_auth,omitempty"`
+	UnscopedConsumers           bool                           `json:"unscoped_consumers,omitempty"`
+	UpdateType                  string                         `json:"update_type,omitempty"`
+	UpdatedAt                   string                         `json:"updated_at,omitempty"`
+	UpdatedBy                   *UpdatedBy                     `json:"updated_by,omitempty"`
 }
 
 // Scopes - more info to follow
@@ -171,7 +175,7 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	var err error
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + rulesetHref + "/sec_rules")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + rulesetHref + "/sec_rules")
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
 	}
@@ -181,6 +185,7 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
 	}
+
 	api, err = apicall("POST", apiURL.String(), *p, ruleJSON, false)
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
@@ -211,7 +216,7 @@ func (p *PCE) UpdateRules(rule Rule) (APIResponse, error) {
 	rule.CreatedBy = nil
 	rule.DeletedAt = ""
 	rule.DeletedBy = nil
-	//iplist.Href = ""
+	rule.Href = ""
 	rule.UpdatedAt = ""
 	rule.UpdatedBy = nil
 
