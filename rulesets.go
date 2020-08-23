@@ -100,8 +100,8 @@ type Rule struct {
 	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
 	Description                 string                         `json:"description,omitempty"`
 	Enabled                     bool                           `json:"enabled"`
-	ExternalDataReference       interface{}                    `json:"external_data_reference,omitempty"`
-	ExternalDataSet             interface{}                    `json:"external_data_set,omitempty"`
+	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
+	ExternalDataSet             string                         `json:"external_data_set,omitempty"`
 	Href                        string                         `json:"href,omitempty"`
 	IngressServices             []*IngressServices             `json:"ingress_services"`
 	Providers                   []*Providers                   `json:"providers"`
