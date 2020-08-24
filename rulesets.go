@@ -166,6 +166,21 @@ func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, er
 	return rulesets, api, nil
 }
 
+// GetRuleSetMapName returns a map of all rulesets with the name as a key
+func (p *PCE) GetRuleSetMapName(provisionStatus string) (map[string]RuleSet, APIResponse, error) {
+	ruleSets, api, err := p.GetAllRuleSets(provisionStatus)
+	if err != nil {
+		return nil, api, fmt.Errorf("get ruleset map by name - %s", err)
+	}
+
+	rsMap := make(map[string]RuleSet)
+	for _, rs := range ruleSets {
+		rsMap[rs.Name] = rs
+	}
+
+	return rsMap, api, nil
+}
+
 // CreateRuleSetRule adds a rule to a RuleSet in the Illumio PCE.
 //
 // The provided RuleSet struct must include an Href.
