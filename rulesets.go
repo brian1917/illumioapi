@@ -197,11 +197,11 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	return newRule, api, nil
 }
 
-// UpdateRules updates a rule in the Illumio PCE.
+// UpdateRuleSetRules updates a rule in the Illumio PCE.
 //
 // The provided Rule struct must include an Href.
 // The function will remove properties not included in the PUT schema.
-func (p *PCE) UpdateRules(rule Rule) (APIResponse, error) {
+func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	var api APIResponse
 	var err error
 
