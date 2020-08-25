@@ -411,6 +411,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 	w.DeletedBy = nil
 	w.UpdatedAt = ""
 	w.UpdatedBy = nil
+	w.Services = nil
 
 	// Managed workloads
 	if w.Agent != nil && w.Agent.Status != nil {
