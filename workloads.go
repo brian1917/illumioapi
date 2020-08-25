@@ -654,7 +654,6 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 		// Marshal the payload
 		unpair := Unpair{IPTableRestore: ipTablesRestore, Workloads: apiArray}
 		payload, err := json.Marshal(unpair)
-		fmt.Println(string(payload))
 		if err != nil {
 			return nil, fmt.Errorf("unpair error - %s", err)
 		}
