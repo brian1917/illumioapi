@@ -35,7 +35,7 @@ type ServicePort struct {
 	IcmpType int `json:"icmp_type,omitempty"`
 	ID       int `json:"id,omitempty"`
 	Port     int `json:"port,omitempty"`
-	Protocol int `json:"proto"`
+	Protocol int `json:"proto,omitempty"`
 	ToPort   int `json:"to_port,omitempty"`
 }
 
@@ -45,7 +45,7 @@ type WindowsService struct {
 	IcmpType    int    `json:"icmp_type,omitempty"`
 	Port        int    `json:"port,omitempty"`
 	ProcessName string `json:"process_name,omitempty"`
-	Protocol    int    `json:"protocol,omitempty"`
+	Protocol    int    `json:"proto,omitempty"`
 	ServiceName string `json:"service_name,omitempty"`
 	ToPort      int    `json:"to_port,omitempty"`
 }
@@ -154,4 +154,50 @@ func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 	}
 
 	return api, nil
+}
+
+// ParseService returns a slice of WindowsServices and ServicePorts from an Illumio service object
+func (s *Service) ParseService() (windowsServices, servicePorts []string) {
+
+	// Create a string for Windows Services
+	for _, ws := range s.WindowsServices {
+		var svcSlice []string
+		if ws.Port != 0 && ws.Protocol != 0 {
+			if ws.ToPort != 0 {
+				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", ws.Port, ws.ToPort, ProtocolList()[ws.Protocol]))
+			} else {
+				svcSlice = append(svcSlice, fmt.Sprintf("%d %s", ws.Port, ProtocolList()[ws.Protocol]))
+			}
+		}
+		if ws.IcmpCode != 0 && ws.IcmpType != 0 {
+			svcSlice = append(svcSlice, fmt.Sprintf("%d/%d %s", ws.IcmpType, ws.IcmpCode, ProtocolList()[ws.Protocol]))
+		}
+		if ws.ProcessName != "" {
+			svcSlice = append(svcSlice, ws.ProcessName)
+		}
+		if ws.ServiceName != "" {
+			svcSlice = append(svcSlice, ws.ServiceName)
+		}
+		windowsServices = append(windowsServices, strings.Join(svcSlice, " "))
+	}
+
+	// Process Service Ports
+	for _, sp := range s.ServicePorts {
+		var svcSlice []string
+		if sp.Port != 0 && sp.Protocol != 0 {
+			if sp.ToPort != 0 {
+				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", sp.Port, sp.ToPort, ProtocolList()[sp.Protocol]))
+			} else {
+				svcSlice = append(svcSlice, fmt.Sprintf("%d %s", sp.Port, ProtocolList()[sp.Protocol]))
+			}
+		}
+		if sp.IcmpCode != 0 && sp.IcmpType != 0 {
+			svcSlice = append(svcSlice, fmt.Sprintf("%d/%d %s", sp.IcmpType, sp.IcmpCode, ProtocolList()[sp.Protocol]))
+		} else if sp.Port == 0 && sp.Protocol != 0 {
+			svcSlice = append(svcSlice, ProtocolList()[sp.Protocol])
+		}
+		servicePorts = append(servicePorts, strings.Join(svcSlice, " "))
+	}
+
+	return windowsServices, servicePorts
 }
