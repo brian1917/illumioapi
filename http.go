@@ -23,19 +23,6 @@ type APIResponse struct {
 	ReqBody    string
 }
 
-// PCE represents an Illumio PCE and the necessary info to authenticate
-type PCE struct {
-	FQDN               string
-	Port               int
-	Org                int
-	User               string
-	Key                string
-	DisableTLSChecking bool
-	LabelMapH          map[string]Label
-	LabelMapKV         map[string]Label
-	LabelGroupMapName  map[string]LabelGroup
-}
-
 // Unexported struct for handling the asyncResults
 type asyncResults struct {
 	Href        string `json:"href"`
