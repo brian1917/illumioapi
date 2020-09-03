@@ -98,3 +98,49 @@ func (p *PCE) GetLabelGroupMapName() (APIResponse, error) {
 
 	return a, nil
 }
+
+// ExpandLabelGroup returns a string of label hrefs in a label group
+// Every subgroup (and nested subgroup) is expanded
+func (p *PCE) ExpandLabelGroup(href string) (labelHrefs []string) {
+
+	// Get the labels from the original label group
+	a, _ := p.expandLabelGroup(href)
+	labelHrefs = append(labelHrefs, a...)
+
+	// Iterate through the subgroups of the original label group
+	for _, sg := range p.LabelGroupMapH[href].SubGroups {
+		// Get the labels in that subgroup and the additional subgroups
+		l, moreSGs := p.expandLabelGroup(sg.Href)
+		// Append the labels
+		labelHrefs = append(labelHrefs, l...)
+		// While there are more subgroups, continue expanding them
+		for len(moreSGs) > 0 {
+			for _, newSG := range moreSGs {
+				l, moreSGs = p.expandLabelGroup(newSG)
+				// Append the labels
+				labelHrefs = append(labelHrefs, l...)
+			}
+		}
+	}
+
+	// De-dupe and return
+	labelGroupMap := make(map[string]bool)
+	for _, l := range labelHrefs {
+		labelGroupMap[l] = true
+	}
+	labelHrefs = []string{}
+	for l := range labelGroupMap {
+		labelHrefs = append(labelHrefs, l)
+	}
+	return labelHrefs
+}
+
+func (p *PCE) expandLabelGroup(href string) (labelHrefs []string, moreSGs []string) {
+	for _, l := range p.LabelGroupMapH[href].Labels {
+		labelHrefs = append(labelHrefs, l.Href)
+	}
+	for _, sg := range p.LabelGroupMapH[href].SubGroups {
+		moreSGs = append(moreSGs, sg.Href)
+	}
+	return labelHrefs, moreSGs
+}
