@@ -33,6 +33,8 @@ type ConsumingSecurityPrincipals struct {
 	Href        string        `json:"href,omitempty"`
 	IPVersion   string        `json:"ip_version,omitempty"`
 	Statements  []*Statements `json:"statements,omitempty"`
+	Name        string        `json:"name,omitempty"`
+	SID         string        `json:"sid,omitempty"`
 }
 
 // IngressServices - more info to follow
@@ -126,11 +128,6 @@ type Statements struct {
 	ChainName  string `json:"chain_name"`
 	Parameters string `json:"parameters"`
 	TableName  string `json:"table_name"`
-}
-
-// VirtualServer represents a Virtual Server in the Illumio PCE
-type VirtualServer struct {
-	Href string `json:"href"`
 }
 
 // GetAllRuleSets returns a slice of Rulesets for all RuleSets in the Illumio PCE
