@@ -52,7 +52,7 @@ func ProtocolList() map[int]string {
 	protocols[44] = "IPv6-Frag"
 	protocols[45] = "IDRP"
 	protocols[46] = "RSVP"
-	protocols[47] = "GREs"
+	protocols[47] = "GRE"
 	protocols[48] = "DSR"
 	protocols[49] = "BNA"
 	protocols[50] = "ESP"
