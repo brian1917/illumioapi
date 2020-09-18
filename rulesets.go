@@ -98,16 +98,16 @@ type Rule struct {
 	CreatedBy                   *CreatedBy                     `json:"created_by,omitempty"`
 	DeletedAt                   string                         `json:"deleted_at,omitempty"`
 	DeletedBy                   *DeletedBy                     `json:"deleted_by,omitempty"`
-	Consumers                   []*Consumers                   `json:"consumers"`
-	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
+	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
+	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
 	Description                 string                         `json:"description,omitempty"`
-	Enabled                     bool                           `json:"enabled"`
+	Enabled                     bool                           `json:"enabled,omitempty"`
 	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
 	ExternalDataSet             string                         `json:"external_data_set,omitempty"`
 	Href                        string                         `json:"href,omitempty"`
-	IngressServices             []*IngressServices             `json:"ingress_services"`
-	Providers                   []*Providers                   `json:"providers"`
-	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as"`
+	IngressServices             []*IngressServices             `json:"ingress_services,omitempty"`
+	Providers                   []*Providers                   `json:"providers,omitempty"`
+	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
 	SecConnect                  bool                           `json:"sec_connect,omitempty"`
 	Stateless                   bool                           `json:"stateless,omitempty"`
 	MachineAuth                 bool                           `json:"machine_auth,omitempty"`
