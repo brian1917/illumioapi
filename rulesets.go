@@ -163,6 +163,34 @@ func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, er
 	return rulesets, api, nil
 }
 
+// CreateRuleSet creates a new unmanaged workload in the Illumio PCE
+func (p *PCE) CreateRuleSet(rs RuleSet) (RuleSet, APIResponse, error) {
+	var newRS RuleSet
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/rule_sets")
+	if err != nil {
+		return newRS, api, fmt.Errorf("create ruleset - %s", err)
+	}
+
+	// Call the API
+	ruleSetJSON, err := json.Marshal(newRS)
+	if err != nil {
+		return newRS, api, fmt.Errorf("create ruleset - %s", err)
+	}
+	api, err = apicall("POST", apiURL.String(), *p, ruleSetJSON, false)
+	if err != nil {
+		return newRS, api, fmt.Errorf("create ruleset - %s", err)
+	}
+
+	// Marshal JSON
+	json.Unmarshal([]byte(api.RespBody), &newRS)
+
+	return newRS, api, nil
+}
+
 // GetRuleSetMapName returns a map of all rulesets with the name as a key
 func (p *PCE) GetRuleSetMapName(provisionStatus string) (map[string]RuleSet, APIResponse, error) {
 	ruleSets, api, err := p.GetAllRuleSets(provisionStatus)
