@@ -110,7 +110,7 @@ type Rule struct {
 	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
 	SecConnect                  bool                           `json:"sec_connect,omitempty"`
 	Stateless                   bool                           `json:"stateless,omitempty"`
-	MachineAuth                 bool                           `json:"machine_auth,omitempty"`
+	MachineAuth                 bool                           `json:"machine_auth"`
 	UnscopedConsumers           bool                           `json:"unscoped_consumers,omitempty"`
 	UpdateType                  string                         `json:"update_type,omitempty"`
 	UpdatedAt                   string                         `json:"updated_at,omitempty"`
