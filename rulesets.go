@@ -101,17 +101,17 @@ type Rule struct {
 	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
 	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
 	Description                 string                         `json:"description,omitempty"`
-	Enabled                     bool                           `json:"enabled,omitempty"`
+	Enabled                     bool                           `json:"enabled"`
 	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
 	ExternalDataSet             string                         `json:"external_data_set,omitempty"`
 	Href                        string                         `json:"href,omitempty"`
 	IngressServices             []*IngressServices             `json:"ingress_services,omitempty"`
 	Providers                   []*Providers                   `json:"providers,omitempty"`
 	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
-	SecConnect                  bool                           `json:"sec_connect,omitempty"`
-	Stateless                   bool                           `json:"stateless,omitempty"`
+	SecConnect                  bool                           `json:"sec_connect"`
+	Stateless                   bool                           `json:"stateless"`
 	MachineAuth                 bool                           `json:"machine_auth"`
-	UnscopedConsumers           bool                           `json:"unscoped_consumers,omitempty"`
+	UnscopedConsumers           bool                           `json:"unscoped_consumers"`
 	UpdateType                  string                         `json:"update_type,omitempty"`
 	UpdatedAt                   string                         `json:"updated_at,omitempty"`
 	UpdatedBy                   *UpdatedBy                     `json:"updated_by,omitempty"`
