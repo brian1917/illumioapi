@@ -428,6 +428,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.Agent.SecureConnect = nil
 		w.Agent.ActivePceFqdn = "" // For supercluster-paired workloads
 		w.Agent.TargetPceFqdn = "" // For supercluster-paired workloads
+		w.Agent.Config.SecurityPolicyUpdateMode = ""
 	}
 
 	// Replace Labels with Hrefs
