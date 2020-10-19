@@ -17,6 +17,11 @@ type IPRange struct {
 	ToIP        string `json:"to_ip,omitempty"`
 }
 
+// FQDN represents an FQDN in an IPList
+type FQDN struct {
+	FQDN string `json:"fqdn"`
+}
+
 // IPList represents an IP List in the Illumio PCE.
 type IPList struct {
 	CreatedAt             string     `json:"created_at,omitempty"`
@@ -26,6 +31,7 @@ type IPList struct {
 	Description           string     `json:"description,omitempty"`
 	ExternalDataReference string     `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string     `json:"external_data_set,omitempty"`
+	FQDNs                 []*FQDN    `json:"fqdns,omitempty"`
 	Href                  string     `json:"href,omitempty"`
 	IPRanges              []*IPRange `json:"ip_ranges,omitempty"`
 	Name                  string     `json:"name,omitempty"`
