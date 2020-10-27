@@ -326,7 +326,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 
 // BulkWorkload takes a bulk action on an array of workloads.
 // Method must be create, update, or delete
-func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, error) {
+func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool) ([]APIResponse, error) {
 	var apiResps []APIResponse
 	var err error
 
@@ -363,7 +363,11 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, 
 	}
 
 	// Figure out how many API calls we need to make
+
 	numAPICalls := int(math.Ceil(float64(len(workloads)) / 1000))
+	if stdoutLogs {
+		fmt.Printf("[INFO] - Bulk API actions happen in 1,000 workload chunks. %d %s calls will be required to process the %d workloads.\r\n", numAPICalls, method, len(workloads))
+	}
 
 	// Build the array to be passed to the API
 	apiArrays := [][]Workload{}
@@ -378,7 +382,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, 
 	}
 
 	// Call the API for each array
-	for _, apiArray := range apiArrays {
+	for i, apiArray := range apiArrays {
 		workloadsJSON, err := json.Marshal(apiArray)
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
@@ -388,6 +392,9 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string) ([]APIResponse, 
 		// fmt.Println(string(workloadsJSON))
 
 		api, err := apicall("PUT", apiURL.String(), *p, workloadsJSON, false)
+		if stdoutLogs {
+			fmt.Printf("[INFO] - API Call %d of %d - complete - status code %d.\r\n", i+1, numAPICalls, api.StatusCode)
+		}
 
 		apiResps = append(apiResps, api)
 
