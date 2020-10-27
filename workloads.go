@@ -177,6 +177,54 @@ func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
 	return workloads, api, nil
 }
 
+// GetAllWorkloadsQP returns a slice of workloads in the Illumio PCE.
+// The first API call to the PCE does not use the async option.
+// If the array length is >=500, it re-runs with async.
+// QueryParameters can be passed as a map of [key]=vale
+func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, APIResponse, error) {
+	var api APIResponse
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads")
+	if err != nil {
+		return nil, api, fmt.Errorf("get all workloads - %s", err)
+	}
+
+	// Set the query parameters
+	for key, value := range queryParameters {
+		q := apiURL.Query()
+		q.Set(key, value)
+		apiURL.RawQuery = q.Encode()
+	}
+
+	// Call the API
+	fmt.Println(apiURL.String())
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	if err != nil {
+		return nil, api, fmt.Errorf("get all workloads - %s", err)
+	}
+
+	var workloads []Workload
+	json.Unmarshal([]byte(api.RespBody), &workloads)
+
+	// If length is 500, re-run with async
+	if len(workloads) >= 500 {
+		// Call async
+		api, err = apicall("GET", apiURL.String(), *p, nil, true)
+		if err != nil {
+			return nil, api, fmt.Errorf("get all workloads - %s", err)
+		}
+		// Unmarshal response to asyncWklds and return
+		var asyncWklds []Workload
+		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
+
+		return asyncWklds, api, nil
+	}
+
+	// Return if less than 500
+	return workloads, api, nil
+}
+
 // GetWkldByHref returns the workload with a specific href
 func (p *PCE) GetWkldByHref(href string) (Workload, APIResponse, error) {
 	// Build the API URL
