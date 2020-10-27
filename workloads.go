@@ -198,7 +198,6 @@ func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, 
 	}
 
 	// Call the API
-	fmt.Println(apiURL.String())
 	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
 		return nil, api, fmt.Errorf("get all workloads - %s", err)
