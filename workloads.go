@@ -413,7 +413,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 
 	numAPICalls := int(math.Ceil(float64(len(workloads)) / 1000))
 	if stdoutLogs {
-		fmt.Printf("[INFO] - Bulk API actions happen in 1,000 workload chunks. %d %s calls will be required to process the %d workloads.\r\n", numAPICalls, method, len(workloads))
+		fmt.Printf("%s [INFO] - Bulk API actions happen in 1,000 workload chunks. %d %s calls will be required to process the %d workloads.\r\n", time.Now().Format("2006-01-02 15:04:05 "), numAPICalls, method, len(workloads))
 	}
 
 	// Build the array to be passed to the API
@@ -440,7 +440,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 
 		api, err := apicall("PUT", apiURL.String(), *p, workloadsJSON, false)
 		if stdoutLogs {
-			fmt.Printf("[INFO] - API Call %d of %d - complete - status code %d.\r\n", i+1, numAPICalls, api.StatusCode)
+			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
 		}
 
 		apiResps = append(apiResps, api)
