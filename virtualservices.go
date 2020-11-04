@@ -50,10 +50,11 @@ type Network struct {
 // GetAllVirtualServices returns a slice of all Virtual services of a
 // specific provision status in the Illumio PCE.
 //
-// The pvoision status must be "draft" or "active".
+// The queryParameters are map["parameter"]="value" (e.g., queryParameters["name"]="name123")
+// The provision status must be "draft" or "active".
 // The first call does not use the async option.
 // If the response array length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, APIResponse, error) {
+func (p *PCE) GetAllVirtualServices(queryParameters map[string]string, provisionStatus string) ([]VirtualService, APIResponse, error) {
 	var api APIResponse
 
 	provisionStatus = strings.ToLower(provisionStatus)
@@ -65,6 +66,13 @@ func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, A
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
 	if err != nil {
 		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
+	}
+
+	// Set the query parameters
+	for key, value := range queryParameters {
+		q := apiURL.Query()
+		q.Set(key, value)
+		apiURL.RawQuery = q.Encode()
 	}
 
 	// Call the API
@@ -92,6 +100,24 @@ func (p *PCE) GetAllVirtualServices(provisionStatus string) ([]VirtualService, A
 
 	// Return if there are less than 500
 	return virtualServices, api, nil
+}
+
+// GetVirtualServiceByName returns a single Virtual Service that matches the name
+// Using the queryParameters in GetAllVirtualServices reports partial matches on name values
+// This method only returns a single value for exact match.
+func (p *PCE) GetVirtualServiceByName(name string, provisionStatus string) (VirtualService, APIResponse, error) {
+	qp := map[string]string{"name": name}
+	vsMatches, api, err := p.GetAllVirtualServices(qp, provisionStatus)
+	if err != nil {
+		return VirtualService{}, api, err
+	}
+	for _, vs := range vsMatches {
+		if vs.Name == name {
+			return vs, api, nil
+		}
+	}
+	return VirtualService{}, api, nil
+
 }
 
 // CreateVirtualService creates a new virtual service in the Illumio PCE.
