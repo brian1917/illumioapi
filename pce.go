@@ -71,7 +71,7 @@ func (p *PCE) Load(provisionStatus string) error {
 	}
 
 	// Virtual services
-	virtualServices, _, err := p.GetAllVirtualServices(provisionStatus)
+	virtualServices, _, err := p.GetAllVirtualServices(nil, provisionStatus)
 	if err != nil {
 		return fmt.Errorf("getting virtual services - %s", err)
 	}
