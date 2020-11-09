@@ -27,14 +27,16 @@ type Consumers struct {
 
 // ConsumingSecurityPrincipals - more info to follow
 type ConsumingSecurityPrincipals struct {
-	Actors      []*Actors     `json:"actors,omitempty"`
-	Description string        `json:"description,omitempty"`
-	Enabled     bool          `json:"enabled,omitempty"`
-	Href        string        `json:"href,omitempty"`
-	IPVersion   string        `json:"ip_version,omitempty"`
-	Statements  []*Statements `json:"statements,omitempty"`
-	Name        string        `json:"name,omitempty"`
-	SID         string        `json:"sid,omitempty"`
+	Actors        []*Actors     `json:"actors,omitempty"`
+	Deleted       bool          `json:"deleted,omitempty"`
+	Description   string        `json:"description,omitempty"`
+	Enabled       bool          `json:"enabled,omitempty"`
+	Href          string        `json:"href,omitempty"`
+	IPVersion     string        `json:"ip_version,omitempty"`
+	Statements    []*Statements `json:"statements,omitempty"`
+	Name          string        `json:"name,omitempty"`
+	SID           string        `json:"sid,omitempty"`
+	UsedByRuleSet bool          `json:"used_by_ruleset,omitempty"`
 }
 
 // IngressServices - more info to follow
@@ -99,7 +101,7 @@ type Rule struct {
 	DeletedAt                   string                         `json:"deleted_at,omitempty"`
 	DeletedBy                   *DeletedBy                     `json:"deleted_by,omitempty"`
 	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
-	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
+	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
 	Description                 string                         `json:"description,omitempty"`
 	Enabled                     bool                           `json:"enabled"`
 	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
