@@ -35,6 +35,11 @@ func (p *PCE) GetAllServiceBindings(virtualService VirtualService) ([]ServiceBin
 		return nil, api, fmt.Errorf("get all service bindings - %s", err)
 	}
 
+	// Set the query parameters
+	q := apiURL.Query()
+	q.Set("virtual_service", virtualService.Href)
+	apiURL.RawQuery = q.Encode()
+
 	// Call the API
 	api, err = apicall("GET", apiURL.String(), *p, nil, false)
 	if err != nil {
