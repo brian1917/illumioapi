@@ -11,7 +11,7 @@ import (
 
 // LabelGroup represents a Label Group in the Illumio PCE
 type LabelGroup struct {
-	Description           string       `json:"description,omitempty"`
+	Description           string       `json:"description"`
 	ExternalDataReference string       `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Href                  string       `json:"href,omitempty"`
@@ -80,6 +80,74 @@ func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIRespon
 
 	// Return if less than 500
 	return labelGroups, api, nil
+}
+
+// CreateLabelGroup creates a new Label Group in the Illumio PCE.
+//
+// The function will remove properties not in the POST schema
+func (p *PCE) CreateLabelGroup(labelGroup LabelGroup) (LabelGroup, APIResponse, error) {
+	var newLabelGroup LabelGroup
+	var api APIResponse
+	var err error
+
+	// Sanitize the Label Group
+	labelGroup.Href = ""
+	labelGroup.Usage = nil
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/label_groups")
+	if err != nil {
+		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
+	}
+
+	// Call the API
+	labelGroupJSON, err := json.Marshal(labelGroup)
+	if err != nil {
+		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
+	}
+	api, err = apicall("POST", apiURL.String(), *p, labelGroupJSON, false)
+	if err != nil {
+		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
+	}
+
+	// Unmarshal response to struct
+	json.Unmarshal([]byte(api.RespBody), &newLabelGroup)
+
+	return newLabelGroup, api, nil
+}
+
+// UpdateLabelGroup updates an existing Label Group in the Illumio PCE.
+//
+// The provided Label Group struct must include an Href.
+// The function will remove properties not included in the PUT schema.
+func (p *PCE) UpdateLabelGroup(labelGroup LabelGroup) (APIResponse, error) {
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + labelGroup.Href)
+	if err != nil {
+		return api, fmt.Errorf("update label group - %s", err)
+	}
+
+	// Remove fields that should be empty for the PUT schema
+	labelGroup.Href = ""
+	labelGroup.Usage = nil
+	labelGroup.Key = ""
+
+	// Marshal JSON
+	labelGroupJSON, err := json.Marshal(labelGroup)
+	if err != nil {
+		return api, fmt.Errorf("update label group - %s", err)
+	}
+
+	// Call the API
+	api, err = apicall("PUT", apiURL.String(), *p, labelGroupJSON, false)
+	if err != nil {
+		return api, fmt.Errorf("update label group - %s", err)
+	}
+
+	return api, nil
 }
 
 // GetLabelGroupMapName sets the LabelGroupMapName parameter of the PCE
