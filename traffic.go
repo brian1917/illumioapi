@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -130,9 +131,9 @@ type TimestampRange struct {
 
 // TrafficQuery is the struct to be passed to the GetTrafficAnalysis function
 type TrafficQuery struct {
-	SourcesInclude      []string
+	SourcesInclude      [][]string
 	SourcesExclude      []string
-	DestinationsInclude []string
+	DestinationsInclude [][]string
 	DestinationsExclude []string
 	// PortProtoInclude and PortProtoExclude entries should be in the format of [port, protocol]
 	// Example [80, 6] is Port 80 TCP.
@@ -168,100 +169,120 @@ type UploadFlowResults struct {
 	TotalFlowsInCSV int
 }
 
+//
+func processHrefList() {
+
+}
+
 // GetTrafficAnalysis gets flow data from Explorer.
 func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
 	var api APIResponse
 
-	// Initialize arrays using "make" so JSON is marshaled with empty arrays and not null values to meet Illumio API spec
-	sourceInc := make([]Include, 0)
-	destInc := make([]Include, 0)
+	// Includes
 
-	sourceExcl := make([]Exclude, 0)
-	destExcl := make([]Exclude, 0)
+	// Create the two Include slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
+	sourceInc, destInc := make([][]Include, 0), make([][]Include, 0)
 
-	// Process source include, destination include, source exclude, and destination exclude
-	queryLists := [][]string{q.SourcesInclude, q.DestinationsInclude, q.SourcesExclude, q.DestinationsExclude}
+	// Populate a slice with our provided query lists
+	includeQueryLists := [][][]string{q.SourcesInclude, q.DestinationsInclude}
 
-	// Start counter
-	i := 0
+	// Create a slice of pointers to the newly created slices. So we can fill in the iterations.
+	inclTargets := []*[][]Include{&sourceInc, &destInc}
 
-	// For each list there are 4 possibilities: empty, label, workload, ipaddress
-	for _, queryList := range queryLists {
+	// Iterate through the q.SourcesInclude (n=0) and q.DestinationsInclude (n=1)
+	for n, includeQueryList := range includeQueryLists {
 
-		// Labels
-		if len(queryList) > 0 {
-			if strings.Contains(queryList[0], "label") == true {
-				for _, label := range queryLists[i] {
-					queryLabel := Label{Href: label}
-					switch i {
-					case 0:
-						sourceInc = append(sourceInc, Include{Label: &queryLabel})
-					case 1:
-						destInc = append(destInc, Include{Label: &queryLabel})
-					case 2:
-						sourceExcl = append(sourceExcl, Exclude{Label: &queryLabel})
-					case 3:
-						destExcl = append(destExcl, Exclude{Label: &queryLabel})
-					}
-
-				}
-
-				// Workloads
-			} else if strings.Contains(queryList[0], "workload") == true {
-				for _, workload := range queryLists[i] {
-					queryWorkload := Workload{Href: workload}
-					switch i {
-					case 0:
-						sourceInc = append(sourceInc, Include{Workload: &queryWorkload})
-					case 1:
-						destInc = append(destInc, Include{Workload: &queryWorkload})
-					case 2:
-						sourceExcl = append(sourceExcl, Exclude{Workload: &queryWorkload})
-					case 3:
-						destExcl = append(destExcl, Exclude{Workload: &queryWorkload})
-					}
-
-				}
-
-				// IP Lists
-			} else if strings.Contains(queryList[0], "iplist") == true {
-				for _, iplist := range queryLists[i] {
-					queryIPList := IPList{Href: iplist}
-					switch i {
-					case 0:
-						sourceInc = append(sourceInc, Include{IPList: &queryIPList})
-					case 1:
-						destInc = append(destInc, Include{IPList: &queryIPList})
-					case 2:
-						sourceExcl = append(sourceExcl, Exclude{IPList: &queryIPList})
-					case 3:
-						destExcl = append(destExcl, Exclude{IPList: &queryIPList})
-					}
-
-				}
-
-				// Assume all else are IP addresses (API will error when needed)
-			} else if len(queryList[0]) > 0 {
-				for _, ipAddress := range queryLists[i] {
-					queryIPAddress := IPAddress{Value: ipAddress}
-					switch i {
-					case 0:
-						sourceInc = append(sourceInc, Include{IPAddress: &queryIPAddress})
-					case 1:
-						destInc = append(destInc, Include{IPAddress: &queryIPAddress})
-					case 2:
-						sourceExcl = append(sourceExcl, Exclude{IPAddress: &queryIPAddress})
-					case 3:
-						destExcl = append(destExcl, Exclude{IPAddress: &queryIPAddress})
-					}
-				}
-			}
+		// Set the PCE object type for the includes
+		var pceObjectType string
+		if n == 0 {
+			pceObjectType = ParseObjectType(includeQueryList[0][0])
 		}
 
-		i++
+		// Iterate through each includeArray
+		for _, includeArray := range includeQueryList {
+
+			// Create the inside array
+			insideInc := []Include{}
+
+			// Iterate through each and fill the inside Array
+			for _, a := range includeArray {
+				switch pceObjectType {
+				case "label":
+					insideInc = append(insideInc, Include{Label: &Label{Href: a}})
+				case "workload":
+					insideInc = append(insideInc, Include{Workload: &Workload{Href: a}})
+				case "iplist":
+					insideInc = append(insideInc, Include{IPList: &IPList{Href: a}})
+				case "unknown":
+					if net.ParseIP(a) == nil {
+						v := "source"
+						if n != 0 {
+							v = "destination"
+						}
+						return nil, api, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
+					}
+					insideInc = append(insideInc, Include{IPAddress: &IPAddress{Value: a}})
+				}
+			}
+
+			// Append the inside array to the correct outter array
+			*inclTargets[n] = append(*inclTargets[n], insideInc)
+
+		}
 	}
 
-	// Get the service data ready
+	// Excludes
+
+	// Create the two Exclude slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
+	sourceExcl, destExcl := make([]Exclude, 0), make([]Exclude, 0)
+
+	// Create a slice of pointers to the newly created slices. So we can fill in the iterations.
+	exclTargets := []*[]Exclude{&sourceExcl, &destExcl}
+
+	// Populate a slice with our provided query lists
+	excludeQueryLists := [][]string{q.SourcesExclude, q.DestinationsExclude}
+
+	for n, excludeQueryList := range excludeQueryLists {
+		for i, exclude := range excludeQueryList {
+			// Set the type based on the first entry
+			var pceObjType string
+			if i == 0 {
+				pceObjType = ParseObjectType(exclude)
+			}
+
+			// If it's a different object type, we need to error.
+			if ParseObjectType(exclude) != pceObjType {
+				v := "source"
+				if n != 0 {
+					v = "destination"
+				}
+				return nil, api, fmt.Errorf("provided %s excludes are not of the same type", v)
+			}
+
+			// Add to the exclude
+			switch pceObjType {
+			case "label":
+				*exclTargets[n] = append(*exclTargets[n], Exclude{Label: &Label{Href: exclude}})
+			case "workload":
+				*exclTargets[n] = append(*exclTargets[n], Exclude{Workload: &Workload{Href: exclude}})
+			case "iplist":
+				*exclTargets[n] = append(*exclTargets[n], Exclude{IPList: &IPList{Href: exclude}})
+			case "unknown":
+				if net.ParseIP(exclude) == nil {
+					v := "source"
+					if n != 0 {
+						v = "destination"
+					}
+					return nil, api, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
+				}
+				*exclTargets[n] = append(*exclTargets[n], Exclude{IPAddress: &IPAddress{Value: exclude}})
+			}
+		}
+	}
+
+	// Servoces
+
+	// Create the array
 	serviceInclude := make([]Include, 0)
 	serviceExclude := make([]Exclude, 0)
 
@@ -313,10 +334,10 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 	// Build the TrafficAnalysisRequest struct
 	traffic := TrafficAnalysisRequest{
 		Sources: Sources{
-			Include: [][]Include{sourceInc},
+			Include: sourceInc,
 			Exclude: sourceExcl},
 		Destinations: Destinations{
-			Include: [][]Include{destInc},
+			Include: destInc,
 			Exclude: destExcl},
 		ExplorerServices: ExplorerServices{
 			Include: serviceInclude,
@@ -347,11 +368,10 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 
 	// Call the API
 	api, err = apicall("POST", apiURL.String(), *p, jsonPayload, false)
+	api.ReqBody = string(jsonPayload)
 	if err != nil {
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
-
-	api.ReqBody = string(jsonPayload)
 
 	// Unmarshal response to struct
 	json.Unmarshal([]byte(api.RespBody), &trafficResponses)
