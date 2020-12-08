@@ -132,3 +132,29 @@ func (p *PCE) FindObject(href string) (key, name string, err error) {
 
 	return "nil", "nil", fmt.Errorf("object not found")
 }
+
+// ParseObjectType takes an href and returns one of the following options: iplist, label, label_group, virtual_service, workload, or unknown.
+func ParseObjectType(href string) string {
+	// IPLists
+	if strings.Contains(href, "/ip_lists/") {
+		return "iplist"
+	}
+	// Labels
+	if strings.Contains(href, "/labels/") {
+		return "label"
+	}
+	// Label Groups
+	if strings.Contains(href, "/label_groups/") {
+		return "label_group"
+	}
+	// Virtual Services
+	if strings.Contains(href, "/virtual_services/") {
+		return "virtual_service"
+	}
+	// Workloads
+	if strings.Contains(href, "/workloads/") {
+		return "workload"
+	}
+	return "unknown"
+
+}
