@@ -181,7 +181,8 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 	// Includes
 
 	// Create the two Include slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
-	sourceInc, destInc := make([][]Include, 0), make([][]Include, 0)
+	sourceInc := make([][]Include, 0)
+	destInc := make([][]Include, 0)
 
 	// Populate a slice with our provided query lists
 	includeQueryLists := [][][]string{q.SourcesInclude, q.DestinationsInclude}
@@ -192,41 +193,39 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 	// Iterate through the q.SourcesInclude (n=0) and q.DestinationsInclude (n=1)
 	for n, includeQueryList := range includeQueryLists {
 
-		// Set the PCE object type for the includes
-		var pceObjectType string
-		if n == 0 {
-			pceObjectType = ParseObjectType(includeQueryList[0][0])
-		}
-
 		// Iterate through each includeArray
 		for _, includeArray := range includeQueryList {
+			if len(includeArray) > 0 {
 
-			// Create the inside array
-			insideInc := []Include{}
+				// Create the inside array
+				insideInc := []Include{}
 
-			// Iterate through each and fill the inside Array
-			for _, a := range includeArray {
-				switch pceObjectType {
-				case "label":
-					insideInc = append(insideInc, Include{Label: &Label{Href: a}})
-				case "workload":
-					insideInc = append(insideInc, Include{Workload: &Workload{Href: a}})
-				case "iplist":
-					insideInc = append(insideInc, Include{IPList: &IPList{Href: a}})
-				case "unknown":
-					if net.ParseIP(a) == nil {
-						v := "source"
-						if n != 0 {
-							v = "destination"
+				// Iterate through each and fill the inside Array
+				for _, a := range includeArray {
+					switch ParseObjectType(a) {
+					case "label":
+						insideInc = append(insideInc, Include{Label: &Label{Href: a}})
+					case "workload":
+						insideInc = append(insideInc, Include{Workload: &Workload{Href: a}})
+					case "iplist":
+						insideInc = append(insideInc, Include{IPList: &IPList{Href: a}})
+					case "unknown":
+						if net.ParseIP(a) == nil {
+							v := "source"
+							if n != 0 {
+								v = "destination"
+							}
+							return nil, api, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
 						}
-						return nil, api, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
+						insideInc = append(insideInc, Include{IPAddress: &IPAddress{Value: a}})
 					}
-					insideInc = append(insideInc, Include{IPAddress: &IPAddress{Value: a}})
 				}
-			}
 
-			// Append the inside array to the correct outter array
-			*inclTargets[n] = append(*inclTargets[n], insideInc)
+				// Append the inside array to the correct outter array
+				*inclTargets[n] = append(*inclTargets[n], insideInc)
+			} else {
+				*inclTargets[n] = append(*inclTargets[n], make([]Include, 0))
+			}
 
 		}
 	}
@@ -686,4 +685,36 @@ func clearBom(r io.Reader) io.Reader {
 		buf.Discard(3)
 	}
 	return buf
+}
+
+// DedupeExplorerTraffic takes two traffic responses and returns a de-duplicated result set
+func DedupeExplorerTraffic(first, second []TrafficAnalysis) []TrafficAnalysis {
+	var new []TrafficAnalysis
+
+	firstMap := make(map[string]bool)
+	for _, entry := range first {
+		firstMap[createExplorerMapKey(entry)] = true
+		new = append(new, entry)
+	}
+
+	for _, entry := range second {
+		if !firstMap[createExplorerMapKey(entry)] {
+			new = append(new, entry)
+		}
+	}
+
+	return new
+}
+
+func createExplorerMapKey(entry TrafficAnalysis) string {
+	key := entry.Dst.FQDN + entry.Dst.IP
+	if entry.Dst.Workload != nil {
+		key = key + entry.Dst.Workload.Hostname
+	}
+	key = key + strconv.Itoa(entry.ExpSrv.Port) + entry.ExpSrv.Process + strconv.Itoa(entry.ExpSrv.Proto) + entry.ExpSrv.User + entry.ExpSrv.WindowsService + strconv.Itoa(entry.NumConnections) + entry.PolicyDecision + entry.Src.FQDN + entry.Src.IP
+	if entry.Src.Workload != nil {
+		key = key + entry.Src.Workload.Hostname
+	}
+	key = key + entry.TimestampRange.FirstDetected + entry.TimestampRange.LastDetected + entry.Transmission
+	return key
 }
