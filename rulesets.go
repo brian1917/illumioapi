@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // Actors - more info to follow
@@ -275,4 +276,10 @@ func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	}
 
 	return api, nil
+}
+
+func (r *Rule) GetRuleSetHrefFromRuleHref() string {
+	x := strings.Split(r.Href, "/")
+	x = x[:len(x)-2]
+	return strings.Join(x, "/")
 }
