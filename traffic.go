@@ -390,7 +390,7 @@ func (p *PCE) IterateTraffic(q TrafficQuery, stdout bool) ([]TrafficAnalysis, er
 	var t []TrafficAnalysis
 	json.Unmarshal([]byte(i), &t)
 	if stdout {
-		fmt.Printf("[INFO] - Final combined traffic export: %d records\r\n", len(t))
+		fmt.Printf("%s [INFO] - Final combined traffic export: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(t))
 	}
 	return t, nil
 
@@ -400,7 +400,7 @@ func (p *PCE) IterateTraffic(q TrafficQuery, stdout bool) ([]TrafficAnalysis, er
 var Threshold int
 
 // IterateTrafficJString returns the combined JSON output from an iterative exlplorer query.
-// The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
+// The iterative query starts by running a blank explorer query. If the results are over threshold, it queries again by TCP, UDP, and other.
 // If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
 func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error) {
 
@@ -412,19 +412,19 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	// Get all explorer data to see where we are starting
 	t, a, _ := p.GetTrafficAnalysis(q)
 	if stdout {
-		fmt.Printf("[INFO] - Initial traffic query: %d records\r\n", len(t))
+		fmt.Printf("%s [INFO] - Initial traffic query: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(t))
 	}
 
 	// If the length is under Threshold return it and be done
 	if len(t) < Threshold {
 		if stdout {
-			fmt.Println("[INFO] - Traffic querying completed")
+			fmt.Printf("%s [INFO] - Traffic querying completed\r\n", time.Now().Format("2006-01-02 15:04:05 "))
 		}
 		return a.RespBody, nil
 	}
 
 	if stdout {
-		fmt.Printf("[INFO] - Traffic records close to threshold (%d) - beginning query by protocol...\r\n", Threshold)
+		fmt.Printf("%s [INFO] - Traffic records close to threshold (%d) - beginning query by protocol...\r\n", time.Now().Format("2006-01-02 15:04:05 "), Threshold)
 	}
 
 	// If we are over Threshold, run the query again for TCP, UDP, and everything else.
@@ -435,7 +435,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("[INFO] - TCP traffic query: %d records\r\n", len(tcpT))
+		fmt.Printf("%s [INFO] - TCP traffic query: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(tcpT))
 	}
 	// UDP
 	q.PortProtoInclude = [][2]int{[2]int{0, 17}}
@@ -444,7 +444,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("[INFO] - UDP traffic query: %d records\r\n", len(udpT))
+		fmt.Printf("%s [INFO] - UDP traffic query: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(udpT))
 	}
 	// Other Protos
 	q.PortProtoInclude = nil
@@ -454,7 +454,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		return "", err
 	}
 	if stdout {
-		fmt.Printf("[INFO] - Other traffic query: %d records\r\n", len(otherProtoT))
+		fmt.Printf("%s [INFO] - Other traffic query: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(otherProtoT))
 	}
 
 	// Create a variable to hold final JSON strings and start with other protocols
@@ -463,7 +463,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	// Process if TCP is over Threshold
 	if len(tcpT) > Threshold {
 		if stdout {
-			fmt.Printf("[INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", Threshold)
+			fmt.Printf("%s [INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", time.Now().Format("2006-01-02 15:04:05 "), Threshold)
 		}
 		q.PortProtoInclude = [][2]int{[2]int{0, 6}}
 		q.PortProtoExclude = nil
@@ -479,7 +479,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	// Process if UDP is over Threshold
 	if len(udpT) > Threshold {
 		if stdout {
-			fmt.Printf("[INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", Threshold)
+			fmt.Printf("%s [INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", time.Now().Format("2006-01-02 15:04:05 "), Threshold)
 		}
 		q.PortProtoInclude = [][2]int{[2]int{0, 17}}
 		q.PortProtoExclude = nil
@@ -496,9 +496,6 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	var FinalSet []TrafficAnalysis
 	s := combineTrafficBodies(finalJSONSet)
 	json.Unmarshal([]byte(s), &FinalSet)
-	if stdout {
-		fmt.Printf("[INFO] - Final combined traffic export: %d records\r\n", len(FinalSet))
-	}
 
 	// Combine sets and return
 	return combineTrafficBodies(finalJSONSet), nil
@@ -531,12 +528,12 @@ func iterateOverPorts(p PCE, tq TrafficQuery, protoResults []TrafficAnalysis, st
 	if protoResults[0].ExpSrv.Proto == 6 {
 		proto = "TCP"
 		protoNum = 6
-		futureExclude = append(futureExclude, [2]int{0, 17})
+		futureExclude = append(futureExclude, [2]int{0, 17}, [2]int{0, 1})
 	}
 	if protoResults[0].ExpSrv.Proto == 17 {
 		proto = "UDP"
 		protoNum = 17
-		futureExclude = append(futureExclude, [2]int{0, 6})
+		futureExclude = append(futureExclude, [2]int{0, 6}, [2]int{0, 1})
 	}
 
 	// Clear the exclude
@@ -555,7 +552,7 @@ func iterateOverPorts(p PCE, tq TrafficQuery, protoResults []TrafficAnalysis, st
 		iterator++
 		if stdout {
 			fmt.Printf("\r                                            ")
-			fmt.Printf("\rQuerying %s Port %d - %d of %d (%d%%)", proto, i, iterator, len(ports), int(iterator*100/len(ports)))
+			fmt.Printf("\r%s [INFO] - Querying %s Port %d - %d of %d (%d%%)", time.Now().Format("2006-01-02 15:04:05 "), proto, i, iterator, len(ports), int(iterator*100/len(ports)))
 		}
 		tq.PortProtoInclude = [][2]int{[2]int{i, protoNum}}
 		_, a, err := p.GetTrafficAnalysis(tq)
@@ -569,13 +566,13 @@ func iterateOverPorts(p PCE, tq TrafficQuery, protoResults []TrafficAnalysis, st
 	// Run one more time exclude all previous queries
 	if stdout {
 		fmt.Printf("\r                                                 ")
-		fmt.Printf("\rCompleted querying %d %s ports\r\n", len(ports), proto)
+		fmt.Printf("\r%s [INFO] - Completed querying %d %s ports                      \r\n", time.Now().Format("2006-01-02 15:04:05 "), len(ports), proto)
 	}
 	tq.PortProtoInclude = [][2]int{}
 	tq.PortProtoExclude = futureExclude // Problem is right here. Grabbing UDP
 	_, a, err := p.GetTrafficAnalysis(tq)
 	if stdout {
-		fmt.Printf("Completed querying all other %s ports not included in original set.\r\n", proto)
+		fmt.Printf("%s [INFO] - Completed querying all other %s ports not included in original set.\r\n", time.Now().Format("2006-01-02 15:04:05 "), proto)
 	}
 	if err != nil {
 		return "", err
