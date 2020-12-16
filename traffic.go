@@ -242,13 +242,12 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 	excludeQueryLists := [][]string{q.SourcesExclude, q.DestinationsExclude}
 
 	for n, excludeQueryList := range excludeQueryLists {
+		var pceObjType string
 		for i, exclude := range excludeQueryList {
 			// Set the type based on the first entry
-			var pceObjType string
 			if i == 0 {
 				pceObjType = ParseObjectType(exclude)
 			}
-
 			// If it's a different object type, we need to error.
 			if ParseObjectType(exclude) != pceObjType {
 				v := "source"
