@@ -17,16 +17,20 @@ type CompatibilityReport struct {
 
 // QualifyTest is part of compatibility report
 type QualifyTest struct {
-	RequiredPackages          []string `json:"required_packages"`
-	RequiredPackagesInstalled bool     `json:"required_packages_installed"`
 	Status                    string   `json:"status"`
-	RequiredPackagesMissing   []string `json:"required_packages_missing"`
-	Ipv4ForwardingEnabled     string   `json:"ipv4_forwarding_enabled"`
+	IpsecServiceEnabled       string   `json:"ipsec_service_enabled"` // Using a string to differentiate between false and empty
+	Ipv4ForwardingEnabled     bool     `json:"ipv4_forwarding_enabled"`
 	Ipv4ForwardingPktCnt      int      `json:"ipv4_forwarding_pkt_cnt"`
 	IptablesRuleCnt           int      `json:"iptables_rule_cnt"`
-	Ipv6GlobalScope           string   `json:"ipv6_global_scope"`
+	Ipv6GlobalScope           bool     `json:"ipv6_global_scope"`
 	Ipv6ActiveConnCnt         int      `json:"ipv6_active_conn_cnt"`
 	IP6TablesRuleCnt          int      `json:"ip6tables_rule_cnt"`
+	RoutingTableConflict      bool     `json:"routing_table_conflict"`
+	IPv6Enabled               bool     `json:"IPv6_enabled"`
+	UnwantedNics              bool     `json:"Unwanted_nics"`
+	GroupPolicy               bool     `json:"Group_policy"`
+	RequiredPackagesInstalled string   `json:"required_packages_installed"` // Using a string to differentiate between false and empty
+	RequiredPackagesMissing   []string `json:"required_packages_missing"`
 }
 
 // Results are the list of qualify tests
