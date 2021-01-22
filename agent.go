@@ -17,20 +17,20 @@ type CompatibilityReport struct {
 
 // QualifyTest is part of compatibility report
 type QualifyTest struct {
-	Status                    string   `json:"status"`
-	IpsecServiceEnabled       string   `json:"ipsec_service_enabled"` // Using a string to differentiate between false and empty
-	Ipv4ForwardingEnabled     bool     `json:"ipv4_forwarding_enabled"`
-	Ipv4ForwardingPktCnt      int      `json:"ipv4_forwarding_pkt_cnt"`
-	IptablesRuleCnt           int      `json:"iptables_rule_cnt"`
-	Ipv6GlobalScope           bool     `json:"ipv6_global_scope"`
-	Ipv6ActiveConnCnt         int      `json:"ipv6_active_conn_cnt"`
-	IP6TablesRuleCnt          int      `json:"ip6tables_rule_cnt"`
-	RoutingTableConflict      bool     `json:"routing_table_conflict"`
-	IPv6Enabled               bool     `json:"IPv6_enabled"`
-	UnwantedNics              bool     `json:"Unwanted_nics"`
-	GroupPolicy               bool     `json:"Group_policy"`
-	RequiredPackagesInstalled string   `json:"required_packages_installed"` // Using a string to differentiate between false and empty
-	RequiredPackagesMissing   []string `json:"required_packages_missing"`
+	Status                    *string   `json:"status"`
+	IpsecServiceEnabled       *string   `json:"ipsec_service_enabled"` // Using a string to differentiate between false and empty
+	Ipv4ForwardingEnabled     *string   `json:"ipv4_forwarding_enabled"`
+	Ipv4ForwardingPktCnt      *string   `json:"ipv4_forwarding_pkt_cnt"`
+	IptablesRuleCnt           *string   `json:"iptables_rule_cnt"`
+	Ipv6GlobalScope           *string   `json:"ipv6_global_scope"`
+	Ipv6ActiveConnCnt         *string   `json:"ipv6_active_conn_cnt"`
+	IP6TablesRuleCnt          *string   `json:"ip6tables_rule_cnt"`
+	RoutingTableConflict      *string   `json:"routing_table_conflict"`
+	IPv6Enabled               *string   `json:"IPv6_enabled"`
+	UnwantedNics              *string   `json:"Unwanted_nics"`
+	GroupPolicy               *string   `json:"Group_policy"`
+	RequiredPackagesInstalled *string   `json:"required_packages_installed"` // Using a string to differentiate between false and empty
+	RequiredPackagesMissing   *[]string `json:"required_packages_missing"`
 }
 
 // Results are the list of qualify tests
