@@ -86,7 +86,7 @@ type Workload struct {
 	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Hostname              string       `json:"hostname,omitempty"`
 	Href                  string       `json:"href,omitempty"`
-	IgnoredInterfaceNames []string     `json:"ignored_interface_names,omitempty"`
+	IgnoredInterfaceNames *[]string    `json:"ignored_interface_names,omitempty"`
 	Interfaces            []*Interface `json:"interfaces,omitempty"`
 	Labels                []*Label     `json:"labels,omitempty"` // This breaks the removing all labels
 	Name                  string       `json:"name,omitempty"`
