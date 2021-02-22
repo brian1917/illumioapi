@@ -603,13 +603,15 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 
 	// Iterate through CSV entries
 	for {
-		// Increment the counter
-		i++
 		// Read the line
 		line, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
+
+		// Increment the counter
+		i++
+
 		// Skip the headerline if we need to
 		if headerLine && i == 1 {
 			continue
