@@ -92,6 +92,9 @@ func (p *PCE) CreateServiceBinding(serviceBindings []ServiceBinding, virtualServ
 	if err != nil {
 		return newServBindings, api, fmt.Errorf("create service binding - %s", err)
 	}
+
+	api.ReqBody = string(sbJSON)
+
 	api, err = apicall("POST", apiURL.String(), *p, sbJSON, false)
 	if err != nil {
 		return newServBindings, api, fmt.Errorf("create servince binding - %s", err)

@@ -291,6 +291,7 @@ func (p *PCE) CreateWorkload(workload Workload) (Workload, APIResponse, error) {
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
 	}
+	api.ReqBody = string(workloadJSON)
 	api, err = apicall("POST", apiURL.String(), *p, workloadJSON, false)
 	if err != nil {
 		return newWL, api, fmt.Errorf("create workload - %s", err)
@@ -322,6 +323,7 @@ func (p *PCE) UpdateWorkload(workload Workload) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update workload - %s", err)
 	}
+	api.ReqBody = string(workloadJSON)
 
 	api, err = apicall("PUT", apiURL.String(), *p, workloadJSON, false)
 	if err != nil {
@@ -435,13 +437,11 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
 		}
 
-		// Uncomment this line if you want to print the JSON object
-		// fmt.Println(string(workloadsJSON))
-
 		api, err := apicall("PUT", apiURL.String(), *p, workloadsJSON, false)
 		if stdoutLogs {
 			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
 		}
+		api.ReqBody = string(workloadsJSON)
 
 		apiResps = append(apiResps, api)
 
@@ -716,6 +716,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 		}
 		// Make the API call and append the response to the results
 		api, err := apicall("PUT", apiURL.String(), *p, payload, false)
+		api.ReqBody = string(payload)
 		apiResps = append(apiResps, api)
 		if err != nil {
 			return apiResps, fmt.Errorf("unpair error - %s", err)

@@ -93,9 +93,10 @@ func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, 
 	if err != nil {
 		return APIResponse{}, err
 	}
+	api := APIResponse{ReqBody: string(pairProfileJSON)}
 
 	// Call the API
-	api, err := apicall("POST", apiURL.String(), *p, pairProfileJSON, false)
+	api, err = apicall("POST", apiURL.String(), *p, pairProfileJSON, false)
 	if err != nil {
 		return api, err
 	}

@@ -56,7 +56,9 @@ func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (APIResponse, error) 
 	if err != nil {
 		return APIResponse{}, err
 	}
-	api, err := apicall("POST", apiURL.String(), *p, provisionJSON, false)
+	api := APIResponse{ReqBody: string(provisionJSON)}
+
+	api, err = apicall("POST", apiURL.String(), *p, provisionJSON, false)
 	if err != nil {
 		return api, err
 	}

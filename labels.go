@@ -172,6 +172,7 @@ func (p *PCE) CreateLabel(label Label) (Label, APIResponse, error) {
 	if err != nil {
 		return newLabel, api, fmt.Errorf("create label - %s", err)
 	}
+	api.ReqBody = string(labelJSON)
 
 	// Call the API
 	api, err = apicall("POST", apiURL.String(), *p, labelJSON, false)
@@ -206,6 +207,7 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update label - %s", err)
 	}
+	api.ReqBody = string(labelJSON)
 
 	api, err = apicall("PUT", apiURL.String(), *p, labelJSON, false)
 	if err != nil {

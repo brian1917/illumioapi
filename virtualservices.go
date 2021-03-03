@@ -140,6 +140,9 @@ func (p *PCE) CreateVirtualService(virtualService VirtualService) (VirtualServic
 	if err != nil {
 		return newVirtualService, api, fmt.Errorf("create Virtual service - %s", err)
 	}
+
+	api.ReqBody = string(virtualServiceJSON)
+
 	api, err = apicall("POST", apiURL.String(), *p, virtualServiceJSON, false)
 	if err != nil {
 		return newVirtualService, api, fmt.Errorf("create Virtual service - %s", err)
@@ -172,6 +175,8 @@ func (p *PCE) UpdateVirtualService(virtualService VirtualService) (APIResponse, 
 	if err != nil {
 		return api, fmt.Errorf("update Virtual service - %s", err)
 	}
+
+	api.ReqBody = string(virtualServiceJSON)
 
 	api, err = apicall("PUT", apiURL.String(), *p, virtualServiceJSON, false)
 	if err != nil {
@@ -245,6 +250,7 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 		// fmt.Println(string(vsJson))
 
 		api, err := apicall("PUT", apiURL.String(), *p, vsJSON, false)
+		api.ReqBody = string(vsJSON)
 
 		apiResps = append(apiResps, api)
 

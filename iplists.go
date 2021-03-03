@@ -196,6 +196,7 @@ func (p *PCE) CreateIPList(ipList IPList) (IPList, APIResponse, error) {
 
 	// Call the API
 	ipListJSON, err := json.Marshal(ipList)
+	api.ReqBody = string(ipListJSON)
 	if err != nil {
 		return newIPList, api, fmt.Errorf("create iplist - %s", err)
 	}
@@ -238,6 +239,7 @@ func (p *PCE) UpdateIPList(iplist IPList) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update iplist - %s", err)
 	}
+	api.ReqBody = string(ipListJSON)
 
 	// Call the API
 	api, err = apicall("PUT", apiURL.String(), *p, ipListJSON, false)

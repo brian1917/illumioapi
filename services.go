@@ -112,6 +112,9 @@ func (p *PCE) CreateService(service Service) (Service, APIResponse, error) {
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
 	}
+
+	api.ReqBody = string(serviceJSON)
+
 	api, err = apicall("POST", apiURL.String(), *p, serviceJSON, false)
 	if err != nil {
 		return newService, api, fmt.Errorf("create service - %s", err)
@@ -147,6 +150,8 @@ func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update service - %s", err)
 	}
+
+	api.ReqBody = string(serviceJSON)
 
 	api, err = apicall("PUT", apiURL.String(), *p, serviceJSON, false)
 	if err != nil {

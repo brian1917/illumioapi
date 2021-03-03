@@ -213,6 +213,7 @@ func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIRe
 	if err != nil {
 		return login, append(a, apiResp), fmt.Errorf("LoginAPIKey - %s", err)
 	}
+	apiResp.ReqBody = string(postJSON)
 
 	// Marshal the response
 	var apiKey APIKey

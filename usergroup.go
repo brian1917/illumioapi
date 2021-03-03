@@ -61,6 +61,8 @@ func (p *PCE) CreateADUserGroup(g ConsumingSecurityPrincipals) (ConsumingSecurit
 		return ConsumingSecurityPrincipals{}, api, fmt.Errorf("CreateADUserGroup - %s", err)
 	}
 
+	api.ReqBody = string(userGroupJSON)
+
 	// Call the API
 	api, err = apicall("POST", apiURL.String(), *p, userGroupJSON, false)
 	if err != nil {
