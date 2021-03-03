@@ -81,15 +81,15 @@ type RuleSet struct {
 	CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
 	DeletedAt             string           `json:"deleted_at,omitempty"`
 	DeletedBy             *DeletedBy       `json:"deleted_by,omitempty"`
-	Description           string           `json:"description"`
-	Enabled               bool             `json:"enabled"`
-	ExternalDataReference interface{}      `json:"external_data_reference,omitempty"`
-	ExternalDataSet       interface{}      `json:"external_data_set,omitempty"`
+	Description           string           `json:"description,omitempty"`
+	Enabled               *bool            `json:"enabled,omitempty"`
+	ExternalDataReference string           `json:"external_data_reference,omitempty"`
+	ExternalDataSet       string           `json:"external_data_set,omitempty"`
 	Href                  string           `json:"href,omitempty"`
 	IPTablesRules         []*IPTablesRules `json:"ip_tables_rules,omitempty"`
-	Name                  string           `json:"name"`
-	Rules                 []*Rule          `json:"rules"`
-	Scopes                [][]*Scopes      `json:"scopes"`
+	Name                  string           `json:"name,omitempty"`
+	Rules                 []*Rule          `json:"rules,omitempty"`
+	Scopes                [][]*Scopes      `json:"scopes,omitempty"`
 	UpdateType            string           `json:"update_type,omitempty"`
 	UpdatedAt             string           `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
@@ -104,17 +104,17 @@ type Rule struct {
 	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
 	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
 	Description                 string                         `json:"description,omitempty"`
-	Enabled                     bool                           `json:"enabled"`
+	Enabled                     *bool                          `json:"enabled,omitempty"`
 	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
 	ExternalDataSet             string                         `json:"external_data_set,omitempty"`
 	Href                        string                         `json:"href,omitempty"`
-	IngressServices             []*IngressServices             `json:"ingress_services,omitempty"`
+	IngressServices             *[]*IngressServices            `json:"ingress_services,omitempty"`
 	Providers                   []*Providers                   `json:"providers,omitempty"`
 	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
-	SecConnect                  bool                           `json:"sec_connect"`
-	Stateless                   bool                           `json:"stateless"`
-	MachineAuth                 bool                           `json:"machine_auth"`
-	UnscopedConsumers           bool                           `json:"unscoped_consumers"`
+	SecConnect                  *bool                          `json:"sec_connect,omitempty"`
+	Stateless                   *bool                          `json:"stateless,omitempty"`
+	MachineAuth                 *bool                          `json:"machine_auth,omitempty"`
+	UnscopedConsumers           *bool                          `json:"unscoped_consumers,omitempty"`
 	UpdateType                  string                         `json:"update_type,omitempty"`
 	UpdatedAt                   string                         `json:"updated_at,omitempty"`
 	UpdatedBy                   *UpdatedBy                     `json:"updated_by,omitempty"`
@@ -166,7 +166,7 @@ func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, er
 	return rulesets, api, nil
 }
 
-// CreateRuleSet creates a new unmanaged workload in the Illumio PCE
+// CreateRuleSet creates a new ruleset in the Illumio PCE
 func (p *PCE) CreateRuleSet(rs RuleSet) (RuleSet, APIResponse, error) {
 	var newRS RuleSet
 	var api APIResponse
@@ -179,10 +179,11 @@ func (p *PCE) CreateRuleSet(rs RuleSet) (RuleSet, APIResponse, error) {
 	}
 
 	// Call the API
-	ruleSetJSON, err := json.Marshal(newRS)
+	ruleSetJSON, err := json.Marshal(rs)
 	if err != nil {
 		return newRS, api, fmt.Errorf("create ruleset - %s", err)
 	}
+	api.ReqBody = string(ruleSetJSON)
 	api, err = apicall("POST", apiURL.String(), *p, ruleSetJSON, false)
 	if err != nil {
 		return newRS, api, fmt.Errorf("create ruleset - %s", err)
@@ -228,6 +229,7 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
 	}
+	api.ReqBody = string(ruleJSON)
 
 	api, err = apicall("POST", apiURL.String(), *p, ruleJSON, false)
 	if err != nil {
@@ -268,6 +270,7 @@ func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update rule - %s", err)
 	}
+	api.ReqBody = string(ruleJSON)
 
 	// Call the API
 	api, err = apicall("PUT", apiURL.String(), *p, ruleJSON, false)
