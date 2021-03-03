@@ -11,7 +11,7 @@ import (
 
 // LabelGroup represents a Label Group in the Illumio PCE
 type LabelGroup struct {
-	Description           string       `json:"description"`
+	Description           string       `json:"description,omitempty"`
 	ExternalDataReference string       `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Href                  string       `json:"href,omitempty"`
@@ -105,6 +105,7 @@ func (p *PCE) CreateLabelGroup(labelGroup LabelGroup) (LabelGroup, APIResponse, 
 	if err != nil {
 		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
 	}
+	api.ReqBody = string(labelGroupJSON)
 	api, err = apicall("POST", apiURL.String(), *p, labelGroupJSON, false)
 	if err != nil {
 		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
@@ -140,6 +141,7 @@ func (p *PCE) UpdateLabelGroup(labelGroup LabelGroup) (APIResponse, error) {
 	if err != nil {
 		return api, fmt.Errorf("update label group - %s", err)
 	}
+	api.ReqBody = string(labelGroupJSON)
 
 	// Call the API
 	api, err = apicall("PUT", apiURL.String(), *p, labelGroupJSON, false)
