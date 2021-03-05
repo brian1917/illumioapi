@@ -82,6 +82,7 @@ type Workload struct {
 	DeletedAt             string       `json:"deleted_at,omitempty"`
 	DeletedBy             *DeletedBy   `json:"deleted_by,omitempty"`
 	Description           string       `json:"description,omitempty"`
+	DistinguishedName     string       `json:"distinguished_name,omitempty"`
 	ExternalDataReference string       `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Hostname              string       `json:"hostname,omitempty"`
