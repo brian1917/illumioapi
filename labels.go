@@ -216,3 +216,61 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 
 	return api, nil
 }
+
+// LabelsToRuleStructure takes a slice of labels and returns a slice of slices for how the labels would be organized as read by the PCE rule processing.
+// For example {"A-ERP", "A-CRM", "E-PROD"} will return [{"A-ERP, E-PROD"}. {"A-CRM", "E-PROD"}]
+func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
+
+	// Create 4 slices: roleLabels, appLabels, envLabels, locLabels and put each label in the correct one
+	var roleLabels, appLabels, envLabels, locLabels []Label
+	for _, l := range labels {
+		switch l.Key {
+		case "role":
+			roleLabels = append(roleLabels, l)
+		case "app":
+			appLabels = append(appLabels, l)
+		case "env":
+			envLabels = append(envLabels, l)
+		case "loc":
+			locLabels = append(locLabels, l)
+		default:
+			return nil, errors.New("label key is not role, app, env, or loc")
+		}
+	}
+
+	// If any of the label slices are empty, put a filler that we will ignore in with blank key and value
+	targets := []*[]Label{&roleLabels, &appLabels, &envLabels, &locLabels}
+	for _, t := range targets {
+		if len(*t) == 0 {
+			*t = append(*t, Label{Key: "", Value: ""})
+		}
+	}
+
+	// Produce an array for every combination that is needed.
+	var results [][]Label
+	for _, r := range roleLabels {
+		for _, a := range appLabels {
+			for _, e := range envLabels {
+				for _, l := range locLabels {
+					n := []Label{}
+					if r.Value != "" {
+						n = append(n, r)
+					}
+					if a.Value != "" {
+						n = append(n, a)
+					}
+					if e.Value != "" {
+						n = append(n, e)
+					}
+					if l.Value != "" {
+						n = append(n, l)
+					}
+					results = append(results, n)
+				}
+			}
+		}
+	}
+
+	return results, nil
+
+}
