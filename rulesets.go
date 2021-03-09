@@ -42,10 +42,10 @@ type ConsumingSecurityPrincipals struct {
 
 // IngressServices - more info to follow
 type IngressServices struct {
-	Port     int    `json:"port,omitempty"`
-	Protocol int    `json:"proto,omitempty"`
-	ToPort   int    `json:"to_port,omitempty"`
-	Href     string `json:"href,omitempty"`
+	Port     *int    `json:"port,omitempty"`
+	Protocol *int    `json:"proto,omitempty"`
+	ToPort   *int    `json:"to_port,omitempty"`
+	Href     *string `json:"href,omitempty"`
 }
 
 // IPTablesRules - more info to follow
