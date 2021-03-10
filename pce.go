@@ -24,80 +24,106 @@ type PCE struct {
 	ServiceMapH        map[string]Service
 }
 
+// LoadInput tells the p.Load method what objects to load
+type LoadInput struct {
+	ProvisionStatus string
+	Labels          bool
+	LabelGroups     bool
+	IPLists         bool
+	Workloads       bool
+	VirtualServices bool
+	VirtualServers  bool
+	Services        bool
+}
+
 // Load fills the PCE object maps
 // provisionStatus must be "draft" or "active"
-func (p *PCE) Load(provisionStatus string) error {
+func (p *PCE) Load(l LoadInput) error {
 
 	// Check provisionStatus
-	provisionStatus = strings.ToLower(provisionStatus)
+	provisionStatus := strings.ToLower(l.ProvisionStatus)
 	if provisionStatus != "draft" && provisionStatus != "active" {
 		return fmt.Errorf("provisionStatus must be draft or active")
 	}
 
 	// Get Label maps
-	_, err := p.GetLabelMaps()
-	if err != nil {
-		return fmt.Errorf("getting label maps - %s", err)
+	if l.Labels {
+		_, err := p.GetLabelMaps()
+		if err != nil {
+			return fmt.Errorf("getting label maps - %s", err)
+		}
 	}
 
 	// Get all label groups
-	lgs, _, err := p.GetAllLabelGroups(provisionStatus)
-	if err != nil {
-		return fmt.Errorf("getting label groups - %s", err)
-	}
-	p.LabelGroupMapH = make(map[string]LabelGroup)
-	for _, lg := range lgs {
-		p.LabelGroupMapH[lg.Href] = lg
+	if l.LabelGroups {
+		lgs, _, err := p.GetAllLabelGroups(provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting label groups - %s", err)
+		}
+		p.LabelGroupMapH = make(map[string]LabelGroup)
+		for _, lg := range lgs {
+			p.LabelGroupMapH[lg.Href] = lg
+		}
 	}
 
 	// Get all IPLists
-	ipls, _, err := p.getAllIPLists(provisionStatus)
-	if err != nil {
-		return fmt.Errorf("getting draft ip lists - %s", err)
-	}
-	p.IPListMapH = make(map[string]IPList)
-	for _, ipl := range ipls {
-		p.IPListMapH[ipl.Href] = ipl
+	if l.IPLists {
+		ipls, _, err := p.getAllIPLists(provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting draft ip lists - %s", err)
+		}
+		p.IPListMapH = make(map[string]IPList)
+		for _, ipl := range ipls {
+			p.IPListMapH[ipl.Href] = ipl
+		}
 	}
 
 	// Get all Workloads
-	wklds, _, err := p.GetAllWorkloads()
-	if err != nil {
-		return fmt.Errorf("getting workloads - %s", err)
-	}
-	p.WorkloadMapH = make(map[string]Workload)
-	for _, w := range wklds {
-		p.WorkloadMapH[w.Href] = w
+	if l.Workloads {
+		wklds, _, err := p.GetAllWorkloads()
+		if err != nil {
+			return fmt.Errorf("getting workloads - %s", err)
+		}
+		p.WorkloadMapH = make(map[string]Workload)
+		for _, w := range wklds {
+			p.WorkloadMapH[w.Href] = w
+		}
 	}
 
 	// Virtual services
-	virtualServices, _, err := p.GetAllVirtualServices(nil, provisionStatus)
-	if err != nil {
-		return fmt.Errorf("getting virtual services - %s", err)
-	}
-	p.VirtualServiceMapH = make(map[string]VirtualService)
-	for _, vs := range virtualServices {
-		p.VirtualServiceMapH[vs.Href] = vs
+	if l.VirtualServices {
+		virtualServices, _, err := p.GetAllVirtualServices(nil, provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting virtual services - %s", err)
+		}
+		p.VirtualServiceMapH = make(map[string]VirtualService)
+		for _, vs := range virtualServices {
+			p.VirtualServiceMapH[vs.Href] = vs
+		}
 	}
 
 	// Services
-	services, _, err := p.GetAllServices(provisionStatus)
-	if err != nil {
-		return fmt.Errorf("getting all services - %s", err)
-	}
-	p.ServiceMapH = make(map[string]Service)
-	for _, s := range services {
-		p.ServiceMapH[s.Href] = s
+	if l.Services {
+		services, _, err := p.GetAllServices(provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting all services - %s", err)
+		}
+		p.ServiceMapH = make(map[string]Service)
+		for _, s := range services {
+			p.ServiceMapH[s.Href] = s
+		}
 	}
 
 	// VirtualServers
-	virtualServers, _, err := p.GetAllVirtualServers(provisionStatus)
-	if err != nil {
-		return fmt.Errorf("getting all virtual servers - %s", err)
-	}
-	p.VirtualServerMapH = make(map[string]VirtualServer)
-	for _, v := range virtualServers {
-		p.VirtualServerMapH[v.Href] = v
+	if l.VirtualServers {
+		virtualServers, _, err := p.GetAllVirtualServers(provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting all virtual servers - %s", err)
+		}
+		p.VirtualServerMapH = make(map[string]VirtualServer)
+		for _, v := range virtualServers {
+			p.VirtualServerMapH[v.Href] = v
+		}
 	}
 
 	return nil
