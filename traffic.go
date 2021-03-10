@@ -176,7 +176,6 @@ func processHrefList() {
 
 // GetTrafficAnalysis gets flow data from Explorer.
 func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
-	var api APIResponse
 
 	// Includes
 
@@ -215,7 +214,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 							if n != 0 {
 								v = "destination"
 							}
-							return nil, api, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
+							return nil, APIResponse{}, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
 						}
 						insideInc = append(insideInc, Include{IPAddress: &IPAddress{Value: a}})
 					}
@@ -254,7 +253,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 				if n != 0 {
 					v = "destination"
 				}
-				return nil, api, fmt.Errorf("provided %s excludes are not of the same type", v)
+				return nil, APIResponse{}, fmt.Errorf("provided %s excludes are not of the same type", v)
 			}
 
 			// Add to the exclude
@@ -271,14 +270,14 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 					if n != 0 {
 						v = "destination"
 					}
-					return nil, api, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
+					return nil, APIResponse{}, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
 				}
 				*exclTargets[n] = append(*exclTargets[n], Exclude{IPAddress: &IPAddress{Value: exclude}})
 			}
 		}
 	}
 
-	// Servoces
+	// Services
 
 	// Create the array
 	serviceInclude := make([]Include, 0)
@@ -350,8 +349,21 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
 	}
 
+	trafficResponses, api, err := p.GetTrafficAnalysisAPI(traffic)
+	if err != nil {
+		return nil, api, err
+	}
+
+	return trafficResponses, api, nil
+
+}
+
+// GetTrafficAnalysisAPI gets flow data from Explorer.
+func (p *PCE) GetTrafficAnalysisAPI(t TrafficAnalysisRequest) ([]TrafficAnalysis, APIResponse, error) {
+	var api APIResponse
+
 	// Create JSON Payload
-	jsonPayload, err := json.Marshal(traffic)
+	jsonPayload, err := json.Marshal(t)
 	if err != nil {
 		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
 	}
@@ -375,7 +387,6 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 	json.Unmarshal([]byte(api.RespBody), &trafficResponses)
 
 	return trafficResponses, api, nil
-
 }
 
 // IterateTraffic returns an array of traffic analysis .
