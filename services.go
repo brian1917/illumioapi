@@ -206,3 +206,73 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 
 	return windowsServices, servicePorts
 }
+
+// ToExplorer takes a service and returns an explorer query include and exclude
+func (s *Service) ToExplorer() ([]Include, []Exclude) {
+	includes := []Include{}
+	excludes := []Exclude{}
+
+	// Process WindowsServices
+	for _, ws := range s.WindowsServices {
+		include := Include{}
+		exclude := Exclude{}
+		check := false
+		if ws.Port != 0 {
+			include.Port = ws.Port
+			exclude.Port = ws.Port
+			check = true
+		}
+		if ws.ToPort != 0 {
+			include.ToPort = ws.ToPort
+			exclude.ToPort = ws.ToPort
+			check = true
+		}
+		if ws.Protocol != 0 {
+			include.Proto = ws.Protocol
+			exclude.Proto = ws.Protocol
+			check = true
+		}
+		if ws.ProcessName != "" {
+			include.Process = ws.ProcessName
+			exclude.Process = ws.ProcessName
+			check = true
+		}
+		if ws.ServiceName != "" {
+			include.WindowsService = ws.ServiceName
+			exclude.WindowsService = ws.ServiceName
+			check = true
+		}
+		if check {
+			includes = append(includes, include)
+			excludes = append(excludes, exclude)
+		}
+	}
+
+	// Service Ports
+	for _, s := range s.ServicePorts {
+		include := Include{}
+		exclude := Exclude{}
+		check := false
+		if s.Port != 0 {
+			include.Port = s.Port
+			exclude.Port = s.Port
+			check = true
+		}
+		if s.ToPort != 0 {
+			include.ToPort = s.ToPort
+			exclude.ToPort = s.ToPort
+			check = true
+		}
+		if s.Protocol != 0 && s.Protocol != -1 {
+			include.Proto = s.Protocol
+			exclude.Proto = s.Protocol
+			check = true
+		}
+		if check {
+			includes = append(includes, include)
+			excludes = append(excludes, exclude)
+		}
+	}
+
+	return includes, excludes
+}
