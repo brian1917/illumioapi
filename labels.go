@@ -78,11 +78,10 @@ func (p *PCE) GetLabelMaps() (APIResponse, error) {
 	if err != nil {
 		return apiResp, fmt.Errorf("get href label map - %s", err)
 	}
-	p.LabelMapH = make(map[string]Label)
-	p.LabelMapKV = make(map[string]Label)
+	p.Labels = make(map[string]Label)
 	for _, l := range labels {
-		p.LabelMapH[l.Href] = l
-		p.LabelMapKV[l.Key+l.Value] = l
+		p.Labels[l.Href] = l
+		p.Labels[l.Key+l.Value] = l
 	}
 
 	return apiResp, nil

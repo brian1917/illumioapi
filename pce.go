@@ -13,15 +13,13 @@ type PCE struct {
 	User               string
 	Key                string
 	DisableTLSChecking bool
-	LabelMapKV         map[string]Label
-	LabelGroupMapName  map[string]LabelGroup
-	LabelMapH          map[string]Label
-	LabelGroupMapH     map[string]LabelGroup
-	IPListMapH         map[string]IPList
-	WorkloadMapH       map[string]Workload
-	VirtualServiceMapH map[string]VirtualService
-	VirtualServerMapH  map[string]VirtualServer
-	ServiceMapH        map[string]Service
+	Labels             map[string]Label          // Labels can be looked up by href or key+value (no character between key and value)
+	LabelGroups        map[string]LabelGroup     // Label Groups can be looked up by href or name
+	IPLists            map[string]IPList         // IP Lists can be looked up by href or name
+	Workloads          map[string]Workload       // Workloads can be looked up by href or hostname
+	VirtualServices    map[string]VirtualService // VirtualServices can be looked up by href or name
+	VirtualServers     map[string]VirtualServer  // VirtualServers can be looked up by href or name
+	Services           map[string]Service        // Services can be looked up by href or name
 }
 
 // LoadInput tells the p.Load method what objects to load
@@ -60,9 +58,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting label groups - %s", err)
 		}
-		p.LabelGroupMapH = make(map[string]LabelGroup)
+		p.LabelGroups = make(map[string]LabelGroup)
 		for _, lg := range lgs {
-			p.LabelGroupMapH[lg.Href] = lg
+			p.LabelGroups[lg.Href] = lg
+			p.LabelGroups[lg.Name] = lg
 		}
 	}
 
@@ -72,9 +71,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting draft ip lists - %s", err)
 		}
-		p.IPListMapH = make(map[string]IPList)
+		p.IPLists = make(map[string]IPList)
 		for _, ipl := range ipls {
-			p.IPListMapH[ipl.Href] = ipl
+			p.IPLists[ipl.Href] = ipl
+			p.IPLists[ipl.Name] = ipl
 		}
 	}
 
@@ -84,9 +84,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting workloads - %s", err)
 		}
-		p.WorkloadMapH = make(map[string]Workload)
+		p.Workloads = make(map[string]Workload)
 		for _, w := range wklds {
-			p.WorkloadMapH[w.Href] = w
+			p.Workloads[w.Href] = w
+			p.Workloads[w.Hostname] = w
 		}
 	}
 
@@ -96,9 +97,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting virtual services - %s", err)
 		}
-		p.VirtualServiceMapH = make(map[string]VirtualService)
+		p.VirtualServices = make(map[string]VirtualService)
 		for _, vs := range virtualServices {
-			p.VirtualServiceMapH[vs.Href] = vs
+			p.VirtualServices[vs.Href] = vs
+			p.VirtualServices[vs.Name] = vs
 		}
 	}
 
@@ -108,9 +110,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting all services - %s", err)
 		}
-		p.ServiceMapH = make(map[string]Service)
+		p.Services = make(map[string]Service)
 		for _, s := range services {
-			p.ServiceMapH[s.Href] = s
+			p.Services[s.Href] = s
+			p.Services[s.Name] = s
 		}
 	}
 
@@ -120,9 +123,10 @@ func (p *PCE) Load(l LoadInput) error {
 		if err != nil {
 			return fmt.Errorf("getting all virtual servers - %s", err)
 		}
-		p.VirtualServerMapH = make(map[string]VirtualServer)
+		p.VirtualServers = make(map[string]VirtualServer)
 		for _, v := range virtualServers {
-			p.VirtualServerMapH[v.Href] = v
+			p.VirtualServers[v.Href] = v
+			p.VirtualServers[v.Name] = v
 		}
 	}
 
@@ -134,26 +138,26 @@ func (p *PCE) FindObject(href string) (key, name string, err error) {
 
 	// IPLists
 	if strings.Contains(href, "/ip_lists/") {
-		return "iplist", p.IPListMapH[href].Name, nil
+		return "iplist", p.IPLists[href].Name, nil
 	}
 	// Labels
 	if strings.Contains(href, "/labels/") {
-		return fmt.Sprintf("%s_label", p.LabelMapH[href].Key), p.LabelMapH[href].Value, nil
+		return fmt.Sprintf("%s_label", p.Labels[href].Key), p.Labels[href].Value, nil
 	}
 	// Label Groups
 	if strings.Contains(href, "/label_groups/") {
-		return fmt.Sprintf("%s_label_group", p.LabelGroupMapH[href].Key), p.LabelGroupMapH[href].Name, nil
+		return fmt.Sprintf("%s_label_group", p.LabelGroups[href].Key), p.LabelGroups[href].Name, nil
 	}
 	// Virtual Services
 	if strings.Contains(href, "/virtual_services/") {
-		return "virtual_service", p.VirtualServiceMapH[href].Name, nil
+		return "virtual_service", p.VirtualServices[href].Name, nil
 	}
 	// Workloads
 	if strings.Contains(href, "/workloads/") {
-		if p.WorkloadMapH[href].Hostname != "" {
-			return "workload", p.WorkloadMapH[href].Hostname, nil
+		if p.Workloads[href].Hostname != "" {
+			return "workload", p.Workloads[href].Hostname, nil
 		}
-		return "workload", p.WorkloadMapH[href].Name, nil
+		return "workload", p.Workloads[href].Name, nil
 	}
 
 	return "nil", "nil", fmt.Errorf("object not found")

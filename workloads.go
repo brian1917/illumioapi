@@ -346,7 +346,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 	// Iterate through each of the workloads labels
 	for _, l := range w.Labels {
 		// If they key isn't the target key, we add it to the updated labels
-		if pce.LabelMapH[l.Href].Key != targetKey {
+		if pce.Labels[l.Href].Key != targetKey {
 			updatedLabels = append(updatedLabels, &Label{Href: l.Href})
 		}
 	}
@@ -358,14 +358,14 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 	}
 
 	// If our new label is not blank, we need to get it's href and add it to the array
-	if newLabel, ok = pce.LabelMapKV[targetKey+newValue]; !ok {
+	if newLabel, ok = pce.Labels[targetKey+newValue]; !ok {
 		// If it doesn't exist, we create it and put it back into the label maps
 		newLabel, _, err = pce.CreateLabel(Label{Key: targetKey, Value: newValue})
 		if err != nil {
 			return pce, err
 		}
-		pce.LabelMapH[newLabel.Href] = newLabel
-		pce.LabelMapKV[newLabel.Key+newLabel.Value] = newLabel
+		pce.Labels[newLabel.Href] = newLabel
+		pce.Labels[newLabel.Key+newLabel.Value] = newLabel
 	}
 	// Append the new label to our label slice
 	updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
