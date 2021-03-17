@@ -29,7 +29,7 @@ type PCE struct {
 
 // LoadInput tells the p.Load method what objects to load
 type LoadInput struct {
-	ProvisionStatus             string
+	ProvisionStatus             string // Must be draft or active. Blank value is draft
 	Labels                      bool
 	LabelGroups                 bool
 	IPLists                     bool
@@ -47,6 +47,9 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Check provisionStatus
 	provisionStatus := strings.ToLower(l.ProvisionStatus)
+	if provisionStatus == "" {
+		provisionStatus = "draft"
+	}
 	if provisionStatus != "draft" && provisionStatus != "active" {
 		return fmt.Errorf("provisionStatus must be draft or active")
 	}
