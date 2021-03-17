@@ -53,6 +53,9 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 
 	// Get the base URL
 	u, err := url.Parse(apiURL)
+	if err != nil {
+		return APIResponse{}, err
+	}
 	baseURL := "https://" + u.Host + "/api/v2"
 
 	// Create body
@@ -60,7 +63,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 
 	// Create HTTP client and request
 	client := &http.Client{}
-	if pce.DisableTLSChecking == true {
+	if pce.DisableTLSChecking {
 		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 
@@ -78,7 +81,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	}
 
 	// Set headers for async
-	if async == true {
+	if async {
 		req.Header.Set("Prefer", "respond-async")
 	}
 
@@ -89,7 +92,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	}
 
 	// Process Async requests
-	if async == true {
+	if async {
 		for asyncResults.Status != "done" {
 			asyncResults, err = polling(baseURL, pce, resp)
 			if err != nil {

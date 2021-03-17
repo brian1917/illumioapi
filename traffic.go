@@ -169,11 +169,6 @@ type UploadFlowResults struct {
 	TotalFlowsInCSV int
 }
 
-//
-func processHrefList() {
-
-}
-
 // GetTrafficAnalysis gets flow data from Explorer.
 func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
 

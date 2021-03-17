@@ -18,7 +18,7 @@ type PairingProfile struct {
 	EnvLabelLock          bool       `json:"env_label_lock"`
 	ExternalDataReference string     `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string     `json:"external_data_set,omitempty"`
-	Href                  string     `json:"href,omitempty,omitempty"`
+	Href                  string     `json:"href,omitempty"`
 	IsDefault             bool       `json:"is_default,omitempty"`
 	KeyLifespan           string     `json:"key_lifespan,omitempty"`
 	Labels                []*Label   `json:"labels,omitempty"`
@@ -32,7 +32,7 @@ type PairingProfile struct {
 	RoleLabelLock         bool       `json:"role_label_lock"`
 	TotalUseCount         int        `json:"total_use_count,omitempty"`
 	UpdatedAt             string     `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty,omitempty"`
+	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
 	VisibilityLevel       string     `json:"visibility_level,omitempty"`
 	VisibilityLevelLock   bool       `json:"visibility_level_lock"`
 }

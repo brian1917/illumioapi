@@ -31,7 +31,7 @@ type UserLogin struct {
 	LastLoginOn                 string          `json:"last_login_on,omitempty"`
 	ProductVersion              *ProductVersion `json:"product_version,omitempty"`
 	SessionToken                string          `json:"session_token,omitempty"`
-	TimeZone                    string          `json:"time_zone,omitempty,omitempty"`
+	TimeZone                    string          `json:"time_zone,omitempty"`
 	Type                        string          `json:"type,omitempty"`
 	Orgs                        []*Org          `json:"orgs,omitempty"`
 }
@@ -173,12 +173,12 @@ func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error) {
 	auth, a, err := p.getAuthToken(user, password)
 	apiResps = append(apiResps, a)
 	if err != nil {
-		return UserLogin{}, apiResps, fmt.Errorf("Error - Authenticating to PCE - %s", err)
+		return UserLogin{}, apiResps, fmt.Errorf("error - Authenticating to PCE - %s", err)
 	}
 	login, a, err := p.login(auth.AuthToken)
 	apiResps = append(apiResps, a)
 	if err != nil {
-		return login, apiResps, fmt.Errorf("Error - Logging in to PCE - %s", err)
+		return login, apiResps, fmt.Errorf("error - Logging in to PCE - %s", err)
 	}
 	p.User = login.AuthUsername
 	p.Key = login.SessionToken

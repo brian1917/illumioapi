@@ -29,7 +29,7 @@ type VulnerabilityReport struct {
 	Name               string     `json:"name,omitempty"`
 	NumVulnerabilities int        `json:"num_vulnerabilities,omitempty"`
 	ReportType         string     `json:"report_type,omitempty"`
-	ScannedIps         []string   `json:"scanned_ips,omitempty,omitempty"`
+	ScannedIps         []string   `json:"scanned_ips,omitempty"`
 	UpdatedAt          string     `json:"updated_at,omitempty"`
 	UpdatedBy          *UpdatedBy `json:"updated_by,omitempty"`
 }
