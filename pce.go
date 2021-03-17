@@ -5,33 +5,40 @@ import (
 	"strings"
 )
 
-// PCE represents an Illumio PCE and the necessary info to authenticate
+// PCE represents an Illumio PCE and the necessary info to authenticate. The policy objects are maps for lookups. ]
+// Each map will have multiple look up keys so the length of the map will be larger than the total objects.
+// For example, each label will be in the map for an HREF and a key value.
+// Policy objects should be called by their corresponding PCE method if you need to iterate or count them (e.g., pce.GetAllLabels)
 type PCE struct {
-	FQDN               string
-	Port               int
-	Org                int
-	User               string
-	Key                string
-	DisableTLSChecking bool
-	Labels             map[string]Label          // Labels can be looked up by href or key+value (no character between key and value)
-	LabelGroups        map[string]LabelGroup     // Label Groups can be looked up by href or name
-	IPLists            map[string]IPList         // IP Lists can be looked up by href or name
-	Workloads          map[string]Workload       // Workloads can be looked up by href or hostname
-	VirtualServices    map[string]VirtualService // VirtualServices can be looked up by href or name
-	VirtualServers     map[string]VirtualServer  // VirtualServers can be looked up by href or name
-	Services           map[string]Service        // Services can be looked up by href or name
+	FQDN                        string
+	Port                        int
+	Org                         int
+	User                        string
+	Key                         string
+	DisableTLSChecking          bool
+	Labels                      map[string]Label                       // Labels can be looked up by href or key+value (no character between key and value)
+	LabelGroups                 map[string]LabelGroup                  // Label Groups can be looked up by href or name
+	IPLists                     map[string]IPList                      // IP Lists can be looked up by href or name
+	Workloads                   map[string]Workload                    // Workloads can be looked up by href, hostname, or names
+	VirtualServices             map[string]VirtualService              // VirtualServices can be looked up by href or name
+	VirtualServers              map[string]VirtualServer               // VirtualServers can be looked up by href or name
+	Services                    map[string]Service                     // Services can be looked up by href or name
+	ConsumingSecurityPrincipals map[string]ConsumingSecurityPrincipals // ConsumingSecurityPrincipals can be loooked up by href or name
+	RuleSets                    map[string]RuleSet                     // RuleSets can be looked up by href or name
 }
 
 // LoadInput tells the p.Load method what objects to load
 type LoadInput struct {
-	ProvisionStatus string
-	Labels          bool
-	LabelGroups     bool
-	IPLists         bool
-	Workloads       bool
-	VirtualServices bool
-	VirtualServers  bool
-	Services        bool
+	ProvisionStatus             string
+	Labels                      bool
+	LabelGroups                 bool
+	IPLists                     bool
+	Workloads                   bool
+	VirtualServices             bool
+	VirtualServers              bool
+	Services                    bool
+	ConsumingSecurityPrincipals bool
+	RuleSets                    bool
 }
 
 // Load fills the PCE object maps
@@ -46,9 +53,14 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get Label maps
 	if l.Labels {
-		_, err := p.GetLabelMaps()
+		labels, _, err := p.GetAllLabels()
 		if err != nil {
-			return fmt.Errorf("getting label maps - %s", err)
+			return fmt.Errorf("getting labels - %s", err)
+		}
+		p.Labels = make(map[string]Label)
+		for _, l := range labels {
+			p.Labels[l.Href] = l
+			p.Labels[l.Key+l.Value] = l
 		}
 	}
 
@@ -88,6 +100,7 @@ func (p *PCE) Load(l LoadInput) error {
 		for _, w := range wklds {
 			p.Workloads[w.Href] = w
 			p.Workloads[w.Hostname] = w
+			p.Workloads[w.Name] = w
 		}
 	}
 
@@ -127,6 +140,32 @@ func (p *PCE) Load(l LoadInput) error {
 		for _, v := range virtualServers {
 			p.VirtualServers[v.Href] = v
 			p.VirtualServers[v.Name] = v
+		}
+	}
+
+	// Rulesets
+	if l.RuleSets {
+		rulesets, _, err := p.GetAllRuleSets(provisionStatus)
+		if err != nil {
+			return fmt.Errorf("getting all rulesets - %s", err)
+		}
+		p.RuleSets = make(map[string]RuleSet)
+		for _, rs := range rulesets {
+			p.RuleSets[rs.Href] = rs
+			p.RuleSets[rs.Name] = rs
+		}
+	}
+
+	// Consuming Security Principals
+	if l.ConsumingSecurityPrincipals {
+		cps, _, err := p.GetAllADUserGroups()
+		if err != nil {
+			return fmt.Errorf("getting all consuming security principals - %s", err)
+		}
+		p.ConsumingSecurityPrincipals = make(map[string]ConsumingSecurityPrincipals)
+		for _, cp := range cps {
+			p.ConsumingSecurityPrincipals[cp.Href] = cp
+			p.ConsumingSecurityPrincipals[cp.Name] = cp
 		}
 	}
 
