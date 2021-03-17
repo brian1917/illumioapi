@@ -72,21 +72,6 @@ func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
 	return labels, api, nil
 }
 
-// GetLabelMaps returns a map of labels with the HREF as the key
-func (p *PCE) GetLabelMaps() (APIResponse, error) {
-	labels, apiResp, err := p.GetAllLabels()
-	if err != nil {
-		return apiResp, fmt.Errorf("get href label map - %s", err)
-	}
-	p.Labels = make(map[string]Label)
-	for _, l := range labels {
-		p.Labels[l.Href] = l
-		p.Labels[l.Key+l.Value] = l
-	}
-
-	return apiResp, nil
-}
-
 // GetLabelbyKeyValue finds a label based on the key and value.
 // It will only return one Label that is an exact match.
 func (p *PCE) GetLabelbyKeyValue(key, value string) (Label, APIResponse, error) {
