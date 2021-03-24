@@ -89,7 +89,7 @@ type Workload struct {
 	Href                  string       `json:"href,omitempty"`
 	IgnoredInterfaceNames *[]string    `json:"ignored_interface_names,omitempty"`
 	Interfaces            []*Interface `json:"interfaces,omitempty"`
-	Labels                []*Label     `json:"labels,omitempty"` // This breaks the removing all labels
+	Labels                *[]*Label    `json:"labels,omitempty"` // This breaks the removing all labels
 	Name                  string       `json:"name,omitempty"`
 	Online                bool         `json:"online,omitempty"`
 	OsDetail              string       `json:"os_detail,omitempty"`
@@ -344,7 +344,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 	var ok bool
 
 	// Iterate through each of the workloads labels
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		// If they key isn't the target key, we add it to the updated labels
 		if pce.Labels[l.Href].Key != targetKey {
 			updatedLabels = append(updatedLabels, &Label{Href: l.Href})
@@ -353,7 +353,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 
 	// If our new label isn't blank, we need to get it's href and attach to array
 	if newValue == "" {
-		w.Labels = updatedLabels
+		*w.Labels = updatedLabels
 		return pce, nil
 	}
 
@@ -370,7 +370,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 	// Append the new label to our label slice
 	updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
 
-	w.Labels = updatedLabels
+	*w.Labels = updatedLabels
 	return pce, nil
 }
 
@@ -488,11 +488,11 @@ func (w *Workload) SanitizeBulkUpdate() {
 
 	// Replace Labels with Hrefs
 	newLabels := []*Label{}
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		newLabel := Label{Href: l.Href}
 		newLabels = append(newLabels, &newLabel)
 	}
-	w.Labels = newLabels
+	*w.Labels = newLabels
 }
 
 // SanitizePut removes the necessary properties to update an unmanaged and managed workload
@@ -504,7 +504,7 @@ func (w *Workload) SanitizePut() {
 // GetRole takes a map of labels with the href string as the key and returns the role label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetRole(labelMap map[string]Label) Label {
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "role" {
 			return labelMap[l.Href]
 		}
@@ -515,7 +515,7 @@ func (w *Workload) GetRole(labelMap map[string]Label) Label {
 // GetApp takes a map of labels with the href string as the key and returns the app label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetApp(labelMap map[string]Label) Label {
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "app" {
 			return labelMap[l.Href]
 		}
@@ -526,7 +526,7 @@ func (w *Workload) GetApp(labelMap map[string]Label) Label {
 // GetEnv takes a map of labels with the href string as the key and returns the env label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetEnv(labelMap map[string]Label) Label {
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "env" {
 			return labelMap[l.Href]
 		}
@@ -537,7 +537,7 @@ func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 // GetLoc takes a map of labels with the href string as the key and returns the loc label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetLoc(labelMap map[string]Label) Label {
-	for _, l := range w.Labels {
+	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "loc" {
 			return labelMap[l.Href]
 		}
