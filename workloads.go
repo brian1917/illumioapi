@@ -139,6 +139,20 @@ type Unpair struct {
 	IPTableRestore string     `json:"ip_table_restore"`
 }
 
+// BulkResponse is the data structure for the bulk response API
+type BulkResponse struct {
+	Href    string  `json:"href"`
+	Status  string  `json:"status"`
+	Token   string  `json:"token"`
+	Message string  `json:"message"`
+	Errors  []Error `json:"errors"`
+}
+
+type Error struct {
+	Token   string `json:"token"`
+	Message string `json:"message"`
+}
+
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
@@ -442,6 +456,27 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 		if stdoutLogs {
 			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
 		}
+
+		// Marshal JSON
+		var bulkResp []BulkResponse
+		json.Unmarshal([]byte(api.RespBody), &bulkResp)
+
+		for _, b := range bulkResp {
+			if method == "update" && b.Status != "updated" {
+				api.Warnings = append(api.Warnings, fmt.Sprintf("%s returned a status of %s with a message of %s and a token of %s", b.Href, b.Status, b.Message, b.Token))
+			}
+			if method == "delete" {
+				errorText := []string{}
+				for _, e := range b.Errors {
+					errorText = append(errorText, fmt.Sprintf("message: %s and token: %s", e.Message, e.Token))
+				}
+				api.Warnings = append(api.Warnings, fmt.Sprintf("%s returned errors: %s", b.Href, strings.Join(errorText, ";")))
+			}
+			if method == "create" && b.Status != "created" {
+				api.Warnings = append(api.Warnings, fmt.Sprintf("workload creation attempt returned a %s status and a %s message", b.Status, b.Message))
+			}
+		}
+
 		api.ReqBody = string(workloadsJSON)
 
 		apiResps = append(apiResps, api)

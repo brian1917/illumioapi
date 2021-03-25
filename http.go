@@ -21,6 +21,7 @@ type APIResponse struct {
 	Header     http.Header
 	Request    *http.Request
 	ReqBody    string
+	Warnings   []string
 }
 
 // Unexported struct for handling the asyncResults
