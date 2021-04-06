@@ -23,6 +23,7 @@ type PCE struct {
 	VirtualServices             map[string]VirtualService              // VirtualServices can be looked up by href or name
 	VirtualServers              map[string]VirtualServer               // VirtualServers can be looked up by href or name
 	Services                    map[string]Service                     // Services can be looked up by href or name
+	ServicesSlice               []Service                              // All services stored in a slice
 	ConsumingSecurityPrincipals map[string]ConsumingSecurityPrincipals // ConsumingSecurityPrincipals can be loooked up by href or name
 	RuleSets                    map[string]RuleSet                     // RuleSets can be looked up by href or name
 }
@@ -44,6 +45,8 @@ type LoadInput struct {
 // Load fills the PCE object maps
 // provisionStatus must be "draft" or "active"
 func (p *PCE) Load(l LoadInput) error {
+
+	var err error
 
 	// Check provisionStatus
 	provisionStatus := strings.ToLower(l.ProvisionStatus)
@@ -122,12 +125,12 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Services
 	if l.Services {
-		services, _, err := p.GetAllServices(provisionStatus)
+		p.ServicesSlice, _, err = p.GetAllServices(provisionStatus)
 		if err != nil {
 			return fmt.Errorf("getting all services - %s", err)
 		}
 		p.Services = make(map[string]Service)
-		for _, s := range services {
+		for _, s := range p.ServicesSlice {
 			p.Services[s.Href] = s
 			p.Services[s.Name] = s
 		}
