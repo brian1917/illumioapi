@@ -891,3 +891,48 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 	}
 	return time.Now().UTC().Sub(t).Hours()
 }
+
+// BuildLabelQuery takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc
+// Each inner slice is an "AND" query
+// The slices are pieces together using "OR"
+// The PCE must be loaded with the labels
+func (p *PCE) WorkloadQueryLabelParameter(data [][]string) (string, error) {
+
+	// Find the headers
+	headers := make(map[int]string)
+	for i, header := range data[0] {
+		headers[i] = header
+	}
+
+	// Iterate through each entry
+	outer := []string{}
+	for row, dataSet := range data {
+		// Skip the first row
+		if row == 0 {
+			continue
+		}
+
+		// Iterate through each row
+		inner := []string{}
+		for column, csvValue := range dataSet {
+			// If the value is blank, continue
+			if csvValue == "" {
+				continue
+			}
+			// If the label exists append it to the inner. If it does not exist, return an error
+			if label, ok := p.Labels[headers[column]+csvValue]; ok {
+				inner = append(inner, fmt.Sprintf("\"%s\"", label.Href))
+			} else if label, ok := p.Labels[csvValue]; ok {
+				inner = append(inner, fmt.Sprintf("\"%s\"", label.Href))
+			} else {
+				return "", fmt.Errorf("line %d - %s does not exist as a %s label", row+1, csvValue, headers[column])
+			}
+		}
+		// Append to the outer
+		outer = append(outer, fmt.Sprintf("[%s]", strings.Join(inner, ",")))
+	}
+
+	labelParamters := fmt.Sprintf("[%s]", strings.Join(outer, ","))
+
+	return labelParamters, nil
+}
