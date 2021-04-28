@@ -10,6 +10,7 @@ import (
 // For example, each label will be in the map for an HREF and a key value.
 // Policy objects should be called by their corresponding PCE method if you need to iterate or count them (e.g., pce.GetAllLabels)
 type PCE struct {
+	FriendlyName                string
 	FQDN                        string
 	Port                        int
 	Org                         int
