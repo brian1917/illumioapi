@@ -17,10 +17,13 @@ type PCE struct {
 	User                        string
 	Key                         string
 	DisableTLSChecking          bool
+	LabelsSlice                 []Label                                // All labels stored in a slice
 	Labels                      map[string]Label                       // Labels can be looked up by href or key+value (no character between key and value)
 	LabelGroups                 map[string]LabelGroup                  // Label Groups can be looked up by href or name
 	IPLists                     map[string]IPList                      // IP Lists can be looked up by href or name
+	IPListsSlice                []IPList                               // All IP Lists stored in a slice
 	Workloads                   map[string]Workload                    // Workloads can be looked up by href, hostname, or names
+	WorkloadsSlice              []Workload                             // All Workloads stored in a slice
 	VirtualServices             map[string]VirtualService              // VirtualServices can be looked up by href or name
 	VirtualServers              map[string]VirtualServer               // VirtualServers can be looked up by href or name
 	Services                    map[string]Service                     // Services can be looked up by href or name
@@ -60,12 +63,12 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get Label maps
 	if l.Labels {
-		labels, _, err := p.GetAllLabels()
+		p.LabelsSlice, _, err = p.GetAllLabels()
 		if err != nil {
 			return fmt.Errorf("getting labels - %s", err)
 		}
 		p.Labels = make(map[string]Label)
-		for _, l := range labels {
+		for _, l := range p.LabelsSlice {
 			p.Labels[l.Href] = l
 			p.Labels[l.Key+l.Value] = l
 		}
@@ -86,12 +89,12 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get all IPLists
 	if l.IPLists {
-		ipls, _, err := p.getAllIPLists(provisionStatus)
+		p.IPListsSlice, _, err = p.getAllIPLists(provisionStatus)
 		if err != nil {
 			return fmt.Errorf("getting draft ip lists - %s", err)
 		}
 		p.IPLists = make(map[string]IPList)
-		for _, ipl := range ipls {
+		for _, ipl := range p.IPListsSlice {
 			p.IPLists[ipl.Href] = ipl
 			p.IPLists[ipl.Name] = ipl
 		}
@@ -99,12 +102,12 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get all Workloads
 	if l.Workloads {
-		wklds, _, err := p.GetAllWorkloads()
+		p.WorkloadsSlice, _, err = p.GetAllWorkloads()
 		if err != nil {
 			return fmt.Errorf("getting workloads - %s", err)
 		}
 		p.Workloads = make(map[string]Workload)
-		for _, w := range wklds {
+		for _, w := range p.WorkloadsSlice {
 			p.Workloads[w.Href] = w
 			p.Workloads[w.Hostname] = w
 			p.Workloads[w.Name] = w
