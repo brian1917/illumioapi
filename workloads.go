@@ -83,6 +83,7 @@ type Workload struct {
 	DeletedBy             *DeletedBy   `json:"deleted_by,omitempty"`
 	Description           string       `json:"description,omitempty"`
 	DistinguishedName     string       `json:"distinguished_name,omitempty"`
+	EnforcementMode       string       `json:"enforcement_mode,omitempty"`
 	ExternalDataReference string       `json:"external_data_reference,omitempty"`
 	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Hostname              string       `json:"hostname,omitempty"`
@@ -100,6 +101,8 @@ type Workload struct {
 	Services              *Services    `json:"services,omitempty"`
 	UpdatedAt             string       `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
+	VEN                   *VEN         `json:"ven,omitempty"`
+	VisibilityLevel       string       `json:"visibility_level,omitempty"`
 }
 
 // SecureConnect represents SecureConnect for an Agent on a Workload
@@ -151,6 +154,13 @@ type BulkResponse struct {
 type Error struct {
 	Token   string `json:"token"`
 	Message string `json:"message"`
+}
+
+type VEN struct {
+	Href     string `json:"href"`
+	Hostname string `json:"hostname"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
 }
 
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
@@ -635,8 +645,22 @@ func (w *Workload) GetAppGroupL(labelMap map[string]Label) string {
 }
 
 // GetMode returns the mode of the workloads.
-// Modes are unmanaged, idle, build, test, enforced-no, enforced-low, enforced-high.
+// The returned value in 20.2 and newer PCEs will be unmanaged, idle, visibility_only, full, or selective.
+// For visibility levels, use the w.GetVisibilityLevel() method.
+//
+// The returned value in 20.1 and lower PCEs will be unmanaged, idle, build, test, enforced-no, enforced-low, enforced-high.
+// The enforced options represent no logging, low details, and high detail.
 func (w *Workload) GetMode() string {
+
+	// Covers 20.2+ with the new API structure for VEN and enforcement_mode
+	if w.EnforcementMode != "" {
+		if w.VEN == nil || w.VEN.Href == "" {
+			return "unmanaged"
+		}
+		return w.EnforcementMode
+	}
+
+	// Covers prior to 20.2 when the API switched to enforcement_mode
 	if w.Agent == nil || w.Agent.Href == "" {
 		return "unmanaged"
 	}
@@ -655,23 +679,40 @@ func (w *Workload) GetMode() string {
 	if w.Agent.Config.Mode == "enforced" && w.Agent.Config.VisibilityLevel == "flow_off" {
 		return "enforced-no"
 	}
-	return "idle"
+	if w.Agent.Config.Mode == "idle" {
+		return "idle"
+	}
+	return "unk"
+
 }
 
-// SetMode adjusts the workload struct to reflect the assigned mode.
-// Nothing is changed in the PCE.
-// To reflect the change in the PCE uset SetMode method followed by PCE.UpdateWorkload() method
+// SetMode adjusts the workload to reflect the assigned mode.
+// Nothing is changed in the PCE. To reflect the change in the PCE use SetMode method followed by PCE.UpdateWorkload() method.
 //
-// Valid options: idle, build, test, enforced-no, enforced-low, and enforced-high.
+// Valid options in 20.2 and newer PCEs are idle, visibility_only, full, and selective.
+// For visibility levels, use the w.SetVisibilityLevel() method.
+//
+// Valid options in 20.1 and lower PCEs are idle, build, test, enforced-no, enforced-low, enforced-high.
 // The enforced options represent no logging, low details, and high detail.
 func (w *Workload) SetMode(m string) error {
 
 	m = strings.ToLower(m)
 
+	// If the VEN href is populated, use the new method and properties
+	if w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective") {
+		w.EnforcementMode = m
+		return nil
+	}
+
 	switch m {
 
 	case "idle":
-		w.Agent.Config.Mode = "idle"
+		// If the VEN href is populated, use the new method
+		if w.VEN.Href != "" {
+			w.EnforcementMode = "idle"
+		} else {
+			w.Agent.Config.Mode = "idle"
+		}
 
 	case "build":
 		w.Agent.Config.Mode = "illuminated"
@@ -700,6 +741,23 @@ func (w *Workload) SetMode(m string) error {
 		return fmt.Errorf("%s is not a valid mode. See SetMode documentation for valid modes", m)
 
 	}
+	return nil
+}
+
+// SetVisibilityLevel adjusts the workload to reflect the assigned visibility level.
+// Nothing is changed in the PCE. To reflect the change in the PCE use SetVisibilityLevel method followed by PCE.UpdateWorkload() method.
+//
+// Valid options in 20.2 and newer PCEs are flow_summary, flow_drops, flow_off, or enhanced_data_collection
+//
+// 20.1 PCEs and lower do not use this method.
+func (w *Workload) SetVisibilityLevel(v string) error {
+	v = strings.ToLower(v)
+
+	if v != "flow_summary" && v != "flow_drops" && v != "flow_off" && v != "enhanced_data_collection" {
+		return fmt.Errorf("%s is not a valid visibility_level. See SetVisibilityLevel documentation for valid levels", v)
+	}
+
+	w.VisibilityLevel = v
 	return nil
 }
 
