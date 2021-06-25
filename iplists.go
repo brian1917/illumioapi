@@ -37,6 +37,7 @@ type IPList struct {
 	Name                  string     `json:"name,omitempty"`
 	UpdatedAt             string     `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
+	Size                  int        `json:"size,omitempty"`
 }
 
 // GetIPList queries returns the IP List based on name. Provisioned IP lists checked before draft

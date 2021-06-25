@@ -111,16 +111,18 @@ type ExpSrv struct {
 
 // Dst is the provider workload details
 type Dst struct {
-	IP       string    `json:"ip"`
-	Workload *Workload `json:"workload,omitempty"`
-	FQDN     string    `json:"fqdn,omitempty"`
+	IP       string     `json:"ip"`
+	Workload *Workload  `json:"workload,omitempty"`
+	FQDN     string     `json:"fqdn,omitempty"`
+	IPLists  *[]*IPList `json:"ip_lists"`
 }
 
 // Src is the consumer workload details
 type Src struct {
-	IP       string    `json:"ip"`
-	Workload *Workload `json:"workload,omitempty"`
-	FQDN     string    `json:"fqdn,omitempty"`
+	IP       string     `json:"ip"`
+	Workload *Workload  `json:"workload,omitempty"`
+	FQDN     string     `json:"fqdn,omitempty"`
+	IPLists  *[]*IPList `json:"ip_lists"`
 }
 
 // TimestampRange is used to limit queries ranges for the flow detected
