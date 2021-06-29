@@ -11,16 +11,17 @@ import (
 
 // A Label represents an Illumio Label.
 type Label struct {
-	CreatedAt             string     `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy `json:"created_by,omitempty"`
-	Deleted               bool       `json:"deleted,omitempty"`
-	ExternalDataReference string     `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string     `json:"external_data_set,omitempty"`
-	Href                  string     `json:"href,omitempty"`
-	Key                   string     `json:"key,omitempty"`
-	UpdatedAt             string     `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
-	Value                 string     `json:"value,omitempty"`
+	CreatedAt             string      `json:"created_at,omitempty"`
+	CreatedBy             *CreatedBy  `json:"created_by,omitempty"`
+	Deleted               bool        `json:"deleted,omitempty"`
+	ExternalDataReference string      `json:"external_data_reference,omitempty"`
+	ExternalDataSet       string      `json:"external_data_set,omitempty"`
+	Href                  string      `json:"href,omitempty"`
+	Key                   string      `json:"key,omitempty"`
+	UpdatedAt             string      `json:"updated_at,omitempty"`
+	UpdatedBy             *UpdatedBy  `json:"updated_by,omitempty"`
+	Value                 string      `json:"value,omitempty"`
+	LabelUsage            *LabelUsage `json:"usage,omitempty"`
 }
 
 // CreatedBy represents the CreatedBy property of an object
@@ -33,15 +34,44 @@ type UpdatedBy struct {
 	Href string `json:"href"`
 }
 
+type LabelUsage struct {
+	VirtualServer                     bool `json:"virtual_server"`
+	LabelGroup                        bool `json:"label_group"`
+	Ruleset                           bool `json:"ruleset"`
+	StaticPolicyScopes                bool `json:"static_policy_scopes"`
+	PairingProfile                    bool `json:"pairing_profile"`
+	Permission                        bool `json:"permission"`
+	Workload                          bool `json:"workload"`
+	ContainerWorkload                 bool `json:"container_workload"`
+	FirewallCoexistenceScope          bool `json:"firewall_coexistence_scope"`
+	ContainersInheritHostPolicyScopes bool `json:"containers_inherit_host_policy_scopes"`
+	ContainerWorkloadProfile          bool `json:"container_workload_profile"`
+	BlockedConnectionRejectScope      bool `json:"blocked_connection_reject_scope"`
+	EnforcementBoundary               bool `json:"enforcement_boundary"`
+	LoopbackInterfacesInPolicyScopes  bool `json:"loopback_interfaces_in_policy_scopes"`
+	VirtualService                    bool `json:"virtual_service"`
+}
+
 // GetAllLabels returns a slice of all Labels in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
 func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
+	l, a, err := p.GetAllLabelsQP(nil)
+	return l, a, err
+}
 
+func (p *PCE) GetAllLabelsQP(queryParameters map[string]string) ([]Label, APIResponse, error) {
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
 	if err != nil {
 		return nil, APIResponse{}, fmt.Errorf("get all labels - %s", err)
+	}
+
+	// Set the query parameters
+	for key, value := range queryParameters {
+		q := apiURL.Query()
+		q.Set(key, value)
+		apiURL.RawQuery = q.Encode()
 	}
 
 	// Call the API
@@ -70,6 +100,7 @@ func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
 
 	// Return if less than 500
 	return labels, api, nil
+
 }
 
 // GetLabelbyKeyValue finds a label based on the key and value.
