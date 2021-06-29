@@ -533,7 +533,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 	w.Services = nil
 
 	// Managed workloads
-	if w.Agent != nil && w.Agent.Status != nil {
+	if w.GetMode() != "unmanaged" {
 		w.Hostname = ""
 		w.Interfaces = nil
 		w.Online = false
@@ -547,6 +547,11 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.Agent.ActivePceFqdn = "" // For supercluster-paired workloads
 		w.Agent.TargetPceFqdn = "" // For supercluster-paired workloads
 		w.Agent.Config.SecurityPolicyUpdateMode = ""
+		w.VEN = nil // The VEN is not updateable.
+	}
+
+	if w.EnforcementMode != "" {
+		w.Agent = nil
 	}
 
 	// Replace Labels with Hrefs
@@ -968,7 +973,7 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 	return time.Now().UTC().Sub(t).Hours()
 }
 
-// BuildLabelQuery takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc
+// WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc
 // Each inner slice is an "AND" query
 // The slices are pieces together using "OR"
 // The PCE must be loaded with the labels
