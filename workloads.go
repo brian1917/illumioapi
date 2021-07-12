@@ -713,7 +713,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "idle":
 		// If the VEN href is populated, use the new method
-		if w.VEN.Href != "" {
+		if w.VEN != nil && w.VEN.Href != "" {
 			w.EnforcementMode = "idle"
 		} else {
 			w.Agent.Config.Mode = "idle"
