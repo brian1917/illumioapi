@@ -704,7 +704,7 @@ func (w *Workload) SetMode(m string) error {
 	m = strings.ToLower(m)
 
 	// If the VEN href is populated, use the new method and properties
-	if w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective") {
+	if w.VEN != nil && w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective") {
 		w.EnforcementMode = m
 		return nil
 	}
