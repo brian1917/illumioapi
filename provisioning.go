@@ -18,6 +18,7 @@ type ChangeSubset struct {
 	Services              []*Service               `json:"services,omitempty"`
 	VirtualServers        []*VirtualServer         `json:"virtual_servers,omitempty"`
 	VirtualServices       []*VirtualService        `json:"virtual_services,omitempty"`
+	EnforcementBoundaries []*EnforcementBoundary   `json:"enforcement_boundaries,omitempty"`
 }
 
 // FirewallSettings are a provisionable object
@@ -56,9 +57,9 @@ func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (APIResponse, error) 
 	if err != nil {
 		return APIResponse{}, err
 	}
-	api := APIResponse{ReqBody: string(provisionJSON)}
 
-	api, err = apicall("POST", apiURL.String(), *p, provisionJSON, false)
+	api, err := apicall("POST", apiURL.String(), *p, provisionJSON, false)
+	api.RespBody = string(provisionJSON)
 	if err != nil {
 		return api, err
 	}
@@ -78,6 +79,7 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 	var virtualServers []*VirtualServer
 	var fs []*FirewallSettings
 	var secureConnectGateways []*SecureConnectGateways
+	var enforcementBoundaries []*EnforcementBoundary
 
 	// Process our list of HREFs
 	for _, h := range hrefs {
@@ -113,6 +115,10 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 		if strings.Contains(h, "/secure_connect_gateways/") {
 			secureConnectGateways = append(secureConnectGateways, &SecureConnectGateways{Href: h})
 		}
+		// Enforcement Boundaries
+		if strings.Contains(h, "/enforcement_boundaries/") {
+			enforcementBoundaries = append(enforcementBoundaries, &EnforcementBoundary{Href: h})
+		}
 
 	}
 	// Build the Provision
@@ -125,6 +131,7 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 		Services:              services,
 		VirtualServers:        virtualServers,
 		VirtualServices:       virtualServices,
+		EnforcementBoundaries: enforcementBoundaries,
 	}, comment)
 	if err != nil {
 		return api, err
