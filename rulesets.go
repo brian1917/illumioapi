@@ -102,7 +102,7 @@ type Rule struct {
 	DeletedAt                   string                         `json:"deleted_at,omitempty"`
 	DeletedBy                   *DeletedBy                     `json:"deleted_by,omitempty"`
 	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
-	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals"`
+	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
 	Description                 string                         `json:"description,omitempty"`
 	Enabled                     *bool                          `json:"enabled,omitempty"`
 	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
@@ -183,8 +183,8 @@ func (p *PCE) CreateRuleSet(rs RuleSet) (RuleSet, APIResponse, error) {
 	if err != nil {
 		return newRS, api, fmt.Errorf("create ruleset - %s", err)
 	}
-	api.ReqBody = string(ruleSetJSON)
 	api, err = apicall("POST", apiURL.String(), *p, ruleSetJSON, false)
+	api.ReqBody = string(ruleSetJSON)
 	if err != nil {
 		return newRS, api, fmt.Errorf("create ruleset - %s", err)
 	}
@@ -229,9 +229,9 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
 	}
-	api.ReqBody = string(ruleJSON)
 
 	api, err = apicall("POST", apiURL.String(), *p, ruleJSON, false)
+	api.ReqBody = string(ruleJSON)
 	if err != nil {
 		return newRule, api, fmt.Errorf("create rule - %s", err)
 	}
