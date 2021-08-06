@@ -704,43 +704,77 @@ func (w *Workload) SetMode(m string) error {
 	m = strings.ToLower(m)
 
 	// If the VEN href is populated, use the new method and properties
-	if w.VEN != nil && w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective") {
+	if w.VEN != nil && w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective" || m == "idle") {
 		w.EnforcementMode = m
 		return nil
 	}
 
+	// Old VEN status
 	switch m {
 
 	case "idle":
-		// If the VEN href is populated, use the new method
 		if w.VEN != nil && w.VEN.Href != "" {
 			w.EnforcementMode = "idle"
 		} else {
 			w.Agent.Config.Mode = "idle"
 		}
-
 	case "build":
-		w.Agent.Config.Mode = "illuminated"
-		w.Agent.Config.LogTraffic = false
+		if w.VEN != nil && w.VEN.Href != "" {
+			w.EnforcementMode = "visibility_only"
+			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
+				return err
+			}
+		} else {
+			w.Agent.Config.Mode = "illuminated"
+			w.Agent.Config.LogTraffic = false
+		}
 
 	case "test":
-		w.Agent.Config.Mode = "illuminated"
-		w.Agent.Config.LogTraffic = true
+		if w.VEN != nil && w.VEN.Href != "" {
+			w.EnforcementMode = "visibility_only"
+			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
+				return err
+			}
+		} else {
+			w.Agent.Config.Mode = "illuminated"
+			w.Agent.Config.LogTraffic = true
+		}
 
 	case "enforced-no":
-		w.Agent.Config.Mode = "enforced"
-		w.Agent.Config.VisibilityLevel = "flow_off"
-		w.Agent.Config.LogTraffic = false
+		if w.VEN != nil && w.VEN.Href != "" {
+			w.EnforcementMode = "full"
+			if err := w.SetVisibilityLevel("flow_off"); err != nil {
+				return err
+			}
+		} else {
+			w.Agent.Config.Mode = "enforced"
+			w.Agent.Config.VisibilityLevel = "flow_off"
+			w.Agent.Config.LogTraffic = false
+		}
 
 	case "enforced-low":
-		w.Agent.Config.Mode = "enforced"
-		w.Agent.Config.VisibilityLevel = "flow_drops"
-		w.Agent.Config.LogTraffic = true
+		if w.VEN != nil && w.VEN.Href != "" {
+			w.EnforcementMode = "full"
+			if err := w.SetVisibilityLevel("flow_drops"); err != nil {
+				return err
+			}
+		} else {
+			w.Agent.Config.Mode = "enforced"
+			w.Agent.Config.VisibilityLevel = "flow_drops"
+			w.Agent.Config.LogTraffic = true
+		}
 
 	case "enforced-high":
-		w.Agent.Config.Mode = "enforced"
-		w.Agent.Config.VisibilityLevel = "flow_summary"
-		w.Agent.Config.LogTraffic = true
+		if w.VEN != nil && w.VEN.Href != "" {
+			w.EnforcementMode = "full"
+			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
+				return err
+			}
+		} else {
+			w.Agent.Config.Mode = "enforced"
+			w.Agent.Config.VisibilityLevel = "flow_summary"
+			w.Agent.Config.LogTraffic = true
+		}
 
 	default:
 		return fmt.Errorf("%s is not a valid mode. See SetMode documentation for valid modes", m)
@@ -764,6 +798,19 @@ func (w *Workload) SetVisibilityLevel(v string) error {
 
 	w.VisibilityLevel = v
 	return nil
+}
+
+func (w *Workload) GetVisibilityLevel() string {
+	switch w.VisibilityLevel {
+	case "flow_summary":
+		return "blocked_allowed"
+	case "flow_drops":
+		return "blocked"
+	case "flow_off":
+		return "off"
+	default:
+		return w.VisibilityLevel
+	}
 }
 
 //GetID returns the ID from the Href of an Agent
