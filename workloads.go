@@ -163,6 +163,10 @@ type VEN struct {
 	Status   string `json:"status"`
 }
 
+type IncraseTrafficUpdateReq struct {
+	Workloads []Workload `json:"workloads"`
+}
+
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
@@ -344,6 +348,37 @@ func (p *PCE) CreateWorkload(workload Workload) (Workload, APIResponse, error) {
 	json.Unmarshal([]byte(api.RespBody), &newWL)
 
 	return newWL, api, nil
+}
+
+// IncreaseTrafficUpdateRate increases the VEN traffic update rate
+func (p *PCE) IncreaseTrafficUpdateRate(wklds []Workload) (APIResponse, error) {
+	var api APIResponse
+	var err error
+
+	t := []Workload{}
+	for _, w := range wklds {
+		t = append(t, Workload{Href: w.Href})
+	}
+	wklds = t
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/set_flow_reporting_frequency")
+	if err != nil {
+		return api, fmt.Errorf("IncreaseTrafficUpdateRate - %s", err)
+	}
+
+	// Call the API
+	wkldsJSON, err := json.Marshal(IncraseTrafficUpdateReq{Workloads: wklds})
+	if err != nil {
+		return api, fmt.Errorf("IncreaseTrafficUpdateRate - %s", err)
+	}
+	api, err = apicall("POST", apiURL.String(), *p, wkldsJSON, false)
+	api.ReqBody = string(wkldsJSON)
+	if err != nil {
+		return api, fmt.Errorf("IncreaseTrafficUpdateRate - %s", err)
+	}
+
+	return api, nil
 }
 
 // UpdateWorkload updates an existing workload in the Illumio PCE
