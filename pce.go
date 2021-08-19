@@ -39,6 +39,7 @@ type LoadInput struct {
 	LabelGroups                 bool
 	IPLists                     bool
 	Workloads                   bool
+	WorkloadsQueryParameters    map[string]string
 	VirtualServices             bool
 	VirtualServers              bool
 	Services                    bool
@@ -102,7 +103,7 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get all Workloads
 	if l.Workloads {
-		p.WorkloadsSlice, _, err = p.GetAllWorkloads()
+		p.WorkloadsSlice, _, err = p.GetAllWorkloadsQP(l.WorkloadsQueryParameters)
 		if err != nil {
 			return fmt.Errorf("getting workloads - %s", err)
 		}
