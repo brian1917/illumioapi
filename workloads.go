@@ -596,6 +596,9 @@ func (w *Workload) SanitizeBulkUpdate() {
 		newLabels = append(newLabels, &newLabel)
 	}
 	*w.Labels = newLabels
+
+	// Change distinguised name
+	w.DistinguishedName = ""
 }
 
 // SanitizePut removes the necessary properties to update an unmanaged and managed workload
