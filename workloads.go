@@ -824,11 +824,21 @@ func (w *Workload) SetMode(m string) error {
 // SetVisibilityLevel adjusts the workload to reflect the assigned visibility level.
 // Nothing is changed in the PCE. To reflect the change in the PCE use SetVisibilityLevel method followed by PCE.UpdateWorkload() method.
 //
-// Valid options in 20.2 and newer PCEs are flow_summary, flow_drops, flow_off, or enhanced_data_collection
+// Valid options in 20.2 and newer PCEs are flow_summary (blocked_allowed), flow_drops (blocked), flow_off (off), or enhanced_data_collection. The options in paranthesis are the UI values. Both are acceptable.
 //
 // 20.1 PCEs and lower do not use this method.
 func (w *Workload) SetVisibilityLevel(v string) error {
 	v = strings.ToLower(v)
+
+	if v == "blocked_allowed" {
+		v = "flow_summary"
+	}
+	if v == "blocked" {
+		v = "flow_drops"
+	}
+	if v == "off" {
+		v = "flow_off"
+	}
 
 	if v != "flow_summary" && v != "flow_drops" && v != "flow_off" && v != "enhanced_data_collection" {
 		return fmt.Errorf("%s is not a valid visibility_level. See SetVisibilityLevel documentation for valid levels", v)
@@ -838,6 +848,7 @@ func (w *Workload) SetVisibilityLevel(v string) error {
 	return nil
 }
 
+// GetVisibilityLevel returns unmanaged, blocked_allowed, blocked, or off.
 func (w *Workload) GetVisibilityLevel() string {
 
 	if w.GetMode() == "unmanaged" {
