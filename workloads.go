@@ -839,6 +839,11 @@ func (w *Workload) SetVisibilityLevel(v string) error {
 }
 
 func (w *Workload) GetVisibilityLevel() string {
+
+	if w.GetMode() == "unmanaged" {
+		return "unmanaged"
+	}
+
 	switch w.VisibilityLevel {
 	case "flow_summary":
 		return "blocked_allowed"
