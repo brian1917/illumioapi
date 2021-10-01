@@ -92,6 +92,7 @@ type Workload struct {
 	Interfaces            []*Interface `json:"interfaces,omitempty"`
 	Labels                *[]*Label    `json:"labels,omitempty"` // This breaks the removing all labels
 	Name                  string       `json:"name,omitempty"`
+	Namespace             string       `json:"namespace,omitempty"` // Only used in Container Workloads
 	Online                bool         `json:"online,omitempty"`
 	OsDetail              string       `json:"os_detail,omitempty"`
 	OsID                  string       `json:"os_id,omitempty"`
@@ -154,13 +155,6 @@ type BulkResponse struct {
 type Error struct {
 	Token   string `json:"token"`
 	Message string `json:"message"`
-}
-
-type VEN struct {
-	Href     string `json:"href"`
-	Hostname string `json:"hostname"`
-	Name     string `json:"name"`
-	Status   string `json:"status"`
 }
 
 type IncraseTrafficUpdateReq struct {
