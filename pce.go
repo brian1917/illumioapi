@@ -30,6 +30,12 @@ type PCE struct {
 	ServicesSlice               []Service                              // All services stored in a slice
 	ConsumingSecurityPrincipals map[string]ConsumingSecurityPrincipals // ConsumingSecurityPrincipals can be loooked up by href or name
 	RuleSets                    map[string]RuleSet                     // RuleSets can be looked up by href or name
+	VENs                        map[string]VEN                         // VENs can be looked up by href or name
+	VENsSlice                   []VEN                                  // All VENs stored in a slice
+	ContainerClusters           map[string]ContainerCluster
+	ContainerClustersSlice      []ContainerCluster
+	ContainerWorkloads          map[string]Workload
+	ContainerWorkloadsSlice     []Workload
 }
 
 // LoadInput tells the p.Load method what objects to load
@@ -45,6 +51,9 @@ type LoadInput struct {
 	Services                    bool
 	ConsumingSecurityPrincipals bool
 	RuleSets                    bool
+	VENs                        bool
+	ContainerClusters           bool
+	ContainerWorkloads          bool
 }
 
 // Load fills the PCE object maps
@@ -101,7 +110,7 @@ func (p *PCE) Load(l LoadInput) error {
 		}
 	}
 
-	// Get all Workloads
+	//  Workloads
 	if l.Workloads {
 		p.WorkloadsSlice, _, err = p.GetAllWorkloadsQP(l.WorkloadsQueryParameters)
 		if err != nil {
@@ -113,6 +122,7 @@ func (p *PCE) Load(l LoadInput) error {
 			p.Workloads[w.Hostname] = w
 			p.Workloads[w.Name] = w
 		}
+
 	}
 
 	// Virtual services
@@ -177,6 +187,46 @@ func (p *PCE) Load(l LoadInput) error {
 		for _, cp := range cps {
 			p.ConsumingSecurityPrincipals[cp.Href] = cp
 			p.ConsumingSecurityPrincipals[cp.Name] = cp
+		}
+	}
+
+	// Get VENs
+	if l.VENs {
+		p.VENsSlice, _, err = p.GetAllVens(nil)
+		if err != nil {
+			return fmt.Errorf("getting all vens - %s", err)
+		}
+		p.VENs = make(map[string]VEN)
+		for _, v := range p.VENsSlice {
+			p.VENs[v.Name] = v
+			p.VENs[v.Href] = v
+			p.VENs[v.UID] = v
+		}
+	}
+
+	// Container Clusters
+	if l.ContainerClusters {
+		p.ContainerClustersSlice, _, err = p.GetAllContainerClusters(nil)
+		if err != nil {
+			return fmt.Errorf("getting all container clusters - %s", err)
+		}
+		p.ContainerClusters = make(map[string]ContainerCluster)
+		for _, c := range p.ContainerClustersSlice {
+			p.ContainerClusters[c.Href] = c
+			p.ContainerClusters[c.Name] = c
+		}
+	}
+
+	// Container Workloads
+	if l.ContainerWorkloads {
+		p.ContainerWorkloadsSlice, _, err = p.GetAllContainerWorkloads(nil)
+		if err != nil {
+			return fmt.Errorf("getting all container workloads - %s", err)
+		}
+		p.ContainerWorkloads = map[string]Workload{}
+		for _, cw := range p.ContainerWorkloadsSlice {
+			p.ContainerWorkloads[cw.Name] = cw
+			p.ContainerWorkloads[cw.Href] = cw
 		}
 	}
 
