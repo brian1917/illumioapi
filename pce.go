@@ -58,9 +58,11 @@ type LoadInput struct {
 
 // Load fills the PCE object maps
 // provisionStatus must be "draft" or "active"
-func (p *PCE) Load(l LoadInput) error {
+func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 
 	var err error
+	var a APIResponse
+	apiResps := make(map[string]APIResponse)
 
 	// Check provisionStatus
 	provisionStatus := strings.ToLower(l.ProvisionStatus)
@@ -68,14 +70,15 @@ func (p *PCE) Load(l LoadInput) error {
 		provisionStatus = "draft"
 	}
 	if provisionStatus != "draft" && provisionStatus != "active" {
-		return fmt.Errorf("provisionStatus must be draft or active")
+		return apiResps, fmt.Errorf("provisionStatus must be draft or active")
 	}
 
 	// Get Label maps
 	if l.Labels {
-		p.LabelsSlice, _, err = p.GetAllLabels()
+		p.LabelsSlice, a, err = p.GetAllLabels()
+		apiResps["GetAllLabels"] = a
 		if err != nil {
-			return fmt.Errorf("getting labels - %s", err)
+			return apiResps, fmt.Errorf("getting labels - %s", err)
 		}
 		p.Labels = make(map[string]Label)
 		for _, l := range p.LabelsSlice {
@@ -86,9 +89,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get all label groups
 	if l.LabelGroups {
-		lgs, _, err := p.GetAllLabelGroups(provisionStatus)
+		lgs, a, err := p.GetAllLabelGroups(provisionStatus)
+		apiResps["GetAllLabelGroups"] = a
 		if err != nil {
-			return fmt.Errorf("getting label groups - %s", err)
+			return apiResps, fmt.Errorf("getting label groups - %s", err)
 		}
 		p.LabelGroups = make(map[string]LabelGroup)
 		for _, lg := range lgs {
@@ -99,9 +103,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get all IPLists
 	if l.IPLists {
-		p.IPListsSlice, _, err = p.getAllIPLists(provisionStatus)
+		p.IPListsSlice, a, err = p.getAllIPLists(provisionStatus)
+		apiResps["getAllIPLists"] = a
 		if err != nil {
-			return fmt.Errorf("getting draft ip lists - %s", err)
+			return apiResps, fmt.Errorf("getting draft ip lists - %s", err)
 		}
 		p.IPLists = make(map[string]IPList)
 		for _, ipl := range p.IPListsSlice {
@@ -112,9 +117,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	//  Workloads
 	if l.Workloads {
-		p.WorkloadsSlice, _, err = p.GetAllWorkloadsQP(l.WorkloadsQueryParameters)
+		p.WorkloadsSlice, a, err = p.GetAllWorkloadsQP(l.WorkloadsQueryParameters)
+		apiResps["GetAllWorkloadsQP"] = a
 		if err != nil {
-			return fmt.Errorf("getting workloads - %s", err)
+			return apiResps, fmt.Errorf("getting workloads - %s", err)
 		}
 		p.Workloads = make(map[string]Workload)
 		for _, w := range p.WorkloadsSlice {
@@ -127,9 +133,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Virtual services
 	if l.VirtualServices {
-		virtualServices, _, err := p.GetAllVirtualServices(nil, provisionStatus)
+		virtualServices, a, err := p.GetAllVirtualServices(nil, provisionStatus)
+		apiResps["GetAllVirtualServices"] = a
 		if err != nil {
-			return fmt.Errorf("getting virtual services - %s", err)
+			return apiResps, fmt.Errorf("getting virtual services - %s", err)
 		}
 		p.VirtualServices = make(map[string]VirtualService)
 		for _, vs := range virtualServices {
@@ -140,9 +147,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Services
 	if l.Services {
-		p.ServicesSlice, _, err = p.GetAllServices(provisionStatus)
+		p.ServicesSlice, a, err = p.GetAllServices(provisionStatus)
+		apiResps["GetAllServices"] = a
 		if err != nil {
-			return fmt.Errorf("getting all services - %s", err)
+			return apiResps, fmt.Errorf("getting all services - %s", err)
 		}
 		p.Services = make(map[string]Service)
 		for _, s := range p.ServicesSlice {
@@ -153,9 +161,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// VirtualServers
 	if l.VirtualServers {
-		virtualServers, _, err := p.GetAllVirtualServers(provisionStatus)
+		virtualServers, a, err := p.GetAllVirtualServers(provisionStatus)
+		apiResps["GetAllVirtualServers"] = a
 		if err != nil {
-			return fmt.Errorf("getting all virtual servers - %s", err)
+			return apiResps, fmt.Errorf("getting all virtual servers - %s", err)
 		}
 		p.VirtualServers = make(map[string]VirtualServer)
 		for _, v := range virtualServers {
@@ -166,9 +175,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Rulesets
 	if l.RuleSets {
-		rulesets, _, err := p.GetAllRuleSets(provisionStatus)
+		rulesets, a, err := p.GetAllRuleSets(provisionStatus)
+		apiResps["GetAllRuleSets"] = a
 		if err != nil {
-			return fmt.Errorf("getting all rulesets - %s", err)
+			return apiResps, fmt.Errorf("getting all rulesets - %s", err)
 		}
 		p.RuleSets = make(map[string]RuleSet)
 		for _, rs := range rulesets {
@@ -179,9 +189,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Consuming Security Principals
 	if l.ConsumingSecurityPrincipals {
-		cps, _, err := p.GetAllADUserGroups()
+		cps, a, err := p.GetAllADUserGroups()
+		apiResps["GetAllADUserGroups"] = a
 		if err != nil {
-			return fmt.Errorf("getting all consuming security principals - %s", err)
+			return apiResps, fmt.Errorf("getting all consuming security principals - %s", err)
 		}
 		p.ConsumingSecurityPrincipals = make(map[string]ConsumingSecurityPrincipals)
 		for _, cp := range cps {
@@ -192,9 +203,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Get VENs
 	if l.VENs {
-		p.VENsSlice, _, err = p.GetAllVens(nil)
+		p.VENsSlice, a, err = p.GetAllVens(nil)
+		apiResps["GetAllVens"] = a
 		if err != nil {
-			return fmt.Errorf("getting all vens - %s", err)
+			return apiResps, fmt.Errorf("getting all vens - %s", err)
 		}
 		p.VENs = make(map[string]VEN)
 		for _, v := range p.VENsSlice {
@@ -206,9 +218,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Container Clusters
 	if l.ContainerClusters {
-		p.ContainerClustersSlice, _, err = p.GetAllContainerClusters(nil)
+		p.ContainerClustersSlice, a, err = p.GetAllContainerClusters(nil)
+		apiResps["GetAllContainerClusters"] = a
 		if err != nil {
-			return fmt.Errorf("getting all container clusters - %s", err)
+			return apiResps, fmt.Errorf("getting all container clusters - %s", err)
 		}
 		p.ContainerClusters = make(map[string]ContainerCluster)
 		for _, c := range p.ContainerClustersSlice {
@@ -219,9 +232,10 @@ func (p *PCE) Load(l LoadInput) error {
 
 	// Container Workloads
 	if l.ContainerWorkloads {
-		p.ContainerWorkloadsSlice, _, err = p.GetAllContainerWorkloads(nil)
+		p.ContainerWorkloadsSlice, a, err = p.GetAllContainerWorkloads(nil)
+		apiResps["GetAllContainerWorkloads"] = a
 		if err != nil {
-			return fmt.Errorf("getting all container workloads - %s", err)
+			return apiResps, fmt.Errorf("getting all container workloads - %s", err)
 		}
 		p.ContainerWorkloads = map[string]Workload{}
 		for _, cw := range p.ContainerWorkloadsSlice {
@@ -230,7 +244,7 @@ func (p *PCE) Load(l LoadInput) error {
 		}
 	}
 
-	return nil
+	return apiResps, nil
 }
 
 // FindObject takes an href and returns what it is and the name
