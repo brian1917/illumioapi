@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // ProductVersion represents the version of the product
@@ -69,7 +70,7 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 
 	// Build the API URL
 	fqdn := pceSanitization(p.FQDN)
-	if p.FQDN == "poc1.illum.io" || p.FQDN == "scp1.illum.io" || p.FQDN == "scp2.illum.io" || p.FQDN == "scp3.illum.io" || p.FQDN == "scp4.illum.io" || p.FQDN == "scp5.illum.io" || p.FQDN == "sca1.illum.io" || p.FQDN == "sca2.illum.io" {
+	if strings.Contains(p.FQDN, "illum.io") {
 		fqdn = "login.illum.io"
 	}
 	if p.FQDN == "xpress1.ilabs.io" {
