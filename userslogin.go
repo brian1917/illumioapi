@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -76,6 +77,12 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	if p.FQDN == "xpress1.ilabs.io" {
 		fqdn = "loginpce-dfdev1.ilabs.io"
 	}
+
+	// If there is an env variable set, use that
+	if os.Getenv("ILLUMIO_LOGIN_SERVER") != "" {
+		fqdn = os.Getenv("ILLUMIO_LOGIN_SERVER")
+	}
+
 	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(p.Port) + "/api/v2/login_users/authenticate")
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - %s", err)
@@ -167,6 +174,7 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 // Login authenticates to the PCE.
 // Login will populate the User, Key, and Org fields in the PCE instance.
 // Login will use a temporary session token that expires after 10 minutes.
+// The ILLUMIO_LOGIN_SERVER environment variable can be used for specifying a login server
 func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error) {
 
 	var apiResps []APIResponse
@@ -191,6 +199,7 @@ func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error) {
 // LoginAPIKey authenticates to the PCE.
 // Login will populate the User, Key, and Org fields in the PCE instance.
 // LoginAPIKey will create a permanent API Key with the provided name and description fields.
+// The ILLUMIO_LOGIN_SERVER environment variable can be used for specifying a login server.
 func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIResponse, error) {
 
 	login, a, err := p.Login(user, password)
