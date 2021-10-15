@@ -17,9 +17,10 @@ type PCE struct {
 	User                        string
 	Key                         string
 	DisableTLSChecking          bool
-	LabelsSlice                 []Label                                // All labels stored in a slice
-	Labels                      map[string]Label                       // Labels can be looked up by href or key+value (no character between key and value)
-	LabelGroups                 map[string]LabelGroup                  // Label Groups can be looked up by href or name
+	LabelsSlice                 []Label               // All labels stored in a slice
+	Labels                      map[string]Label      // Labels can be looked up by href or key+value (no character between key and value)
+	LabelGroups                 map[string]LabelGroup // Label Groups can be looked up by href or name
+	LabelGroupsSlice            []LabelGroup
 	IPLists                     map[string]IPList                      // IP Lists can be looked up by href or name
 	IPListsSlice                []IPList                               // All IP Lists stored in a slice
 	Workloads                   map[string]Workload                    // Workloads can be looked up by href, hostname, or names
@@ -89,15 +90,16 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 
 	// Get all label groups
 	if l.LabelGroups {
-		lgs, a, err := p.GetAllLabelGroups(provisionStatus)
+		p.LabelGroupsSlice, a, err = p.GetAllLabelGroups(provisionStatus)
 		apiResps["GetAllLabelGroups"] = a
 		if err != nil {
 			return apiResps, fmt.Errorf("getting label groups - %s", err)
 		}
 		p.LabelGroups = make(map[string]LabelGroup)
-		for _, lg := range lgs {
+		for _, lg := range p.LabelGroupsSlice {
 			p.LabelGroups[lg.Href] = lg
 			p.LabelGroups[lg.Name] = lg
+			p.LabelGroups[lg.Key+lg.Name] = lg
 		}
 	}
 
