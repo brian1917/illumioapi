@@ -41,13 +41,19 @@ type IPList struct {
 }
 
 // GetIPList queries returns the IP List based on name. Provisioned IP lists checked before draft
-func (p *PCE) GetIPList(name string) (IPList, APIResponse, error) {
+func (p *PCE) GetIPList(name string, provStatus string) (IPList, APIResponse, error) {
 	var ipList IPList
 	var api APIResponse
-	var activeIPLists, draftIPLists []IPList
+	var ipLists []IPList
+
+	// Validate pStatus
+	provStatus = strings.ToLower(provStatus)
+	if provStatus != "active" && provStatus != "draft" {
+		return ipList, api, fmt.Errorf("get iplist - invalid provStatus")
+	}
 
 	// Active IP Lists
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/active/ip_lists")
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provStatus + "/ip_lists")
 	if err != nil {
 		return ipList, api, fmt.Errorf("get iplist - %s", err)
 	}
@@ -58,24 +64,7 @@ func (p *PCE) GetIPList(name string) (IPList, APIResponse, error) {
 	if err != nil {
 		return ipList, api, fmt.Errorf("get iplist - %s", err)
 	}
-	json.Unmarshal([]byte(api.RespBody), &activeIPLists)
-
-	// Draft IP Lists
-	apiURL, err = url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/ip_lists")
-	if err != nil {
-		return ipList, api, fmt.Errorf("get iplist - %s", err)
-	}
-	q = apiURL.Query()
-	q.Set("name", name)
-	apiURL.RawQuery = q.Encode()
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return ipList, api, fmt.Errorf("get iplist - %s", err)
-	}
-	json.Unmarshal([]byte(api.RespBody), &draftIPLists)
-
-	// Combine into a single slice with active first
-	ipLists := append(activeIPLists, draftIPLists...)
+	json.Unmarshal([]byte(api.RespBody), &ipLists)
 
 	// Look for our match and return the first one
 	for _, ipl := range ipLists {
@@ -83,7 +72,6 @@ func (p *PCE) GetIPList(name string) (IPList, APIResponse, error) {
 			return ipl, api, nil
 		}
 	}
-
 	// If there is no match we are going to return an empty IP List
 	return ipList, api, err
 
