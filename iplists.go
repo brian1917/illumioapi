@@ -24,20 +24,20 @@ type FQDN struct {
 
 // IPList represents an IP List in the Illumio PCE.
 type IPList struct {
-	CreatedAt             string     `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy `json:"created_by,omitempty"`
-	DeletedAt             string     `json:"deleted_at,omitempty"`
-	DeletedBy             *DeletedBy `json:"deleted_by,omitempty"`
-	Description           string     `json:"description,omitempty"`
-	ExternalDataReference string     `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string     `json:"external_data_set,omitempty"`
-	FQDNs                 []*FQDN    `json:"fqdns,omitempty"`
-	Href                  string     `json:"href,omitempty"`
-	IPRanges              []*IPRange `json:"ip_ranges,omitempty"`
-	Name                  string     `json:"name,omitempty"`
-	UpdatedAt             string     `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
-	Size                  int        `json:"size,omitempty"`
+	CreatedAt             string      `json:"created_at,omitempty"`
+	CreatedBy             *CreatedBy  `json:"created_by,omitempty"`
+	DeletedAt             string      `json:"deleted_at,omitempty"`
+	DeletedBy             *DeletedBy  `json:"deleted_by,omitempty"`
+	Description           string      `json:"description,omitempty"`
+	ExternalDataReference string      `json:"external_data_reference,omitempty"`
+	ExternalDataSet       string      `json:"external_data_set,omitempty"`
+	FQDNs                 *[]*FQDN    `json:"fqdns,omitempty"`
+	Href                  string      `json:"href,omitempty"`
+	IPRanges              *[]*IPRange `json:"ip_ranges,omitempty"`
+	Name                  string      `json:"name,omitempty"`
+	UpdatedAt             string      `json:"updated_at,omitempty"`
+	UpdatedBy             *UpdatedBy  `json:"updated_by,omitempty"`
+	Size                  int         `json:"size,omitempty"`
 }
 
 // GetIPList queries returns the IP List based on name. Provisioned IP lists checked before draft
