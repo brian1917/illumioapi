@@ -691,14 +691,14 @@ func (w *Workload) GetMode() string {
 
 	// Covers 20.2+ with the new API structure for VEN and enforcement_mode
 	if w.EnforcementMode != "" {
-		if w.VEN == nil || w.VEN.Href == "" {
+		if (w.VEN == nil || w.VEN.Href == "") && w.ServicePrincipalName == "" {
 			return "unmanaged"
 		}
 		return w.EnforcementMode
 	}
 
 	// Covers prior to 20.2 when the API switched to enforcement_mode
-	if w.Agent == nil || w.Agent.Href == "" {
+	if (w.Agent == nil || w.Agent.Href == "") && w.ServicePrincipalName == "" {
 		return "unmanaged"
 	}
 	if w.Agent.Config.Mode == "illuminated" && !w.Agent.Config.LogTraffic {
