@@ -72,38 +72,39 @@ type OpenServicePorts struct {
 
 // A Workload represents a workload in the PCE
 type Workload struct {
-	Agent                 *Agent       `json:"agent,omitempty"`
-	CreatedAt             string       `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy   `json:"created_by,omitempty"`
-	DataCenter            string       `json:"data_center,omitempty"`
-	DataCenterZone        string       `json:"data_center_zone,omitempty"`
-	DeleteType            string       `json:"delete_type,omitempty"`
-	Deleted               *bool        `json:"deleted,omitempty"`
-	DeletedAt             string       `json:"deleted_at,omitempty"`
-	DeletedBy             *DeletedBy   `json:"deleted_by,omitempty"`
-	Description           string       `json:"description,omitempty"`
-	DistinguishedName     string       `json:"distinguished_name,omitempty"`
-	EnforcementMode       string       `json:"enforcement_mode,omitempty"`
-	ExternalDataReference string       `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string       `json:"external_data_set,omitempty"`
-	Hostname              string       `json:"hostname,omitempty"`
-	Href                  string       `json:"href,omitempty"`
-	IgnoredInterfaceNames *[]string    `json:"ignored_interface_names,omitempty"`
-	Interfaces            []*Interface `json:"interfaces,omitempty"`
-	Labels                *[]*Label    `json:"labels,omitempty"` // This breaks the removing all labels
-	Name                  string       `json:"name,omitempty"`
-	Namespace             string       `json:"namespace,omitempty"` // Only used in Container Workloads
-	Online                bool         `json:"online,omitempty"`
-	OsDetail              string       `json:"os_detail,omitempty"`
-	OsID                  string       `json:"os_id,omitempty"`
-	PublicIP              string       `json:"public_ip,omitempty"`
-	ServicePrincipalName  string       `json:"service_principal_name,omitempty"`
-	ServiceProvider       string       `json:"service_provider,omitempty"`
-	Services              *Services    `json:"services,omitempty"`
-	UpdatedAt             string       `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy   `json:"updated_by,omitempty"`
-	VEN                   *VEN         `json:"ven,omitempty"`
-	VisibilityLevel       string       `json:"visibility_level,omitempty"`
+	Agent                 *Agent                `json:"agent,omitempty"`
+	CreatedAt             string                `json:"created_at,omitempty"`
+	CreatedBy             *CreatedBy            `json:"created_by,omitempty"`
+	DataCenter            string                `json:"data_center,omitempty"`
+	DataCenterZone        string                `json:"data_center_zone,omitempty"`
+	DeleteType            string                `json:"delete_type,omitempty"`
+	Deleted               *bool                 `json:"deleted,omitempty"`
+	DeletedAt             string                `json:"deleted_at,omitempty"`
+	DeletedBy             *DeletedBy            `json:"deleted_by,omitempty"`
+	Description           string                `json:"description,omitempty"`
+	DistinguishedName     string                `json:"distinguished_name,omitempty"`
+	EnforcementMode       string                `json:"enforcement_mode,omitempty"`
+	ExternalDataReference string                `json:"external_data_reference,omitempty"`
+	ExternalDataSet       string                `json:"external_data_set,omitempty"`
+	Hostname              string                `json:"hostname,omitempty"`
+	Href                  string                `json:"href,omitempty"`
+	IgnoredInterfaceNames *[]string             `json:"ignored_interface_names,omitempty"`
+	Interfaces            []*Interface          `json:"interfaces,omitempty"`
+	Labels                *[]*Label             `json:"labels,omitempty"` // This breaks the removing all labels
+	Name                  string                `json:"name,omitempty"`
+	Namespace             string                `json:"namespace,omitempty"` // Only used in Container Workloads
+	Online                bool                  `json:"online,omitempty"`
+	OsDetail              string                `json:"os_detail,omitempty"`
+	OsID                  string                `json:"os_id,omitempty"`
+	PublicIP              string                `json:"public_ip,omitempty"`
+	ServicePrincipalName  string                `json:"service_principal_name,omitempty"`
+	ServiceProvider       string                `json:"service_provider,omitempty"`
+	Services              *Services             `json:"services,omitempty"`
+	UpdatedAt             string                `json:"updated_at,omitempty"`
+	UpdatedBy             *UpdatedBy            `json:"updated_by,omitempty"`
+	VEN                   *VEN                  `json:"ven,omitempty"`
+	VisibilityLevel       string                `json:"visibility_level,omitempty"`
+	VulnerabilitySummary  *VulnerabilitySummary `json:"vulnerability_summary,omitempty"`
 }
 
 // SecureConnect represents SecureConnect for an Agent on a Workload
@@ -159,6 +160,19 @@ type Error struct {
 
 type IncraseTrafficUpdateReq struct {
 	Workloads []Workload `json:"workloads"`
+}
+
+type VulnerabilitySummary struct {
+	NumVulnerabilities         int                        `json:"num_vulnerabilities,omitempty"`
+	MaxVulnerabilityScore      int                        `json:"max_vulnerability_score,omitempty"`
+	VulnerabilityScore         int                        `json:"vulnerability_score,omitempty"`
+	VulnerablePortExposure     int                        `json:"vulnerable_port_exposure,omitempty"`
+	VulnerablePortWideExposure VulnerablePortWideExposure `json:"vulnerable_port_wide_exposure,omitempty"`
+	VulnerabilityExposureScore int                        `json:"vulnerability_exposure_score,omitempty"`
+}
+type VulnerablePortWideExposure struct {
+	Any    bool `json:"any"`
+	IPList bool `json:"ip_list"`
 }
 
 // GetAllWorkloads returns an slice of workloads in the Illumio PCE.
@@ -560,6 +574,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 	w.UpdatedAt = ""
 	w.UpdatedBy = nil
 	w.Services = nil
+	w.VulnerabilitySummary = nil
 
 	// Managed workloads
 	if w.GetMode() != "unmanaged" {
