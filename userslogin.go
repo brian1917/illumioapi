@@ -71,7 +71,7 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 
 	// Build the API URL
 	fqdn := pceSanitization(p.FQDN)
-	if strings.Contains(p.FQDN, "illum.io") {
+	if strings.Contains(p.FQDN, "illum.io") && !strings.Contains(p.FQDN, "demo") {
 		fqdn = "login.illum.io"
 	}
 	if p.FQDN == "xpress1.ilabs.io" {
@@ -94,7 +94,7 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	// Call the API - Use a PCE object since that's what apicall expects
 	api, err = apicall("POST", apiURL.String(), PCE{DisableTLSChecking: p.DisableTLSChecking, User: username, Key: password}, nil, false)
 	if err != nil {
-		return auth, api, fmt.Errorf("authenticate error - %s", err)
+		return auth, api, fmt.Errorf("authenticate error - with login server %s - %s", fqdn, err)
 	}
 
 	// Marshal the response
