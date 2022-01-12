@@ -20,6 +20,7 @@ type Agent struct {
 	SecureConnect *SecureConnect `json:"secure_connect,omitempty"`
 	Status        *Status        `json:"status,omitempty"`
 	TargetPceFqdn string         `json:"target_pce_fqdn,omitempty"`
+	Hostname      string         `json:"hostname,omitempty"` // Added this for events
 }
 
 // AgentHealth represents the Agent Health of the Status of a Workload

@@ -36,6 +36,7 @@ type UserLogin struct {
 	TimeZone                    string          `json:"time_zone,omitempty"`
 	Type                        string          `json:"type,omitempty"`
 	Orgs                        []*Org          `json:"orgs,omitempty"`
+	Username                    string          `json:"username,omitempty"` // Added for events
 }
 
 // Org is an an organization in a SaaS PCE
