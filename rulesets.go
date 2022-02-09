@@ -237,10 +237,48 @@ func (p *PCE) CreateRuleSetRule(rulesetHref string, rule Rule) (Rule, APIRespons
 	return newRule, api, nil
 }
 
+// UpdateRuleSet updates an existing ruleset object in the Illumio PCE
+func (p *PCE) UpdateRuleSet(ruleset RuleSet) (APIResponse, error) {
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + ruleset.Href)
+	if err != nil {
+		return api, fmt.Errorf("update ruleset - %s", err)
+	}
+
+	// Remove fields that shouldn't be available for updating
+	ruleset.CreatedAt = ""
+	ruleset.CreatedBy = nil
+	ruleset.Href = ""
+	ruleset.UpdateType = ""
+	ruleset.UpdatedAt = ""
+	ruleset.UpdatedBy = nil
+	ruleset.DeletedAt = ""
+	ruleset.DeletedBy = nil
+	ruleset.Rules = nil
+
+	// Call the API
+	ruleSetJSON, err := json.Marshal(ruleset)
+	if err != nil {
+		return api, fmt.Errorf("update ruleset - %s", err)
+	}
+
+	api.ReqBody = string(ruleSetJSON)
+
+	api, err = apicall("PUT", apiURL.String(), *p, ruleSetJSON, false)
+	if err != nil {
+		return api, fmt.Errorf("update ruleset - %s", err)
+	}
+
+	return api, nil
+}
+
 // UpdateRuleSetRules updates a rule in the Illumio PCE.
 //
 // The provided Rule struct must include an Href.
-// The function will remove properties not included in the PUT schema.
+// The method will remove properties not included in the PUT schema.
 func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	var api APIResponse
 	var err error
