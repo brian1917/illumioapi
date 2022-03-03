@@ -124,13 +124,6 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		if err != nil {
 			return apiResps, fmt.Errorf("getting workloads - %s", err)
 		}
-		p.Workloads = make(map[string]Workload)
-		for _, w := range p.WorkloadsSlice {
-			p.Workloads[w.Href] = w
-			p.Workloads[w.Hostname] = w
-			p.Workloads[w.Name] = w
-		}
-
 	}
 
 	// Virtual services
