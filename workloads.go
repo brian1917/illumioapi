@@ -259,8 +259,15 @@ func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, 
 		p.Workloads = make(map[string]Workload)
 		for _, w := range asyncWklds {
 			p.Workloads[w.Href] = w
-			p.Workloads[w.Hostname] = w
-			p.Workloads[w.Name] = w
+			if w.Hostname != "" {
+				p.Workloads[w.Hostname] = w
+			}
+			if w.Name != "" {
+				p.Workloads[w.Name] = w
+			}
+			if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
+				p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
+			}
 		}
 		p.WorkloadsSlice = asyncWklds
 
@@ -271,8 +278,15 @@ func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, 
 	p.Workloads = make(map[string]Workload)
 	for _, w := range workloads {
 		p.Workloads[w.Href] = w
-		p.Workloads[w.Hostname] = w
-		p.Workloads[w.Name] = w
+		if w.Hostname != "" {
+			p.Workloads[w.Hostname] = w
+		}
+		if w.Name != "" {
+			p.Workloads[w.Name] = w
+		}
+		if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
+			p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
+		}
 	}
 	p.WorkloadsSlice = workloads
 
