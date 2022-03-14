@@ -130,6 +130,11 @@ type Statements struct {
 
 // GetAllRuleSets returns a slice of Rulesets for all RuleSets in the Illumio PCE
 func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, error) {
+	return p.GetAllRuleSetsQP(nil, provisionStatus)
+}
+
+// GetAllRuleSetsQP returns a slice of Rulesets for all RuleSets in the Illumio PCE
+func (p *PCE) GetAllRuleSetsQP(queryParameters map[string]string, provisionStatus string) ([]RuleSet, APIResponse, error) {
 	var rulesets []RuleSet
 	var api APIResponse
 
@@ -137,6 +142,13 @@ func (p *PCE) GetAllRuleSets(provisionStatus string) ([]RuleSet, APIResponse, er
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/rule_sets")
 	if err != nil {
 		return rulesets, api, fmt.Errorf("get all rulesets - %s", err)
+	}
+
+	// Set the query parameters
+	for key, value := range queryParameters {
+		q := apiURL.Query()
+		q.Set(key, value)
+		apiURL.RawQuery = q.Encode()
 	}
 
 	// Call the API
