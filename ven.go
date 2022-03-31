@@ -25,6 +25,22 @@ type VEN struct {
 	ContainerCluster *ContainerCluster `json:"container_cluster,omitempty"`
 }
 
+type VENUpgrade struct {
+	VENs    []VEN  `json:"vens"`
+	Release string `json:"release"`
+	DryRun  bool   `json:"dry_run"`
+}
+
+type VENUpgradeResp struct {
+	VENUpgradeErrors []VENUpgradeError `json:"errors"`
+}
+
+type VENUpgradeError struct {
+	Token   string   `json:"token"`
+	Message string   `json:"message"`
+	Hrefs   []string `json:"hrefs"`
+}
+
 // GetAllVens returns a slice of VENs in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
@@ -121,4 +137,38 @@ func (p *PCE) UpdateVen(ven VEN) (APIResponse, error) {
 	}
 
 	return api, nil
+}
+
+func (p *PCE) UpgradeVENs(vens []VEN, release string) (VENUpgradeResp, APIResponse, error) {
+	var api APIResponse
+	var err error
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens/upgrade")
+	if err != nil {
+		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
+	}
+
+	// Build the venUpgrade
+	venHrefs := []VEN{}
+	for _, v := range vens {
+		venHrefs = append(venHrefs, VEN{Href: v.Href})
+	}
+	venUpgrade := VENUpgrade{Release: release, DryRun: false, VENs: venHrefs}
+
+	// Call the API
+	venUpgradeJSON, err := json.Marshal(venUpgrade)
+	if err != nil {
+		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
+	}
+	api.ReqBody = string(venUpgradeJSON)
+
+	api, err = apicall("PUT", apiURL.String(), *p, venUpgradeJSON, false)
+	if err != nil {
+		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
+	}
+	var resp VENUpgradeResp
+	json.Unmarshal([]byte(api.RespBody), &resp)
+
+	return resp, api, nil
 }
