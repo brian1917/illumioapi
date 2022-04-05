@@ -314,6 +314,20 @@ func (p *PCE) GetWkldByHref(href string) (Workload, APIResponse, error) {
 	return wkld, api, nil
 }
 
+// GetWkldByHostname gets a workload based on the hostname
+func (p *PCE) GetWkldByHostname(hostname string) (Workload, APIResponse, error) {
+	workloads, a, err := p.GetAllWorkloadsQP(map[string]string{"hostname": hostname})
+	if err != nil {
+		return Workload{}, a, fmt.Errorf("GetWkldByHref - %s", err)
+	}
+	for _, w := range workloads {
+		if w.Hostname == hostname {
+			return w, a, nil
+		}
+	}
+	return Workload{}, a, nil
+}
+
 // GetWkldHrefMap returns a map of all workloads with the Href as the key.
 func (p *PCE) GetWkldHrefMap() (map[string]Workload, APIResponse, error) {
 
