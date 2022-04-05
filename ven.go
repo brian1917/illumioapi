@@ -105,6 +105,26 @@ func (p *PCE) GetAllVens(queryParameters map[string]string) ([]VEN, APIResponse,
 	return vens, api, nil
 }
 
+// GetVenByHref returns the VEN with a specific href
+func (p *PCE) GetVenByHref(href string) (VEN, APIResponse, error) {
+	// Build the API URL
+	apiURL, err := url.Parse(fmt.Sprintf("https://%s:%d/api/v2%s", pceSanitization(p.FQDN), p.Port, href))
+	if err != nil {
+		return VEN{}, APIResponse{}, fmt.Errorf("get ven by href - %s", err)
+	}
+
+	// Call the API
+	api, err := apicall("GET", apiURL.String(), *p, nil, false)
+	if err != nil {
+		return VEN{}, api, fmt.Errorf("get ven by href - %s", err)
+	}
+
+	var ven VEN
+	json.Unmarshal([]byte(api.RespBody), &ven)
+
+	return ven, api, nil
+}
+
 // UpdateVEN updates an existing ven in the Illumio PCE
 // The provided ven struct must include an href.
 // Properties that cannot be included in the PUT method will be ignored.
