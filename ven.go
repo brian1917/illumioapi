@@ -192,3 +192,16 @@ func (p *PCE) UpgradeVENs(vens []VEN, release string) (VENUpgradeResp, APIRespon
 
 	return resp, api, nil
 }
+
+func (p *PCE) GetVenByHostname(hostname string) (VEN, APIResponse, error) {
+	vens, a, err := p.GetAllVens(map[string]string{"hostname": hostname})
+	if err != nil {
+		return VEN{}, a, err
+	}
+	for _, ven := range vens {
+		if ven.Hostname == hostname {
+			return ven, a, nil
+		}
+	}
+	return VEN{}, a, nil
+}
