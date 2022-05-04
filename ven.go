@@ -88,6 +88,7 @@ func (p *PCE) GetAllVens(queryParameters map[string]string) ([]VEN, APIResponse,
 		for _, v := range asyncVENs {
 			p.VENs[v.Href] = v
 			p.VENs[v.Name] = v
+			p.VENs[v.Hostname] = v
 		}
 		p.VENsSlice = asyncVENs
 
@@ -98,6 +99,7 @@ func (p *PCE) GetAllVens(queryParameters map[string]string) ([]VEN, APIResponse,
 	for _, v := range vens {
 		p.VENs[v.Href] = v
 		p.VENs[v.Name] = v
+		p.VENs[v.Hostname] = v
 	}
 	p.VENsSlice = vens
 
