@@ -120,6 +120,28 @@ func (p *PCE) GetVirtualServiceByName(name string, provisionStatus string) (Virt
 
 }
 
+// GetVirtualServiceByHref returns the virtualservice with a specific href
+func (p *PCE) GetVirtualServiceByHref(href string) (VirtualService, APIResponse, error) {
+	var virtualservice VirtualService
+	var api APIResponse
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
+	if err != nil {
+		return virtualservice, api, fmt.Errorf("get virtualservice - %s", err)
+	}
+
+	// Call the API
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	if err != nil {
+		return virtualservice, api, fmt.Errorf("get virtualservice - %s", err)
+	}
+
+	json.Unmarshal([]byte(api.RespBody), &virtualservice)
+
+	return virtualservice, api, nil
+}
+
 // CreateVirtualService creates a new virtual service in the Illumio PCE.
 func (p *PCE) CreateVirtualService(virtualService VirtualService) (VirtualService, APIResponse, error) {
 	var newVirtualService VirtualService

@@ -326,6 +326,28 @@ func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	return api, nil
 }
 
+// GetRuleSetRuleByHref returns the rule with a specific href
+func (p *PCE) GetRuleSetRuleByHref(href string) (Rule, APIResponse, error) {
+	var rule Rule
+	var api APIResponse
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
+	if err != nil {
+		return rule, api, fmt.Errorf("get rule - %s", err)
+	}
+
+	// Call the API
+	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	if err != nil {
+		return rule, api, fmt.Errorf("get rule - %s", err)
+	}
+
+	json.Unmarshal([]byte(api.RespBody), &rule)
+
+	return rule, api, nil
+}
+
 // GetRuleSetHrefFromRuleHref returns the href of a ruleset based on the rule's href
 func (r *Rule) GetRuleSetHrefFromRuleHref() string {
 	x := strings.Split(r.Href, "/")
