@@ -242,15 +242,15 @@ func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, 
 		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
 
 		// Load the PCE with the returned workloads
-		p.LoadWorkloadMap()
 		p.WorkloadsSlice = asyncWklds
+		p.LoadWorkloadMap()
 
 		return asyncWklds, api, nil
 	}
 
 	// Load the PCE with the returned workloads
-	p.LoadWorkloadMap()
 	p.WorkloadsSlice = workloads
+	p.LoadWorkloadMap()
 
 	// Return if less than 500
 	return workloads, api, nil
