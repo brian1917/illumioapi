@@ -41,6 +41,16 @@ type VENUpgradeError struct {
 	Hrefs   []string `json:"hrefs"`
 }
 
+// LoadVenMap populates the workload maps based on p.WorkloadSlice
+func (p *PCE) LoadVenMap() {
+	p.VENs = make(map[string]VEN)
+	for _, v := range p.VENsSlice {
+		p.VENs[v.Href] = v
+		p.VENs[v.Name] = v
+		p.VENs[v.Hostname] = v
+	}
+}
+
 // GetAllVens returns a slice of VENs in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
@@ -85,23 +95,15 @@ func (p *PCE) GetAllVens(queryParameters map[string]string) ([]VEN, APIResponse,
 		json.Unmarshal([]byte(api.RespBody), &asyncVENs)
 
 		// Load the PCE with the returned workloads
-		for _, v := range asyncVENs {
-			p.VENs[v.Href] = v
-			p.VENs[v.Name] = v
-			p.VENs[v.Hostname] = v
-		}
 		p.VENsSlice = asyncVENs
+		p.LoadVenMap()
 
 		return asyncVENs, api, nil
 	}
 
 	// Load the PCE with the returned workloads
-	for _, v := range vens {
-		p.VENs[v.Href] = v
-		p.VENs[v.Name] = v
-		p.VENs[v.Hostname] = v
-	}
 	p.VENsSlice = vens
+	p.LoadVenMap()
 
 	// Return if less than 500
 	return vens, api, nil

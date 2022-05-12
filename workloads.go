@@ -180,39 +180,25 @@ type VulnerablePortWideExposure struct {
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
 func (p *PCE) GetAllWorkloads() ([]Workload, APIResponse, error) {
-	var api APIResponse
+	wklds, a, err := p.GetAllWorkloadsQP(nil)
+	return wklds, a, err
+}
 
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all workloads - %s", err)
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all workloads - %s", err)
-	}
-
-	var workloads []Workload
-	json.Unmarshal([]byte(api.RespBody), &workloads)
-
-	// If length is 500, re-run with async
-	if len(workloads) >= 500 {
-		// Call async
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all workloads - %s", err)
+// LoadWorkloadMap will populate the workload maps based on p.WorkloadSlice
+func (p *PCE) LoadWorkloadMap() {
+	p.Workloads = make(map[string]Workload)
+	for _, w := range p.WorkloadsSlice {
+		p.Workloads[w.Href] = w
+		if w.Hostname != "" {
+			p.Workloads[w.Hostname] = w
 		}
-		// Unmarshal response to asyncWklds and return
-		var asyncWklds []Workload
-		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
-
-		return asyncWklds, api, nil
+		if w.Name != "" {
+			p.Workloads[w.Name] = w
+		}
+		if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
+			p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
+		}
 	}
-
-	// Return if less than 500
-	return workloads, api, nil
 }
 
 // GetAllWorkloadsQP returns a slice of workloads in the Illumio PCE.
@@ -256,38 +242,14 @@ func (p *PCE) GetAllWorkloadsQP(queryParameters map[string]string) ([]Workload, 
 		json.Unmarshal([]byte(api.RespBody), &asyncWklds)
 
 		// Load the PCE with the returned workloads
-		p.Workloads = make(map[string]Workload)
-		for _, w := range asyncWklds {
-			p.Workloads[w.Href] = w
-			if w.Hostname != "" {
-				p.Workloads[w.Hostname] = w
-			}
-			if w.Name != "" {
-				p.Workloads[w.Name] = w
-			}
-			if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
-				p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
-			}
-		}
+		p.LoadWorkloadMap()
 		p.WorkloadsSlice = asyncWklds
 
 		return asyncWklds, api, nil
 	}
 
 	// Load the PCE with the returned workloads
-	p.Workloads = make(map[string]Workload)
-	for _, w := range workloads {
-		p.Workloads[w.Href] = w
-		if w.Hostname != "" {
-			p.Workloads[w.Hostname] = w
-		}
-		if w.Name != "" {
-			p.Workloads[w.Name] = w
-		}
-		if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
-			p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
-		}
-	}
+	p.LoadWorkloadMap()
 	p.WorkloadsSlice = workloads
 
 	// Return if less than 500
@@ -648,6 +610,9 @@ func (w *Workload) SanitizePut() {
 // GetRole takes a map of labels with the href string as the key and returns the role label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetRole(labelMap map[string]Label) Label {
+	if w.Labels == nil {
+		return Label{}
+	}
 	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "role" {
 			return labelMap[l.Href]
@@ -659,6 +624,9 @@ func (w *Workload) GetRole(labelMap map[string]Label) Label {
 // GetApp takes a map of labels with the href string as the key and returns the app label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetApp(labelMap map[string]Label) Label {
+	if w.Labels == nil {
+		return Label{}
+	}
 	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "app" {
 			return labelMap[l.Href]
@@ -670,6 +638,9 @@ func (w *Workload) GetApp(labelMap map[string]Label) Label {
 // GetEnv takes a map of labels with the href string as the key and returns the env label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetEnv(labelMap map[string]Label) Label {
+	if w.Labels == nil {
+		return Label{}
+	}
 	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "env" {
 			return labelMap[l.Href]
@@ -681,6 +652,9 @@ func (w *Workload) GetEnv(labelMap map[string]Label) Label {
 // GetLoc takes a map of labels with the href string as the key and returns the loc label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetLoc(labelMap map[string]Label) Label {
+	if w.Labels == nil {
+		return Label{}
+	}
 	for _, l := range *w.Labels {
 		if labelMap[l.Href].Key == "loc" {
 			return labelMap[l.Href]
