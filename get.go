@@ -22,7 +22,6 @@ func (p *PCE) GetHref(href string, response interface{}) (APIResponse, error) {
 		return api, err
 	}
 
-	json.Unmarshal([]byte(api.RespBody), &response)
-
-	return api, nil
+	err = json.Unmarshal([]byte(api.RespBody), &response)
+	return api, err
 }
