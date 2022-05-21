@@ -326,6 +326,20 @@ func (p *PCE) UpdateRuleSetRules(rule Rule) (APIResponse, error) {
 	return api, nil
 }
 
+// GetRuleSetRuleByHref returns the rule with a specific href
+func (p *PCE) GetRuleSetRuleByHref(href string) (Rule, APIResponse, error) {
+	var rule Rule
+	api, err := p.GetHref(href, &rule)
+	return rule, api, err
+}
+
+// GetRuleSetByHref returns the rule with a specific href
+func (p *PCE) GetRuleSetByHref(href string) (RuleSet, APIResponse, error) {
+	var ruleset RuleSet
+	api, err := p.GetHref(href, &ruleset)
+	return ruleset, api, err
+}
+
 // GetRuleSetHrefFromRuleHref returns the href of a ruleset based on the rule's href
 func (r *Rule) GetRuleSetHrefFromRuleHref() string {
 	x := strings.Split(r.Href, "/")
