@@ -10,33 +10,35 @@ import (
 // For example, each label will be in the map for an HREF and a key value.
 // Policy objects should be called by their corresponding PCE method if you need to iterate or count them (e.g., pce.GetAllLabels)
 type PCE struct {
-	FriendlyName                string
-	FQDN                        string
-	Port                        int
-	Org                         int
-	User                        string
-	Key                         string
-	DisableTLSChecking          bool
-	LabelsSlice                 []Label               // All labels stored in a slice
-	Labels                      map[string]Label      // Labels can be looked up by href or key+value (no character between key and value)
-	LabelGroups                 map[string]LabelGroup // Label Groups can be looked up by href or name
-	LabelGroupsSlice            []LabelGroup
-	IPLists                     map[string]IPList                      // IP Lists can be looked up by href or name
-	IPListsSlice                []IPList                               // All IP Lists stored in a slice
-	Workloads                   map[string]Workload                    // Workloads can be looked up by href, hostname, or names
-	WorkloadsSlice              []Workload                             // All Workloads stored in a slice
-	VirtualServices             map[string]VirtualService              // VirtualServices can be looked up by href or name
-	VirtualServers              map[string]VirtualServer               // VirtualServers can be looked up by href or name
-	Services                    map[string]Service                     // Services can be looked up by href or name
-	ServicesSlice               []Service                              // All services stored in a slice
-	ConsumingSecurityPrincipals map[string]ConsumingSecurityPrincipals // ConsumingSecurityPrincipals can be loooked up by href or name
-	RuleSets                    map[string]RuleSet                     // RuleSets can be looked up by href or name
-	VENs                        map[string]VEN                         // VENs can be looked up by href or name
-	VENsSlice                   []VEN                                  // All VENs stored in a slice
-	ContainerClusters           map[string]ContainerCluster
-	ContainerClustersSlice      []ContainerCluster
-	ContainerWorkloads          map[string]Workload
-	ContainerWorkloadsSlice     []Workload
+	FriendlyName                   string
+	FQDN                           string
+	Port                           int
+	Org                            int
+	User                           string
+	Key                            string
+	DisableTLSChecking             bool
+	LabelsSlice                    []Label               // All labels stored in a slice
+	Labels                         map[string]Label      // Labels can be looked up by href or key+value (no character between key and value)
+	LabelGroups                    map[string]LabelGroup // Label Groups can be looked up by href or name
+	LabelGroupsSlice               []LabelGroup
+	IPLists                        map[string]IPList                      // IP Lists can be looked up by href or name
+	IPListsSlice                   []IPList                               // All IP Lists stored in a slice
+	Workloads                      map[string]Workload                    // Workloads can be looked up by href, hostname, or names
+	WorkloadsSlice                 []Workload                             // All Workloads stored in a slice
+	VirtualServices                map[string]VirtualService              // VirtualServices can be looked up by href or name
+	VirtualServers                 map[string]VirtualServer               // VirtualServers can be looked up by href or name
+	Services                       map[string]Service                     // Services can be looked up by href or name
+	ServicesSlice                  []Service                              // All services stored in a slice
+	ConsumingSecurityPrincipals    map[string]ConsumingSecurityPrincipals // ConsumingSecurityPrincipals can be loooked up by href or name
+	RuleSets                       map[string]RuleSet                     // RuleSets can be looked up by href or name
+	VENs                           map[string]VEN                         // VENs can be looked up by href or name
+	VENsSlice                      []VEN                                  // All VENs stored in a slice
+	ContainerClusters              map[string]ContainerCluster
+	ContainerClustersSlice         []ContainerCluster
+	ContainerWorkloads             map[string]Workload
+	ContainerWorkloadsSlice        []Workload
+	ContainerWorkloadProfiles      map[string]ContainerWorkloadProfile
+	ContainerWorkloadProfilesSlice []ContainerWorkloadProfile
 }
 
 // LoadInput tells the p.Load method what objects to load
