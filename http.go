@@ -241,14 +241,10 @@ func apicallNoContentType(httpAction, apiURL string, pce PCE, body []byte, async
 func pceSanitization(pceFQDN string) string {
 
 	// Remove trailing slash if included
-	if strings.HasSuffix(pceFQDN, "/") {
-		pceFQDN = pceFQDN[:len(pceFQDN)-1]
-	}
+	pceFQDN = strings.TrimSuffix(pceFQDN, "/")
 
 	// Remove HTTPS if included
-	if strings.HasPrefix(pceFQDN, "https://") {
-		pceFQDN = strings.Replace(pceFQDN, "https://", "", -1)
-	}
+	pceFQDN = strings.TrimPrefix(pceFQDN, "https://")
 
 	return pceFQDN
 
