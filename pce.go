@@ -78,7 +78,7 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 
 	// Get Label maps
 	if l.Labels {
-		p.LabelsSlice, a, err = p.GetAllLabels()
+		p.LabelsSlice, a, err = p.GetLabels(nil)
 		apiResps["GetAllLabels"] = a
 		if err != nil {
 			return apiResps, fmt.Errorf("getting labels - %s", err)

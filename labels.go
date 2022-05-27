@@ -1,11 +1,7 @@
 package illumioapi
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -52,184 +48,73 @@ type LabelUsage struct {
 	VirtualService                    bool `json:"virtual_service"`
 }
 
-// GetAllLabels returns a slice of all Labels in the Illumio PCE.
+// GetLabels returns a slice of all Labels in the Illumio PCE.
 // The first API call to the PCE does not use the async option.
 // If the array length is >=500, it re-runs with async.
-func (p *PCE) GetAllLabels() ([]Label, APIResponse, error) {
-	l, a, err := p.GetAllLabelsQP(nil)
-	return l, a, err
-}
-
-func (p *PCE) GetAllLabelsQP(queryParameters map[string]string) ([]Label, APIResponse, error) {
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
-	if err != nil {
-		return nil, APIResponse{}, fmt.Errorf("get all labels - %s", err)
-	}
-
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all workloads - %s", err)
-	}
-
-	// Unmarshal response to struct
+func (p *PCE) GetLabels(queryParameters map[string]string) ([]Label, APIResponse, error) {
 	var labels []Label
-	json.Unmarshal([]byte(api.RespBody), &labels)
-
-	// If length is 500, re-run with async
+	api, err := p.GetCollection("labels", false, nil, &labels)
 	if len(labels) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all workloads - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncLabels []Label
-		json.Unmarshal([]byte(api.RespBody), &asyncLabels)
-
-		return asyncLabels, api, nil
+		labels = nil
+		api, err = p.GetCollection("labels", true, nil, &labels)
 	}
-
-	// Return if less than 500
-	return labels, api, nil
-
+	return labels, api, err
 }
 
-// GetLabelbyKeyValue finds a label based on the key and value.
+// GetLabelByKeyValue finds a label based on the key and value.
 // It will only return one Label that is an exact match.
-func (p *PCE) GetLabelbyKeyValue(key, value string) (Label, APIResponse, error) {
-	var l Label
-	var labels []Label
-	var api APIResponse
+func (p *PCE) GetLabelByKeyValue(key, value string) (Label, APIResponse, error) {
 
-	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
-	if err != nil {
-		return l, api, fmt.Errorf("get label - %s", err)
-	}
-	q := apiURL.Query()
-	q.Set("key", key)
-	q.Set("value", value)
-	apiURL.RawQuery = q.Encode()
+	labels, api, err := p.GetLabels(map[string]string{"key": key, "value": value})
 
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return l, api, fmt.Errorf("get label - %s", err)
-	}
-
-	// Unmarshal respones to struct
-	json.Unmarshal([]byte(api.RespBody), &labels)
-
-	//Illumio API returns any label that contains the search team. We need exact
+	// API returns any label that contains the search team. We need exact
 	for _, label := range labels {
 		if label.Value == value {
-			return label, api, nil
+			return label, api, err
 		}
 	}
 
 	// If we reach here, a label doesn't exist - return an emtpy label struct and no error
-	return l, api, nil
+	return Label{}, api, nil
 }
 
 // GetLabelbyHref returns a label based on the provided HREF.
-func (p *PCE) GetLabelbyHref(href string) (Label, APIResponse, error) {
-	var l Label
-	var api APIResponse
-
-	// Build the API URL and Query Parameters
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/" + href)
-	if err != nil {
-		return l, api, fmt.Errorf("get label by href - %s", err)
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return l, api, fmt.Errorf("get label by href- %s", err)
-	}
-
-	// Unmarshal respones to struct
-	json.Unmarshal([]byte(api.RespBody), &l)
-
-	// If we reach here, a label doesn't exist - return an emtpy label struct and no error
-	return l, api, nil
+func (p *PCE) GetLabelByHref(href string) (Label, APIResponse, error) {
+	var label Label
+	api, err := p.GetHref(href, &label)
+	return label, api, err
 }
 
-// CreateLabel creates a new Label in the Illumio PCE.
+// CreateLabel creates a new Label in the PCE.
 func (p *PCE) CreateLabel(label Label) (Label, APIResponse, error) {
-	var newLabel Label
-	var api APIResponse
-	var err error
 
 	// Check to make sure the label key is valid
 	label.Key = strings.ToLower(label.Key)
 	if label.Key != "app" && label.Key != "env" && label.Key != "role" && label.Key != "loc" {
-		return newLabel, api, errors.New("label key is not app, env, role, or loc")
+		return Label{}, APIResponse{}, errors.New("label key is not app, env, role, or loc")
 	}
 
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/labels")
-	if err != nil {
-		return newLabel, api, fmt.Errorf("create label - %s", err)
-	}
+	var createdLabel Label
+	api, err := p.Post("labels", &label, &createdLabel)
 
-	// Create payload
-	labelJSON, err := json.Marshal(label)
-	if err != nil {
-		return newLabel, api, fmt.Errorf("create label - %s", err)
-	}
-	api.ReqBody = string(labelJSON)
-
-	// Call the API
-	api, err = apicall("POST", apiURL.String(), *p, labelJSON, false)
-	if err != nil {
-		return newLabel, api, fmt.Errorf("create label - %s", err)
-	}
-
-	// Unmarshal new label
-	json.Unmarshal([]byte(api.RespBody), &newLabel)
-
-	return newLabel, api, nil
+	return createdLabel, api, err
 }
 
 // UpdateLabel updates an existing label in the Illumio PCE.
-// The provided label struct must include an Href.
+// The provided label must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
 func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
-	var api APIResponse
-	var err error
 
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + label.Href)
-	if err != nil {
-		return api, fmt.Errorf("update label - %s", err)
+	// Create a new label with just the fields that should be updated and the href
+	l := Label{
+		Href:                  label.Href,
+		Value:                 label.Value,
+		ExternalDataReference: label.ExternalDataReference,
+		ExternalDataSet:       label.ExternalDataSet,
 	}
 
-	// Create a new label with just the fields that should be updated
-	l := Label{Value: label.Value, ExternalDataReference: label.ExternalDataReference, ExternalDataSet: label.ExternalDataSet}
-
-	// Call the API
-	labelJSON, err := json.Marshal(l)
-	if err != nil {
-		return api, fmt.Errorf("update label - %s", err)
-	}
-	api.ReqBody = string(labelJSON)
-
-	api, err = apicall("PUT", apiURL.String(), *p, labelJSON, false)
-	if err != nil {
-		return api, fmt.Errorf("update label - %s", err)
-	}
-
-	return api, nil
+	api, err := p.Put(&l)
+	return api, err
 }
 
 // LabelsToRuleStructure takes a slice of labels and returns a slice of slices for how the labels would be organized as read by the PCE rule processing.
