@@ -189,7 +189,7 @@ func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, er
 // PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
 // async parameter should be set to true for any GET requests returning > 500 items.
 func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
-	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{{"Content-Type", "application/json"}})
 	retry := 0
 
 	for a.StatusCode == 429 {
@@ -202,7 +202,7 @@ func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIRe
 		// Sleep for 30 seconds
 		time.Sleep(30 * time.Second)
 		// Retry the API call
-		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{[2]string{"Content-Type", "application/json"}})
+		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{{"Content-Type", "application/json"}})
 	}
 
 	// Return once response code isn't 429 or if we've exceeded our attempts.

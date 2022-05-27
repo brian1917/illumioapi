@@ -436,7 +436,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 
 	// If we are over Threshold, run the query again for TCP, UDP, and everything else.
 	// TCP
-	q.PortProtoInclude = [][2]int{[2]int{0, 6}}
+	q.PortProtoInclude = [][2]int{{0, 6}}
 	tcpT, tcpA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
@@ -445,7 +445,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		fmt.Printf("%s [INFO] - TCP traffic query: %d records\r\n", time.Now().Format("2006-01-02 15:04:05 "), len(tcpT))
 	}
 	// UDP
-	q.PortProtoInclude = [][2]int{[2]int{0, 17}}
+	q.PortProtoInclude = [][2]int{{0, 17}}
 	udpT, udpA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
@@ -455,7 +455,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 	}
 	// Other Protos
 	q.PortProtoInclude = nil
-	q.PortProtoExclude = [][2]int{[2]int{0, 6}, [2]int{0, 17}}
+	q.PortProtoExclude = [][2]int{{0, 6}, {0, 17}}
 	otherProtoT, otherProtoA, err := p.GetTrafficAnalysis(q)
 	if err != nil {
 		return "", err
@@ -472,7 +472,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		if stdout {
 			fmt.Printf("%s [INFO] - TCP entries close to threshold (%d), querying by TCP port...\r\n", time.Now().Format("2006-01-02 15:04:05 "), Threshold)
 		}
-		q.PortProtoInclude = [][2]int{[2]int{0, 6}}
+		q.PortProtoInclude = [][2]int{{0, 6}}
 		q.PortProtoExclude = nil
 		s, err := iterateOverPorts(*p, q, tcpT, stdout)
 		if err != nil {
@@ -488,7 +488,7 @@ func (p *PCE) IterateTrafficJString(q TrafficQuery, stdout bool) (string, error)
 		if stdout {
 			fmt.Printf("%s [INFO] - UDP entries close to threshold (%d), querying by UDP port...\r\n", time.Now().Format("2006-01-02 15:04:05 "), Threshold)
 		}
-		q.PortProtoInclude = [][2]int{[2]int{0, 17}}
+		q.PortProtoInclude = [][2]int{{0, 17}}
 		q.PortProtoExclude = nil
 		s, err := iterateOverPorts(*p, q, udpT, stdout)
 		if err != nil {
@@ -561,7 +561,7 @@ func iterateOverPorts(p PCE, tq TrafficQuery, protoResults []TrafficAnalysis, st
 			fmt.Printf("\r                                            ")
 			fmt.Printf("\r%s [INFO] - Querying %s Port %d - %d of %d (%d%%)", time.Now().Format("2006-01-02 15:04:05 "), proto, i, iterator, len(ports), int(iterator*100/len(ports)))
 		}
-		tq.PortProtoInclude = [][2]int{[2]int{i, protoNum}}
+		tq.PortProtoInclude = [][2]int{{i, protoNum}}
 		_, a, err := p.GetTrafficAnalysis(tq)
 		if err != nil {
 			return "", err
