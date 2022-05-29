@@ -42,15 +42,7 @@ type asyncResults struct {
 
 func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, headers [][2]string) (APIResponse, error) {
 
-	var response APIResponse
-	var httpBody *bytes.Buffer
 	var asyncResults asyncResults
-
-	// Validate the provided action
-	httpAction = strings.ToUpper(httpAction)
-	if httpAction != "GET" && httpAction != "POST" && httpAction != "PUT" && httpAction != "DELETE" {
-		return response, errors.New("invalid http action string. action must be GET, POST, PUT, or DELETE")
-	}
 
 	// Get the base URL
 	u, err := url.Parse(apiURL)
@@ -60,7 +52,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	baseURL := "https://" + u.Host + "/api/v2"
 
 	// Create body
-	httpBody = bytes.NewBuffer(body)
+	httpBody := bytes.NewBuffer(body)
 
 	// Create HTTP client and request
 	client := &http.Client{}
@@ -70,18 +62,14 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 
 	req, err := http.NewRequest(httpAction, apiURL, httpBody)
 	if err != nil {
-		return response, err
+		return APIResponse{}, err
 	}
 
 	// Set basic authentication and headers
 	req.SetBasicAuth(pce.User, pce.Key)
-
-	// Set the user provided headers
 	for _, h := range headers {
 		req.Header.Set(h[0], h[1])
 	}
-
-	// Set headers for async
 	if async {
 		req.Header.Set("Prefer", "respond-async")
 	}
@@ -89,7 +77,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	// Make HTTP Request
 	resp, err := client.Do(req)
 	if err != nil {
-		return response, err
+		return APIResponse{}, err
 	}
 
 	// Process Async requests
@@ -97,13 +85,13 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 		for asyncResults.Status != "done" {
 			asyncResults, err = polling(baseURL, pce, resp)
 			if err != nil {
-				return response, err
+				return APIResponse{}, err
 			}
 		}
 
 		finalReq, err := http.NewRequest("GET", baseURL+asyncResults.Result.Href, httpBody)
 		if err != nil {
-			return response, err
+			return APIResponse{}, err
 		}
 
 		// Set basic authentication and headers
@@ -113,17 +101,18 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 		// Make HTTP Request
 		resp, err = client.Do(finalReq)
 		if err != nil {
-			return response, err
+			return APIResponse{}, err
 		}
 	}
 
 	// Process response
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return response, err
+		return APIResponse{}, err
 	}
 
 	// Put relevant response info into struct
+	var response APIResponse
 	response.RespBody = string(data[:])
 	response.StatusCode = resp.StatusCode
 	response.Header = resp.Header
