@@ -52,6 +52,7 @@ func (p *PCE) GetCollection(endpoint string, async bool, queryParameters map[str
 
 	// Unmarshal response to struct and return
 	json.Unmarshal([]byte(api.RespBody), &response)
+
 	return api, nil
 
 }
@@ -71,13 +72,14 @@ func (p *PCE) Post(endpoint string, object, createdObject interface{}) (api APIR
 		return api, err
 	}
 
-	api.ReqBody = string(jsonBytes)
-
 	// Call the API
 	api, err = apicall("POST", apiURL.String(), *p, jsonBytes, false)
 	if err != nil {
 		return api, err
 	}
+
+	// Add the request body to the API object
+	api.ReqBody = string(jsonBytes)
 
 	// Unmarshal new label
 	json.Unmarshal([]byte(api.RespBody), &createdObject)
@@ -104,13 +106,14 @@ func (p *PCE) Put(object interface{}) (api APIResponse, err error) {
 	if err != nil {
 		return api, err
 	}
-	api.ReqBody = string(jsonBytes)
 
 	// Call the API
 	api, err = apicall("PUT", apiURL.String(), *p, jsonBytes, false)
 	if err != nil {
 		return api, err
 	}
+	// Add the request body to the API object
+	api.ReqBody = string(jsonBytes)
 
 	return api, nil
 }
