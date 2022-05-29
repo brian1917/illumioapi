@@ -48,33 +48,28 @@ type LabelUsage struct {
 	VirtualService                    bool `json:"virtual_service"`
 }
 
-// GetLabels returns a slice of all Labels in the Illumio PCE.
+// GetLabels returns a slice of labels from the PCE.
+// queryParameters can be used for filtering in the form of [parameter]="value"
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
+// If the slice length is >=500, it re-runs with async.
 func (p *PCE) GetLabels(queryParameters map[string]string) ([]Label, APIResponse, error) {
 	var labels []Label
-	api, err := p.GetCollection("labels", false, nil, &labels)
+	api, err := p.GetCollection("labels", false, queryParameters, &labels)
 	if len(labels) >= 500 {
 		labels = nil
-		api, err = p.GetCollection("labels", true, nil, &labels)
+		api, err = p.GetCollection("labels", true, queryParameters, &labels)
 	}
 	return labels, api, err
 }
 
-// GetLabelByKeyValue finds a label based on the key and value.
-// It will only return one Label that is an exact match.
+// GetLabelByKeyValue finds a label based on the key and value. A blank label is return if no exact match.
 func (p *PCE) GetLabelByKeyValue(key, value string) (Label, APIResponse, error) {
-
 	labels, api, err := p.GetLabels(map[string]string{"key": key, "value": value})
-
-	// API returns any label that contains the search team. We need exact
 	for _, label := range labels {
 		if label.Value == value {
 			return label, api, err
 		}
 	}
-
-	// If we reach here, a label doesn't exist - return an emtpy label struct and no error
 	return Label{}, api, nil
 }
 
