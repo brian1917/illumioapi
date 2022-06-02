@@ -1,12 +1,5 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
-
 // Vulnerability represents a vulnerability in the Illumio PCE
 type Vulnerability struct {
 	CreatedAt   string     `json:"created_at,omitempty"`
@@ -34,74 +27,28 @@ type VulnerabilityReport struct {
 	UpdatedBy          *UpdatedBy `json:"updated_by,omitempty"`
 }
 
-// GetAllVulns returns a slice of all Vulnerabilities in the Illumio PCE.
-// The first call does not use the async option.
-// If the response slice length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllVulns() ([]Vulnerability, APIResponse, error) {
-	var vulns []Vulnerability
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vulnerabilities")
-	if err != nil {
-		return vulns, api, fmt.Errorf("get all vulnerabilities - %s", err)
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return vulns, api, fmt.Errorf("get all vulnerabilities - %s", err)
-	}
-
-	// Unmarshal response to struct
-	json.Unmarshal([]byte(api.RespBody), &vulns)
-
-	// If length is 500, re-run with async
+// GetVulns returns a slice of vulnerabilities from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetVulns(queryParameters map[string]string) (vulns []Vulnerability, api APIResponse, err error) {
+	api, err = p.GetCollection("vulnerabilities", false, queryParameters, &vulns)
 	if len(vulns) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return vulns, api, fmt.Errorf("get all vulnerabilties - %s", err)
-		}
-
-		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &vulns)
+		vulns = nil
+		api, err = p.GetCollection("vulnerabilities", true, queryParameters, &vulns)
 	}
-
-	return vulns, api, nil
+	return vulns, api, err
 }
 
-// GetAllVulnReports returns a slice of all Vulnerability Reports in the Illumio PCE.
-// The first call does not use the async option.
-// If the response slice length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllVulnReports() ([]VulnerabilityReport, APIResponse, error) {
-	var vulnReports []VulnerabilityReport
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vulnerability_reports")
-	if err != nil {
-		return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
-	}
-
-	// Unmarshal response to struct
-	json.Unmarshal([]byte(api.RespBody), &vulnReports)
-
-	// If length is 500, re-run with async
+// GetVulnReports returns a slice of vulnerabilities from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetVulnReports(queryParameters map[string]string) (vulnReports []VulnerabilityReport, api APIResponse, err error) {
+	api, err = p.GetCollection("vulnerability_reports", false, queryParameters, &vulnReports)
 	if len(vulnReports) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return vulnReports, api, fmt.Errorf("get all vulnerability reports - %s", err)
-		}
-
-		// Unmarshal response to struct
-		json.Unmarshal([]byte(api.RespBody), &vulnReports)
+		vulnReports = nil
+		api, err = p.GetCollection("vulnerability_reports", true, queryParameters, &vulnReports)
 	}
-
-	return vulnReports, api, nil
+	return vulnReports, api, err
 }

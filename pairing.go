@@ -1,10 +1,8 @@
 package illumioapi
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
+	"strings"
 )
 
 // PairingProfile represents a pairing profile in the Illumio PCE
@@ -42,86 +40,27 @@ type PairingKey struct {
 	ActivationCode string `json:"activation_code,omitempty"`
 }
 
-// GetAllPairingProfiles gets all pairing profiles in the Illumio PCE.
-func (p *PCE) GetAllPairingProfiles() ([]PairingProfile, APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
-	if err != nil {
-		return nil, APIResponse{}, err
-	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, err
-	}
-
-	// Unmarshal response to struct
-	var pairingProfiles []PairingProfile
-	json.Unmarshal([]byte(api.RespBody), &pairingProfiles)
-
-	// Check if we need to re-run with async
+// GetPairingProfiles returns a slice of labels from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetPairingProfiles(queryParameters map[string]string) (pairingProfiles []PairingProfile, api APIResponse, err error) {
+	api, err = p.GetCollection("pairing_profiles", false, queryParameters, &pairingProfiles)
 	if len(pairingProfiles) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all pairing profiles - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncPairingProfiles []PairingProfile
-		json.Unmarshal([]byte(api.RespBody), &asyncPairingProfiles)
-
-		return asyncPairingProfiles, api, nil
+		pairingProfiles = nil
+		api, err = p.GetCollection("pairing_profiles", true, queryParameters, &pairingProfiles)
 	}
-
-	// Return if less than 500
-	return pairingProfiles, api, nil
+	return pairingProfiles, api, err
 }
 
-// CreatePairingProfile creates a new pairing profile in the Illumio PCE.
-func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/pairing_profiles")
-	if err != nil {
-		return APIResponse{}, err
-	}
-
-	// Create the Payload
-	pairProfileJSON, err := json.Marshal(pairingProfile)
-	if err != nil {
-		return APIResponse{}, err
-	}
-	api := APIResponse{ReqBody: string(pairProfileJSON)}
-
-	// Call the API
-	api, err = apicall("POST", apiURL.String(), *p, pairProfileJSON, false)
-	if err != nil {
-		return api, err
-	}
-
-	return api, nil
+// CreatePairingProfile creates a new pairing profile in the PCE.
+func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (createdPairingProfile PairingProfile, api APIResponse, err error) {
+	api, err = p.Post("pairing_profiles", &pairingProfile, &createdPairingProfile)
+	return createdPairingProfile, api, err
 }
 
 // CreatePairingKey creates a pairing key from a pairing profile.
-func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (PairingKey, APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + pairingProfile.Href + "/pairing_key")
-	if err != nil {
-		return PairingKey{}, APIResponse{}, err
-	}
-
-	// Call the API
-	api, err := apicall("POST", apiURL.String(), *p, []byte("{}"), false)
-	if err != nil {
-		return PairingKey{}, api, err
-	}
-
-	// Unmarshal response to struct
-	var pairingKey PairingKey
-	json.Unmarshal([]byte(api.RespBody), &pairingKey)
-
-	return pairingKey, api, nil
+func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (pairingKey PairingKey, api APIResponse, err error) {
+	api, err = p.Post(strings.TrimPrefix(pairingProfile.Href, fmt.Sprintf("/orgs/%d/", p.Org))+"/pairing_key", &struct{}{}, &pairingKey)
+	return pairingKey, api, err
 }

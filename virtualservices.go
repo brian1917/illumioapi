@@ -47,67 +47,28 @@ type Network struct {
 	Name string `json:"name,omitempty"`
 }
 
-// GetAllVirtualServices returns a slice of all Virtual services of a
-// specific provision status in the Illumio PCE.
-//
-// The queryParameters are map["parameter"]="value" (e.g., queryParameters["name"]="name123")
-// The provision status must be "draft" or "active".
-// The first call does not use the async option.
-// If the response array length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllVirtualServices(queryParameters map[string]string, provisionStatus string) ([]VirtualService, APIResponse, error) {
-	var api APIResponse
-
-	provisionStatus = strings.ToLower(provisionStatus)
-	if provisionStatus != "active" && provisionStatus != "draft" {
-		return nil, api, errors.New("get all Virtual services - provisionStatus must be active or draft")
+// GetVirtualServices returns a slice of IP lists from the PCE. pStatus must be "draft" or "active".
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetVirtualServices(queryParameters map[string]string, pStatus string) (virtualServices []VirtualService, api APIResponse, err error) {
+	// Validate pStatus
+	pStatus = strings.ToLower(pStatus)
+	if pStatus != "active" && pStatus != "draft" {
+		return virtualServices, api, fmt.Errorf("invalid pStatus")
 	}
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_services")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_services", false, queryParameters, &virtualServices)
+	if len(virtualServices) > 500 {
+		virtualServices = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_services", true, queryParameters, &virtualServices)
 	}
+	return virtualServices, api, err
 
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all Virtual services - %s", err)
-	}
-
-	var virtualServices []VirtualService
-	json.Unmarshal([]byte(api.RespBody), &virtualServices)
-
-	// If length is 500, re-run with async
-	if len(virtualServices) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all Virtual services - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncVirtualServices []VirtualService
-		json.Unmarshal([]byte(api.RespBody), &asyncVirtualServices)
-
-		return asyncVirtualServices, api, nil
-	}
-
-	// Return if there are less than 500
-	return virtualServices, api, nil
 }
 
-// GetVirtualServiceByName returns a single Virtual Service that matches the name
-// Using the queryParameters in GetAllVirtualServices reports partial matches on name values
-// This method only returns a single value for exact match.
-func (p *PCE) GetVirtualServiceByName(name string, provisionStatus string) (VirtualService, APIResponse, error) {
-	qp := map[string]string{"name": name}
-	vsMatches, api, err := p.GetAllVirtualServices(qp, provisionStatus)
+// GetVirtualServiceByName returns the virtual service based on name. A blank virtual service is return if no exact match.
+func (p *PCE) GetVirtualServiceByName(name string, pStatus string) (VirtualService, APIResponse, error) {
+	vsMatches, api, err := p.GetAllVirtualServices(map[string]string{"name": name}, pStatus)
 	if err != nil {
 		return VirtualService{}, api, err
 	}
@@ -121,76 +82,25 @@ func (p *PCE) GetVirtualServiceByName(name string, provisionStatus string) (Virt
 }
 
 // GetVirtualServiceByHref returns the virtualservice with a specific href
-func (p *PCE) GetVirtualServiceByHref(href string) (VirtualService, APIResponse, error) {
-	var virtualservice VirtualService
-	api, err := p.GetHref(href, &virtualservice)
-	return virtualservice, api, err
+func (p *PCE) GetVirtualServiceByHref(href string) (virtualService VirtualService, api APIResponse, err error) {
+	api, err = p.GetHref(href, &virtualService)
+	return virtualService, api, err
 }
 
 // CreateVirtualService creates a new virtual service in the Illumio PCE.
-func (p *PCE) CreateVirtualService(virtualService VirtualService) (VirtualService, APIResponse, error) {
-	var newVirtualService VirtualService
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services")
-	if err != nil {
-		return newVirtualService, api, fmt.Errorf("create Virtual service - %s", err)
-	}
-
-	// Sanitize
+func (p *PCE) CreateVirtualService(virtualService VirtualService) (createdVirtualService VirtualService, api APIResponse, err error) {
 	virtualService.Sanitize()
-
-	// Call the API
-	virtualServiceJSON, err := json.Marshal(virtualService)
-	if err != nil {
-		return newVirtualService, api, fmt.Errorf("create Virtual service - %s", err)
-	}
-
-	api.ReqBody = string(virtualServiceJSON)
-
-	api, err = apicall("POST", apiURL.String(), *p, virtualServiceJSON, false)
-	if err != nil {
-		return newVirtualService, api, fmt.Errorf("create Virtual service - %s", err)
-	}
-
-	// Unmarshal new Virtual service
-	json.Unmarshal([]byte(api.RespBody), &newVirtualService)
-
-	return newVirtualService, api, nil
+	virtualService.Href = ""
+	api, err = p.Post("sec_policy/draft/virtual_services", &virtualService, &createdVirtualService)
+	return createdVirtualService, api, err
 }
 
-// UpdateVirtualService updates an existing virtual service in the Illumio PCE.
-//
-// The provided Virtual Service struct must include an Href.
+// UpdateVirtualService updates an existing virtual service in the PCE.
+// The provided virtual service must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
 func (p *PCE) UpdateVirtualService(virtualService VirtualService) (APIResponse, error) {
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + virtualService.Href)
-	if err != nil {
-		return api, fmt.Errorf("update virtual service - %s", err)
-	}
-
 	virtualService.Sanitize()
-
-	// Call the API
-	virtualServiceJSON, err := json.Marshal(virtualService)
-	if err != nil {
-		return api, fmt.Errorf("update Virtual service - %s", err)
-	}
-
-	api.ReqBody = string(virtualServiceJSON)
-
-	api, err = apicall("PUT", apiURL.String(), *p, virtualServiceJSON, false)
-	if err != nil {
-		return api, fmt.Errorf("update Virtual service - %s", err)
-	}
-
-	return api, nil
+	return p.Put(&virtualService)
 }
 
 // BulkVS takes a bulk action on an array of workloads.
@@ -253,9 +163,6 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 			return apiResps, fmt.Errorf("bulk vs error - %s", err)
 		}
 
-		// Uncomment this line if you want to print the JSON object
-		// fmt.Println(string(vsJson))
-
 		api, err := apicall("PUT", apiURL.String(), *p, vsJSON, false)
 		api.ReqBody = string(vsJSON)
 
@@ -277,7 +184,6 @@ func (vs *VirtualService) Sanitize() {
 	vs.CreatedBy = nil
 	vs.DeletedAt = ""
 	vs.DeletedBy = nil
-	vs.Href = ""
 	vs.UpdateType = ""
 	vs.UpdatedAt = ""
 	vs.UpdatedBy = nil

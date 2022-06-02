@@ -51,122 +51,42 @@ func (p *PCE) LoadVenMap() {
 	}
 }
 
-// GetAllVens returns a slice of VENs in the Illumio PCE.
+// GetVens returns a slice of VENs from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value"
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-// QueryParameters can be passed as a map of [key]=vale
-func (p *PCE) GetAllVens(queryParameters map[string]string) ([]VEN, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all vens - %s", err)
-	}
-
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all vens - %s", err)
-	}
-
-	var vens []VEN
-	json.Unmarshal([]byte(api.RespBody), &vens)
-
-	// Set up the VEN map
-	p.VENs = make(map[string]VEN)
-
-	// If length is 500, re-run with async
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetVens(queryParameters map[string]string) (vens []VEN, api APIResponse, err error) {
+	api, err = p.GetCollection("vens", false, queryParameters, &vens)
 	if len(vens) >= 500 {
-		// Call async
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all vens - %s", err)
-		}
-		// Unmarshal response to asyncWklds and return
-		var asyncVENs []VEN
-		json.Unmarshal([]byte(api.RespBody), &asyncVENs)
-
-		// Load the PCE with the returned workloads
-		p.VENsSlice = asyncVENs
-		p.LoadVenMap()
-
-		return asyncVENs, api, nil
+		vens = nil
+		api, err = p.GetCollection("vens", true, queryParameters, &vens)
 	}
-
-	// Load the PCE with the returned workloads
 	p.VENsSlice = vens
 	p.LoadVenMap()
-
-	// Return if less than 500
-	return vens, api, nil
+	return vens, api, err
 }
 
 // GetVenByHref returns the VEN with a specific href
-func (p *PCE) GetVenByHref(href string) (VEN, APIResponse, error) {
-	// Build the API URL
-	apiURL, err := url.Parse(fmt.Sprintf("https://%s:%d/api/v2%s", pceSanitization(p.FQDN), p.Port, href))
-	if err != nil {
-		return VEN{}, APIResponse{}, fmt.Errorf("get ven by href - %s", err)
-	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return VEN{}, api, fmt.Errorf("get ven by href - %s", err)
-	}
-
-	var ven VEN
-	json.Unmarshal([]byte(api.RespBody), &ven)
-
-	return ven, api, nil
+func (p *PCE) GetVenByHref(href string) (ven VEN, api APIResponse, err error) {
+	api, err = p.GetHref(href, &ven)
+	return ven, api, err
 }
 
 // UpdateVEN updates an existing ven in the Illumio PCE
 // The provided ven struct must include an href.
 // Properties that cannot be included in the PUT method will be ignored.
-func (p *PCE) UpdateVen(ven VEN) (APIResponse, error) {
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + ven.Href)
-	if err != nil {
-		return api, fmt.Errorf("update ven - %s", err)
-	}
+func (p *PCE) UpdateVen(ven VEN) (api APIResponse, err error) {
 
 	// Build the new ven with only propertie we can update
 	if strings.ToLower(ven.Status) != "active" && strings.ToLower(ven.Status) != "suspended" {
 		return api, fmt.Errorf("%s is not a valid status. must be active or suspended", ven.Status)
 	}
-	venToUpdate := VEN{Name: ven.Name, Description: ven.Description, Status: strings.ToLower(ven.Status)}
+	venToUpdate := VEN{Href: ven.Href, Name: ven.Name, Description: ven.Description, Status: strings.ToLower(ven.Status)}
 
-	// Call the API
-	venJSON, err := json.Marshal(venToUpdate)
-	if err != nil {
-		return api, fmt.Errorf("update ven - %s", err)
-	}
-	api.ReqBody = string(venJSON)
-
-	api, err = apicall("PUT", apiURL.String(), *p, venJSON, false)
-	if err != nil {
-		return api, fmt.Errorf("update ven - %s", err)
-	}
-
-	return api, nil
+	return p.Put(&venToUpdate)
 }
 
-func (p *PCE) UpgradeVENs(vens []VEN, release string) (VENUpgradeResp, APIResponse, error) {
-	var api APIResponse
-	var err error
-
+func (p *PCE) UpgradeVENs(vens []VEN, release string) (resp VENUpgradeResp, api APIResponse, err error) {
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens/upgrade")
 	if err != nil {
@@ -183,15 +103,13 @@ func (p *PCE) UpgradeVENs(vens []VEN, release string) (VENUpgradeResp, APIRespon
 	// Call the API
 	venUpgradeJSON, err := json.Marshal(venUpgrade)
 	if err != nil {
-		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
+		return VENUpgradeResp{}, api, err
 	}
-	api.ReqBody = string(venUpgradeJSON)
-
 	api, err = apicall("PUT", apiURL.String(), *p, venUpgradeJSON, false)
 	if err != nil {
 		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
 	}
-	var resp VENUpgradeResp
+	api.ReqBody = string(venUpgradeJSON)
 	json.Unmarshal([]byte(api.RespBody), &resp)
 
 	return resp, api, nil
@@ -199,7 +117,7 @@ func (p *PCE) UpgradeVENs(vens []VEN, release string) (VENUpgradeResp, APIRespon
 
 // GetVenByHostname gets a VEN by the hostname
 func (p *PCE) GetVenByHostname(hostname string) (VEN, APIResponse, error) {
-	vens, a, err := p.GetAllVens(map[string]string{"hostname": hostname})
+	vens, a, err := p.GetVens(map[string]string{"hostname": hostname})
 	if err != nil {
 		return VEN{}, a, err
 	}

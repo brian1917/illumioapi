@@ -1,12 +1,5 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
-
 // ContainerCluster represents a container cluster in the Illumio PCE
 type ContainerCluster struct {
 	Href             string `json:"href,omitempty"`
@@ -19,66 +12,22 @@ type ContainerCluster struct {
 	PceFqdn          string `json:"pce_fqdn,omitempty"`
 }
 
-// GetAllContainerClusters returns a slice of ContainerCluster in the Illumio PCE.
+// GetContainerClusters returns a slice of ContainerCluster in the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-// QueryParameters can be passed as a map of [key]=vale
-func (p *PCE) GetAllContainerClusters(queryParameters map[string]string) ([]ContainerCluster, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/container_clusters")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all container clusters - %s", err)
-	}
-
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all container clusters - %s", err)
-	}
-
-	var containerClusters []ContainerCluster
-	json.Unmarshal([]byte(api.RespBody), &containerClusters)
-
-	// Set up the VEN map
-	p.ContainerClusters = make(map[string]ContainerCluster)
-
-	// If length is 500, re-run with async
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetContainerClusters(queryParameters map[string]string) (containerClusters []ContainerCluster, api APIResponse, err error) {
+	api, err = p.GetCollection("container_clusters", false, queryParameters, &containerClusters)
 	if len(containerClusters) >= 500 {
-		// Call async
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all container clusters - %s", err)
-		}
-		// Unmarshal response to asyncWklds and return
-		var asyncContainerClusters []ContainerCluster
-		json.Unmarshal([]byte(api.RespBody), &asyncContainerClusters)
-
-		// Load the PCE with the returned workloads
-		for _, c := range asyncContainerClusters {
-			p.ContainerClusters[c.Href] = c
-			p.ContainerClusters[c.Name] = c
-		}
-		p.ContainerClustersSlice = asyncContainerClusters
-
-		return asyncContainerClusters, api, nil
+		containerClusters = nil
+		api, err = p.GetCollection("container_clusters", true, queryParameters, &containerClusters)
 	}
-
 	// Load the PCE with the returned workloads
+	p.ContainerClustersSlice = containerClusters
+	p.ContainerClusters = make(map[string]ContainerCluster)
 	for _, c := range containerClusters {
 		p.ContainerClusters[c.Href] = c
 		p.ContainerClusters[c.Name] = c
 	}
-	p.ContainerClustersSlice = containerClusters
-
-	// Return if less than 500
-	return containerClusters, api, nil
+	return containerClusters, api, err
 }

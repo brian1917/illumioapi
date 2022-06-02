@@ -172,7 +172,7 @@ type UploadFlowResults struct {
 }
 
 // GetTrafficAnalysis gets flow data from Explorer.
-func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse, error) {
+func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
 
 	// Includes
 
@@ -346,47 +346,15 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) ([]TrafficAnalysis, APIResponse
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
 	}
 
-	trafficResponses, api, err := p.GetTrafficAnalysisAPI(traffic)
-	if err != nil {
-		return nil, api, err
-	}
-
-	return trafficResponses, api, nil
-
+	return p.CreateTrafficRequest(traffic)
 }
 
-// GetTrafficAnalysisAPI gets flow data from Explorer.
-func (p *PCE) GetTrafficAnalysisAPI(t TrafficAnalysisRequest) ([]TrafficAnalysis, APIResponse, error) {
-	var api APIResponse
-
-	// Create JSON Payload
-	jsonPayload, err := json.Marshal(t)
-	if err != nil {
-		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
-	}
-
-	var trafficResponses []TrafficAnalysis
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/traffic_flows/traffic_analysis_queries")
-	if err != nil {
-		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
-	}
-
-	// Call the API
-	api, err = apicall("POST", apiURL.String(), *p, jsonPayload, false)
-	api.ReqBody = string(jsonPayload)
-	if err != nil {
-		return nil, api, fmt.Errorf("get traffic analysis - %s", err)
-	}
-
-	// Unmarshal response to struct
-	json.Unmarshal([]byte(api.RespBody), &trafficResponses)
-
-	return trafficResponses, api, nil
+func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
+	api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
+	return returnedTraffic, api, err
 }
 
-// IterateTraffic returns an array of traffic analysis .
+// IterateTraffic returns an array of traffic analysis.
 // The iterative query starts by running a blank explorer query. If the results are over 90K, it queries again by TCP, UDP, and other.
 // If either protocol-specific query is over 90K, it queries again by TCP and UDP port.
 func (p *PCE) IterateTraffic(q TrafficQuery, stdout bool) ([]TrafficAnalysis, error) {

@@ -1,10 +1,6 @@
 package illumioapi
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -43,28 +39,13 @@ type VirtualServers struct {
 }
 
 // ProvisionCS provisions a ChangeSubset
-func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy")
-	if err != nil {
-		return APIResponse{}, fmt.Errorf("provision href - %s", err)
-	}
-
-	// Build the Provision
+func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (api APIResponse, err error) {
 	provision := Provision{ChangeSubset: &cs, UpdateDescription: comment}
-	provisionJSON, err := json.Marshal(provision)
 	if err != nil {
 		return APIResponse{}, err
 	}
-
-	api, err := apicall("POST", apiURL.String(), *p, provisionJSON, false)
-	api.RespBody = string(provisionJSON)
-	if err != nil {
-		return api, err
-	}
-
-	return api, nil
+	api, err = p.Post("/sec_policy", &provision, &struct{}{})
+	return api, err
 }
 
 // ProvisionHref provisions a slice of HREFs
@@ -140,25 +121,8 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 	return api, nil
 }
 
-// GetAllPending gets all the items pending provisioning
-func (p *PCE) GetAllPending() (ChangeSubset, APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/pending")
-	if err != nil {
-		return ChangeSubset{}, APIResponse{}, err
-	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return ChangeSubset{}, api, err
-	}
-
-	// Unmarshal response to struct
-	var cs ChangeSubset
-	json.Unmarshal([]byte(api.RespBody), &cs)
-
-	// Return
-	return cs, api, nil
+// GetPending returns a slice of pending changes from the PCE.
+func (p *PCE) GetPendingChanges() (cs ChangeSubset, api APIResponse, err error) {
+	api, err = p.GetCollection("sec_policy/pending", false, nil, &cs)
+	return cs, api, err
 }

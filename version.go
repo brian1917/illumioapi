@@ -20,8 +20,7 @@ type Version struct {
 }
 
 // GetVersion returns the version of the PCE
-func (p *PCE) GetVersion() (Version, error) {
-	var version Version
+func (p *PCE) GetVersion() (version Version, err error) {
 
 	// Build the API URL
 	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/product_version")
@@ -34,12 +33,10 @@ func (p *PCE) GetVersion() (Version, error) {
 	if err != nil {
 		return Version{}, fmt.Errorf("get version - %s", err)
 	}
-
 	json.Unmarshal([]byte(api.RespBody), &version)
 
 	// Process the versions
 	numbers := strings.Split(version.Version, ".")
-
 	version.Major, err = strconv.Atoi(numbers[0])
 	if err != nil {
 		return Version{}, fmt.Errorf("calculating major - %s", err)

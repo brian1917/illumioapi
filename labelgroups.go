@@ -1,11 +1,7 @@
 package illumioapi
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -36,120 +32,40 @@ type Usage struct {
 	StaticPolicyScopes bool `json:"static_policy_scopes,omitempty"`
 }
 
-// GetAllLabelGroups returns a slice of all Label Groups of a
-// specific provision status in the Illumio PCE.
-//
-// The pvoision status must be "draft" or "active".
-// The first call does not use the async option.
-// If the response array length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllLabelGroups(provisionStatus string) ([]LabelGroup, APIResponse, error) {
+// GetLabelGroups returns a slice of label groups from the PCE. pStatus must be "draft" or "active"
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetLabelGroups(queryParameters map[string]string, pStatus string) (labelGroups []LabelGroup, api APIResponse, err error) {
 
-	provisionStatus = strings.ToLower(provisionStatus)
-	if provisionStatus != "active" && provisionStatus != "draft" {
-		return nil, APIResponse{}, errors.New("get all label groups - provisionStatus must be active or draft")
+	// Validate pStatus
+	pStatus = strings.ToLower(pStatus)
+	if pStatus != "active" && pStatus != "draft" {
+		return labelGroups, api, fmt.Errorf("invalid pStatus")
 	}
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/label_groups")
-	if err != nil {
-		return nil, APIResponse{}, fmt.Errorf("get all label groups - %s", err)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", false, queryParameters, &labelGroups)
+	if len(labelGroups) > 500 {
+		labelGroups = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", true, queryParameters, &labelGroups)
 	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all label groups - %s", err)
-	}
-
-	var labelGroups []LabelGroup
-	json.Unmarshal([]byte(api.RespBody), &labelGroups)
-
-	// If length is 500, re-run with async
-	if len(labelGroups) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all label groups - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncLabelGroups []LabelGroup
-		json.Unmarshal([]byte(api.RespBody), &asyncLabelGroups)
-
-		return asyncLabelGroups, api, nil
-	}
-
-	// Return if less than 500
-	return labelGroups, api, nil
+	return labelGroups, api, err
 }
 
-// CreateLabelGroup creates a new Label Group in the Illumio PCE.
-//
-// The function will remove properties not in the POST schema
-func (p *PCE) CreateLabelGroup(labelGroup LabelGroup) (LabelGroup, APIResponse, error) {
-	var newLabelGroup LabelGroup
-	var api APIResponse
-	var err error
-
-	// Sanitize the Label Group
-	labelGroup.Href = ""
-	labelGroup.Usage = nil
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/label_groups")
-	if err != nil {
-		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
-	}
-
-	// Call the API
-	labelGroupJSON, err := json.Marshal(labelGroup)
-	if err != nil {
-		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
-	}
-	api.ReqBody = string(labelGroupJSON)
-	api, err = apicall("POST", apiURL.String(), *p, labelGroupJSON, false)
-	if err != nil {
-		return newLabelGroup, api, fmt.Errorf("create label group - %s", err)
-	}
-
-	// Unmarshal response to struct
-	json.Unmarshal([]byte(api.RespBody), &newLabelGroup)
-
-	return newLabelGroup, api, nil
+// CreateLabelGroup creates a new label group in the PCE.
+func (p *PCE) CreateLabelGroup(labelGroup LabelGroup) (createdLabelGroup LabelGroup, api APIResponse, err error) {
+	api, err = p.Post("sec_policy/draft/label_groups", &labelGroup, &createdLabelGroup)
+	return createdLabelGroup, api, err
 }
 
-// UpdateLabelGroup updates an existing Label Group in the Illumio PCE.
-//
-// The provided Label Group struct must include an Href.
-// The function will remove properties not included in the PUT schema.
+// UpdateLabelGroup updates an existing label group in the PCE.
+// The provided label group must include an Href.
+// Properties that cannot be included in the PUT method will be ignored.
 func (p *PCE) UpdateLabelGroup(labelGroup LabelGroup) (APIResponse, error) {
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + labelGroup.Href)
-	if err != nil {
-		return api, fmt.Errorf("update label group - %s", err)
-	}
-
-	// Remove fields that should be empty for the PUT schema
-	labelGroup.Href = ""
 	labelGroup.Usage = nil
 	labelGroup.Key = ""
 
-	// Marshal JSON
-	labelGroupJSON, err := json.Marshal(labelGroup)
-	if err != nil {
-		return api, fmt.Errorf("update label group - %s", err)
-	}
-	api.ReqBody = string(labelGroupJSON)
-
-	// Call the API
-	api, err = apicall("PUT", apiURL.String(), *p, labelGroupJSON, false)
-	if err != nil {
-		return api, fmt.Errorf("update label group - %s", err)
-	}
-
-	return api, nil
+	api, err := p.Put(&labelGroup)
+	return api, err
 }
 
 // ExpandLabelGroup returns a string of label hrefs in a label group

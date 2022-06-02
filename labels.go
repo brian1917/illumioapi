@@ -49,12 +49,11 @@ type LabelUsage struct {
 }
 
 // GetLabels returns a slice of labels from the PCE.
-// queryParameters can be used for filtering in the form of [parameter]="value"
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetLabels(queryParameters map[string]string) ([]Label, APIResponse, error) {
-	var labels []Label
-	api, err := p.GetCollection("labels", false, queryParameters, &labels)
+func (p *PCE) GetLabels(queryParameters map[string]string) (labels []Label, api APIResponse, err error) {
+	api, err = p.GetCollection("labels", false, queryParameters, &labels)
 	if len(labels) >= 500 {
 		labels = nil
 		api, err = p.GetCollection("labels", true, queryParameters, &labels)
@@ -81,25 +80,20 @@ func (p *PCE) GetLabelByHref(href string) (Label, APIResponse, error) {
 }
 
 // CreateLabel creates a new Label in the PCE.
-func (p *PCE) CreateLabel(label Label) (Label, APIResponse, error) {
-
+func (p *PCE) CreateLabel(label Label) (createdLabel Label, api APIResponse, err error) {
 	// Check to make sure the label key is valid
 	label.Key = strings.ToLower(label.Key)
 	if label.Key != "app" && label.Key != "env" && label.Key != "role" && label.Key != "loc" {
 		return Label{}, APIResponse{}, errors.New("label key is not app, env, role, or loc")
 	}
-
-	var createdLabel Label
-	api, err := p.Post("labels", &label, &createdLabel)
-
+	api, err = p.Post("labels", &label, &createdLabel)
 	return createdLabel, api, err
 }
 
-// UpdateLabel updates an existing label in the Illumio PCE.
+// UpdateLabel updates an existing label in the PCE.
 // The provided label must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
 func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
-
 	// Create a new label with just the fields that should be updated and the href
 	l := Label{
 		Href:                  label.Href,
@@ -107,7 +101,6 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 		ExternalDataReference: label.ExternalDataReference,
 		ExternalDataSet:       label.ExternalDataSet,
 	}
-
 	api, err := p.Put(&l)
 	return api, err
 }
@@ -115,7 +108,6 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 // LabelsToRuleStructure takes a slice of labels and returns a slice of slices for how the labels would be organized as read by the PCE rule processing.
 // For example {"A-ERP", "A-CRM", "E-PROD"} will return [{"A-ERP, E-PROD"}. {"A-CRM", "E-PROD"}]
 func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
-
 	// Create 4 slices: roleLabels, appLabels, envLabels, locLabels and put each label in the correct one
 	var roleLabels, appLabels, envLabels, locLabels []Label
 	for _, l := range labels {
@@ -132,7 +124,6 @@ func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
 			return nil, errors.New("label key is not role, app, env, or loc")
 		}
 	}
-
 	// If any of the label slices are empty, put a filler that we will ignore in with blank key and value
 	targets := []*[]Label{&roleLabels, &appLabels, &envLabels, &locLabels}
 	for _, t := range targets {
@@ -140,7 +131,6 @@ func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
 			*t = append(*t, Label{Key: "", Value: ""})
 		}
 	}
-
 	// Produce an array for every combination that is needed.
 	var results [][]Label
 	for _, r := range roleLabels {

@@ -1,10 +1,8 @@
 package illumioapi
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
+	"strings"
 )
 
 // VirtualServer represents a VirtualServer in the PCE
@@ -32,42 +30,20 @@ type DiscoveredVirtualServer struct {
 	Href string `json:"href"`
 }
 
-// GetAllVirtualServers returns a slice of virtual servers in the Illumio PCE.
-// provisionStatus must be "draft" or "active"
+// GetVirtualServers returns a slice of IP lists from the PCE. pStatus must be "draft" or "active".
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-func (p *PCE) GetAllVirtualServers(provisionStatus string) ([]VirtualServer, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/virtual_servers")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all workloads - %s", err)
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetVirtualServers(queryParameters map[string]string, pStatus string) (virtualServers []VirtualServer, api APIResponse, err error) {
+	// Validate pStatus
+	pStatus = strings.ToLower(pStatus)
+	if pStatus != "active" && pStatus != "draft" {
+		return virtualServers, api, fmt.Errorf("invalid pStatus")
 	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all virtualservers - %s", err)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_servers", false, queryParameters, &virtualServers)
+	if len(virtualServers) > 500 {
+		virtualServers = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_servers", true, queryParameters, &virtualServers)
 	}
-
-	var virtualServers []VirtualServer
-	json.Unmarshal([]byte(api.RespBody), &virtualServers)
-
-	// If length is 500, re-run with async
-	if len(virtualServers) >= 500 {
-		// Call async
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all virtualservers - %s", err)
-		}
-		// Unmarshal response to asyncWklds and return
-		var asyncVS []VirtualServer
-		json.Unmarshal([]byte(api.RespBody), &asyncVS)
-
-		return asyncVS, api, nil
-	}
-
-	// Return if less than 500
-	return virtualServers, api, nil
+	return virtualServers, api, err
 }

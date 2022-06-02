@@ -194,7 +194,7 @@ func (p *PCE) LoadWorkloadMap() {
 }
 
 // GetWklds returns a slice of workloads from the PCE.
-// queryParameters can be used for filtering in the form of [parameter]="value"
+// queryParameters can be used for filtering in the form of ["parameter"]="value"
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
 func (p *PCE) GetWklds(queryParameters map[string]string) ([]Workload, APIResponse, error) {
@@ -422,6 +422,7 @@ func (w *Workload) SanitizeBulkUpdate() {
 
 	// Managed workloads
 	if w.GetMode() != "unmanaged" {
+		w.DistinguishedName = ""
 		w.Hostname = ""
 		w.Interfaces = nil
 		w.Online = false
@@ -450,8 +451,6 @@ func (w *Workload) SanitizeBulkUpdate() {
 	}
 	*w.Labels = newLabels
 
-	// Change distinguised name
-	w.DistinguishedName = ""
 }
 
 // SanitizePut removes the necessary properties to update a workload.

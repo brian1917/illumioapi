@@ -1,12 +1,5 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
-
 // A ServiceBinding binds a worklad to a Virtual Service
 type ServiceBinding struct {
 	Href           string          `json:"href,omitempty"`
@@ -22,93 +15,31 @@ type PortOverrides struct {
 	NewPort int `json:"new_port"`
 }
 
-// GetAllServiceBindings returns a slice of all workload bindings for a virtual service.
-//
-// The first call does not use the async option.
-// If the response array length is >=500, it is re-run enabling async.
-func (p *PCE) GetAllServiceBindings(virtualService VirtualService) ([]ServiceBinding, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/service_bindings")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all service bindings - %s", err)
-	}
-
-	// Set the query parameters
-	q := apiURL.Query()
-	q.Set("virtual_service", virtualService.Href)
-	apiURL.RawQuery = q.Encode()
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all service bindings - %s", err)
-	}
-
-	var serviceBindings []ServiceBinding
-	json.Unmarshal([]byte(api.RespBody), &serviceBindings)
-
-	// If length is 500, re-run with async
+// GetServiceBindings returns a slice of labels from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetServiceBindings(queryParameters map[string]string) (serviceBindings []ServiceBinding, api APIResponse, err error) {
+	api, err = p.GetCollection("service_bindings", false, queryParameters, &serviceBindings)
 	if len(serviceBindings) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all service bindings - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncServiceBindings []ServiceBinding
-		json.Unmarshal([]byte(api.RespBody), &asyncServiceBindings)
-
-		return asyncServiceBindings, api, nil
+		serviceBindings = nil
+		api, err = p.GetCollection("service_bindings", true, queryParameters, &serviceBindings)
 	}
-
-	// Return if there are less than 500
-	return serviceBindings, api, nil
+	return serviceBindings, api, err
 }
 
 // CreateServiceBinding binds new workloads to a virtual service
-func (p *PCE) CreateServiceBinding(serviceBindings []ServiceBinding, virtualService VirtualService) ([]ServiceBinding, APIResponse, error) {
-	var newServBindings []ServiceBinding
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/service_bindings")
-	if err != nil {
-		return newServBindings, api, fmt.Errorf("create service binding - %s", err)
-	}
-
+func (p *PCE) CreateServiceBinding(serviceBindings []ServiceBinding) (createdServiceBindings []ServiceBinding, api APIResponse, err error) {
 	// Sanitize Bindings
 	sanSBs := []ServiceBinding{}
 	for _, sb := range serviceBindings {
-		sb.sanitizeBindings()
+		sb.Href = ""
+		sb.VirtualService = VirtualService{Href: sb.VirtualService.SetActive().Href}
+		sb.Workload = Workload{Href: sb.Workload.Href}
 		sanSBs = append(sanSBs, sb)
 	}
 	serviceBindings = sanSBs
 
-	// Call the API
-	sbJSON, err := json.Marshal(serviceBindings)
-	if err != nil {
-		return newServBindings, api, fmt.Errorf("create service binding - %s", err)
-	}
-
-	api.ReqBody = string(sbJSON)
-
-	api, err = apicall("POST", apiURL.String(), *p, sbJSON, false)
-	if err != nil {
-		return newServBindings, api, fmt.Errorf("create servince binding - %s", err)
-	}
-
-	// Unmarshal new Virtual service
-	json.Unmarshal([]byte(api.RespBody), &newServBindings)
-
-	return newServBindings, api, nil
-}
-
-// SanitizeBindings preps bindings for update or create
-func (sb *ServiceBinding) sanitizeBindings() {
-	sb.Href = ""
-	sb.VirtualService = VirtualService{Href: sb.VirtualService.SetActive().Href}
-	sb.Workload = Workload{Href: sb.Workload.Href}
+	api, err = p.Post("service_bindings", &serviceBindings, &createdServiceBindings)
+	return createdServiceBindings, api, err
 }

@@ -1,12 +1,5 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
-
 type EnforcementBoundary struct {
 	Href            string            `json:"href,omitempty"`
 	Name            string            `json:"name,omitempty"`
@@ -16,28 +9,7 @@ type EnforcementBoundary struct {
 }
 
 // CreateEnforcementBoundary creates a new enforcement boundary in the Illumio PCE
-func (p *PCE) CreateEnforcementBoundary(enforcementBoundary EnforcementBoundary) (EnforcementBoundary, APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/enforcement_boundaries")
-	if err != nil {
-		return EnforcementBoundary{}, APIResponse{}, fmt.Errorf("create enforcement boundary - %s", err)
-	}
-
-	// Call the API
-	enforcementBoundaryJson, err := json.Marshal(enforcementBoundary)
-	if err != nil {
-		return EnforcementBoundary{}, APIResponse{}, fmt.Errorf("create enforcement boundary - %s", err)
-	}
-	api, err := apicall("POST", apiURL.String(), *p, enforcementBoundaryJson, false)
-	api.ReqBody = string(enforcementBoundaryJson)
-	if err != nil {
-		return EnforcementBoundary{}, api, fmt.Errorf("create enforcement boundary - %s", err)
-	}
-
-	// Marshal JSON
-	var newEB EnforcementBoundary
-	json.Unmarshal([]byte(api.RespBody), &newEB)
-
-	return newEB, api, nil
+func (p *PCE) CreateEnforcementBoundary(eb EnforcementBoundary) (createdEB EnforcementBoundary, api APIResponse, err error) {
+	api, err = p.Post("/sec_policy/draft/enforcement_boundaries", &eb, &createdEB)
+	return createdEB, api, err
 }

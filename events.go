@@ -1,10 +1,6 @@
 package illumioapi
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -48,58 +44,21 @@ type Info struct {
 	SrcIP       string `json:"src_ip"`
 }
 
-// GetAllEvents returns a slice of events in the Illumio PCE.
+// GetEvents returns a slice of labels from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-// QueryParameters can be passed as a map of [key]=vale
-func (p *PCE) GetAllEvents(queryParameters map[string]string) ([]Event, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/events")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all events - %s", err)
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetEvents(queryParameters map[string]string) (events []Event, api APIResponse, err error) {
+	api, err = p.GetCollection("events", false, queryParameters, &events)
+	if len(events) >= 500 {
+		events = nil
+		api, err = p.GetCollection("events", true, queryParameters, &events)
 	}
-
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all events - %s", err)
-	}
-
-	var events []Event
-	json.Unmarshal([]byte(api.RespBody), &events)
-
-	if len(events) < 500 {
-		for i, e := range events {
-			e.PopulateCreatedBy()
-			events[i] = e
-		}
-		return events, api, nil
-	}
-
-	// If length is 500, re-run with async
-	api, err = apicall("GET", apiURL.String(), *p, nil, true)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all events - %s", err)
-	}
-	// Unmarshal response to asyncEvents and return
-	var asyncEvents []Event
-	json.Unmarshal([]byte(api.RespBody), &asyncEvents)
-
-	for i, e := range asyncEvents {
+	for i, e := range events {
 		e.PopulateCreatedBy()
-		asyncEvents[i] = e
+		events[i] = e
 	}
-	return asyncEvents, api, nil
-
+	return events, api, err
 }
 
 func (e *Event) PopulateCreatedBy() {

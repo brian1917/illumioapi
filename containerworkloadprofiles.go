@@ -1,12 +1,5 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
-
 type ContainerWorkloadProfileAssignLabel struct {
 	Href string `json:"href,omitempty"`
 }
@@ -38,66 +31,21 @@ type ContainerWorkloadProfile struct {
 	UpdatedBy       *UpdatedBy                            `json:"updated_by,omitempty"`
 }
 
-// GetAllContainerWorkloadProfiles returns a slice of ContainerWorkloadProfiles in the Illumio PCE.
+// GetContainerWkldProfiles returns a slice of container workload profiles from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-// QueryParameters can be passed as a map of [key]=value
-func (p *PCE) GetAllContainerWorkloadProfiles(queryParameters map[string]string, containerClusterID string) ([]ContainerWorkloadProfile, APIResponse, error) {
-	var api APIResponse
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/container_clusters/" + containerClusterID + "/container_workload_profiles")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all container workload profiles - %s", err)
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, containerClusterID string) (containerWkldProfiles []ContainerWorkloadProfile, api APIResponse, err error) {
+	api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", false, queryParameters, &containerWkldProfiles)
+	if len(containerWkldProfiles) >= 500 {
+		containerWkldProfiles = nil
+		api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", true, queryParameters, &containerWkldProfiles)
 	}
-
-	// Set the query parameters
-	for key, value := range queryParameters {
-		q := apiURL.Query()
-		q.Set(key, value)
-		apiURL.RawQuery = q.Encode()
-	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all container workload profiles - %s", err)
-	}
-
-	var containerWorkloadProfiles []ContainerWorkloadProfile
-	json.Unmarshal([]byte(api.RespBody), &containerWorkloadProfiles)
-
-	// Set up the VEN map
+	p.ContainerWorkloadProfilesSlice = containerWkldProfiles
 	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
-
-	// If length is 500, re-run with async
-	if len(containerWorkloadProfiles) >= 500 {
-		// Call async
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all container clusters - %s", err)
-		}
-		// Unmarshal response to asyncWklds and return
-		var asyncContainerWorkloadProfiles []ContainerWorkloadProfile
-		json.Unmarshal([]byte(api.RespBody), &asyncContainerWorkloadProfiles)
-
-		// Load the PCE with the returned workloads
-		for _, c := range asyncContainerWorkloadProfiles {
-			p.ContainerWorkloadProfiles[c.Href] = c
-			p.ContainerWorkloadProfiles[c.Name] = c
-		}
-		p.ContainerWorkloadProfilesSlice = asyncContainerWorkloadProfiles
-
-		return asyncContainerWorkloadProfiles, api, nil
-	}
-
-	// Load the PCE with the returned workloads
-	for _, c := range containerWorkloadProfiles {
+	for _, c := range containerWkldProfiles {
 		p.ContainerWorkloadProfiles[c.Href] = c
 		p.ContainerWorkloadProfiles[c.Name] = c
 	}
-	p.ContainerWorkloadProfilesSlice = containerWorkloadProfiles
-
-	// Return if less than 500
-	return containerWorkloadProfiles, api, nil
+	return containerWkldProfiles, api, err
 }

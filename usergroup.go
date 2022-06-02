@@ -1,77 +1,29 @@
 package illumioapi
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-)
+// ConsumingSecurityPrincipals are AD user groups
+type ConsumingSecurityPrincipals struct {
+	Deleted       bool   `json:"deleted,omitempty"`
+	Href          string `json:"href,omitempty"`
+	Name          string `json:"name,omitempty"`
+	SID           string `json:"sid,omitempty"`
+	UsedByRuleSet bool   `json:"used_by_ruleset,omitempty"`
+}
 
-// GetAllADUserGroups gets all user groups in the PCE
-func (p *PCE) GetAllADUserGroups() ([]ConsumingSecurityPrincipals, APIResponse, error) {
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/security_principals")
-	if err != nil {
-		return nil, APIResponse{}, fmt.Errorf("GetAllADUserGroups - %s", err)
+// GetADUserGroups returns a slice of AD user groups from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetADUserGroups(queryParameters map[string]string) (groups []ConsumingSecurityPrincipals, api APIResponse, err error) {
+	api, err = p.GetCollection("security_principals", false, queryParameters, &groups)
+	if len(groups) >= 500 {
+		groups = nil
+		api, err = p.GetCollection("security_principals", true, queryParameters, &groups)
 	}
-
-	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("GetAllADUserGroups - %s", err)
-	}
-
-	// Unmarshal response to struct
-	var adUserGroups []ConsumingSecurityPrincipals
-	json.Unmarshal([]byte(api.RespBody), &adUserGroups)
-
-	// If adUserGroups is 500, re-run with async
-	if len(adUserGroups) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("adUserGroups - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncADUserGroups []ConsumingSecurityPrincipals
-		json.Unmarshal([]byte(api.RespBody), &asyncADUserGroups)
-
-		return asyncADUserGroups, api, nil
-	}
-
-	// Return if less than 500
-	return adUserGroups, api, nil
+	return groups, api, err
 }
 
 // CreateADUserGroup creates a user group policy object in the PCE
-func (p *PCE) CreateADUserGroup(g ConsumingSecurityPrincipals) (ConsumingSecurityPrincipals, APIResponse, error) {
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/security_principals")
-	if err != nil {
-		return ConsumingSecurityPrincipals{}, api, fmt.Errorf("CreateADUserGroup - %s", err)
-	}
-
-	// Create payload
-	userGroupJSON, err := json.Marshal(g)
-	if err != nil {
-		return ConsumingSecurityPrincipals{}, api, fmt.Errorf("CreateADUserGroup - %s", err)
-	}
-
-	api.ReqBody = string(userGroupJSON)
-
-	// Call the API
-	api, err = apicall("POST", apiURL.String(), *p, userGroupJSON, false)
-	if err != nil {
-		return ConsumingSecurityPrincipals{}, api, fmt.Errorf("CreateADUserGroup - %s", err)
-	}
-
-	// Unmarshal new label
-	var newGroup ConsumingSecurityPrincipals
-	json.Unmarshal([]byte(api.RespBody), &newGroup)
-
-	return newGroup, api, nil
+func (p *PCE) CreateADUserGroup(group ConsumingSecurityPrincipals) (createdGroup ConsumingSecurityPrincipals, api APIResponse, err error) {
+	api, err = p.Post("security_principals", &group, &createdGroup)
+	return createdGroup, api, err
 }

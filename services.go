@@ -1,11 +1,7 @@
 package illumioapi
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -50,115 +46,40 @@ type WindowsService struct {
 	ToPort      int    `json:"to_port,omitempty"`
 }
 
-// GetAllServices returns a slice of Services for each Service in the Illumio PCE.
-// provisionStatus must either be "draft" or "active".
+// GetServices returns a slice of IP lists from the PCE. pStatus must be "draft" or "active".
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
-// If the array length is >=500, it re-runs with async.
-func (p *PCE) GetAllServices(provisionStatus string) ([]Service, APIResponse, error) {
-	var api APIResponse
-
-	provisionStatus = strings.ToLower(provisionStatus)
-	if provisionStatus != "active" && provisionStatus != "draft" {
-		return nil, api, errors.New("provisionStatus must be active or draft")
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetServices(queryParameters map[string]string, pStatus string) (services []Service, api APIResponse, err error) {
+	// Validate pStatus
+	pStatus = strings.ToLower(pStatus)
+	if pStatus != "active" && pStatus != "draft" {
+		return services, api, fmt.Errorf("invalid pStatus")
 	}
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/" + provisionStatus + "/services")
-	if err != nil {
-		return nil, api, fmt.Errorf("get all services - %s", err)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", false, queryParameters, &services)
+	if len(services) > 500 {
+		services = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", true, queryParameters, &services)
 	}
-
-	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
-	if err != nil {
-		return nil, api, fmt.Errorf("get all services - %s", err)
-	}
-
-	var services []Service
-	json.Unmarshal([]byte(api.RespBody), &services)
-
-	// If length is 500, re-run with async
-	if len(services) >= 500 {
-		api, err = apicall("GET", apiURL.String(), *p, nil, true)
-		if err != nil {
-			return nil, api, fmt.Errorf("get all services - %s", err)
-		}
-
-		// Unmarshal response to struct
-		var asyncServices []Service
-		json.Unmarshal([]byte(api.RespBody), &asyncServices)
-
-		return asyncServices, api, nil
-	}
-
-	// Return if there is less than 500
-	return services, api, nil
+	return services, api, err
 }
 
-// CreateService creates a new service in the Illumio PCE
-func (p *PCE) CreateService(service Service) (Service, APIResponse, error) {
-	var newService Service
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/services")
-	if err != nil {
-		return newService, api, fmt.Errorf("create service - %s", err)
-	}
-
-	// Call the API
-	serviceJSON, err := json.Marshal(service)
-	if err != nil {
-		return newService, api, fmt.Errorf("create service - %s", err)
-	}
-
-	api.ReqBody = string(serviceJSON)
-
-	api, err = apicall("POST", apiURL.String(), *p, serviceJSON, false)
-	if err != nil {
-		return newService, api, fmt.Errorf("create service - %s", err)
-	}
-
-	// Unmarshal new service
-	json.Unmarshal([]byte(api.RespBody), &newService)
-
-	return newService, api, nil
+// CreateService creates a new service in the PCE.
+func (p *PCE) CreateService(service Service) (createdService Service, api APIResponse, err error) {
+	api, err = p.Post("sec_policy/draft/services", &service, &createdService)
+	return createdService, api, err
 }
 
 // UpdateService updates an existing service object in the Illumio PCE
 func (p *PCE) UpdateService(service Service) (APIResponse, error) {
-	var api APIResponse
-	var err error
-
-	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + service.Href)
-	if err != nil {
-		return api, fmt.Errorf("update service - %s", err)
-	}
-
-	// Remove fields that shouldn't be available for updating
 	service.CreatedAt = ""
 	service.CreatedBy = nil
-	service.Href = ""
 	service.UpdateType = ""
 	service.UpdatedAt = ""
 	service.UpdatedBy = nil
 
-	// Call the API
-	serviceJSON, err := json.Marshal(service)
-	if err != nil {
-		return api, fmt.Errorf("update service - %s", err)
-	}
-
-	api.ReqBody = string(serviceJSON)
-
-	api, err = apicall("PUT", apiURL.String(), *p, serviceJSON, false)
-	if err != nil {
-		return api, fmt.Errorf("update service - %s", err)
-	}
-
-	return api, nil
+	api, err := p.Put(&service)
+	return api, err
 }
 
 // ParseService returns a slice of WindowsServices and ServicePorts from an Illumio service object

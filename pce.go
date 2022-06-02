@@ -60,7 +60,6 @@ type LoadInput struct {
 }
 
 // Load fills the PCE object maps
-// provisionStatus must be "draft" or "active"
 func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 
 	var err error
@@ -107,7 +106,7 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 
 	// Get all IPLists
 	if l.IPLists {
-		p.IPListsSlice, a, err = p.getAllIPLists(provisionStatus)
+		p.IPListsSlice, a, err = p.GetIPLists(nil, provisionStatus)
 		apiResps["getAllIPLists"] = a
 		if err != nil {
 			return apiResps, fmt.Errorf("getting draft ip lists - %s", err)
