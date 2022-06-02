@@ -4,10 +4,13 @@
 
 ## Description
 
-Go package to easily interact with the Illumio API.
+Go package to interact with the Illumio API.
+
+## Version 2.0 Announcement
+Version 2.0 removes redundant code by using the new PCE CRUD methods, standardizes names, and cleans up other tech debt. Renamed or removed methods have been moved to `deprecated.go` to keep backwards compatibility.
 
 ## Example Code
-Nearly all functions that interact with your PCE are methods on the PCE type. For example, the code below prints all hostnames:
+All interaction with the PCE are done via methods on the PCE type. For example, the code below prints all hostnames:
 ```
 // Create PCE
 pce := illumioapi.PCE{
@@ -19,13 +22,10 @@ pce := illumioapi.PCE{
 pce.Login("brian@email.com", "Password123")
 
 // Get all workloads and ignore error checking for example
-wklds, _, _ := pce.GetAllWorkloads()
+wklds, _, _ := pce.GetWklds(nil)
 
 // Iterate through workloads and print hostname
 for _, w := range wklds {
     fmt.Println(w.Hostname)
 }
 ```
-
-## Tests and Examples ##
-The `illumioapi_test` package includes some tests for the package. This can also be referenced for examples on how to use some of the functions. It's not a complete test package.
