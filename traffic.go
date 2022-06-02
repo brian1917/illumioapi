@@ -616,7 +616,7 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/agents/bulk_traffic_flows")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/agents/bulk_traffic_flows")
 	if err != nil {
 		return UploadFlowResults{}, err
 	}
@@ -631,7 +631,7 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 	for _, fs := range flowSlices {
 
 		// Call the API
-		api, err := apicallNoContentType("POST", apiURL.String(), *p, []byte(strings.Join(fs, "\n")), false)
+		api, err := p.httpReq("POST", apiURL.String(), []byte(strings.Join(fs, "\n")), false, false)
 		results.APIResps = append(results.APIResps, api)
 		if err != nil {
 			return results, err

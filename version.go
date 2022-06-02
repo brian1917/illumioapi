@@ -23,13 +23,13 @@ type Version struct {
 func (p *PCE) GetVersion() (version Version, err error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/product_version")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/product_version")
 	if err != nil {
 		return Version{}, fmt.Errorf("get version - %s", err)
 	}
 
 	// Call the API
-	api, err := apicall("GET", apiURL.String(), *p, nil, false)
+	api, err := p.httpReq("GET", apiURL.String(), nil, false, true)
 	if err != nil {
 		return Version{}, fmt.Errorf("get version - %s", err)
 	}

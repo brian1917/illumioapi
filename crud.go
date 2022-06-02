@@ -13,13 +13,13 @@ func (p *PCE) GetHref(href string, response interface{}) (APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
 	if err != nil {
 		return api, err
 	}
 
 	// Call the API
-	api, err = apicall("GET", apiURL.String(), *p, nil, false)
+	api, err = p.httpReq("GET", apiURL.String(), nil, false, true)
 	if err != nil {
 		return api, err
 	}
@@ -32,7 +32,7 @@ func (p *PCE) GetHref(href string, response interface{}) (APIResponse, error) {
 func (p *PCE) GetCollection(endpoint string, async bool, queryParameters map[string]string, response interface{}) (APIResponse, error) {
 
 	// Build the API URL
-	url, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/" + endpoint)
+	url, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/" + endpoint)
 	if err != nil {
 		return APIResponse{}, err
 	}
@@ -45,7 +45,7 @@ func (p *PCE) GetCollection(endpoint string, async bool, queryParameters map[str
 	}
 
 	// Call the API
-	api, err := apicall("GET", url.String(), *p, nil, async)
+	api, err := p.httpReq("GET", url.String(), nil, async, true)
 	if err != nil {
 		return api, fmt.Errorf("get %s - %s", endpoint, err)
 	}
@@ -61,7 +61,7 @@ func (p *PCE) GetCollection(endpoint string, async bool, queryParameters map[str
 func (p *PCE) Post(endpoint string, object, createdObject interface{}) (api APIResponse, err error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/" + endpoint)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/" + endpoint)
 	if err != nil {
 		return api, err
 	}
@@ -73,7 +73,7 @@ func (p *PCE) Post(endpoint string, object, createdObject interface{}) (api APIR
 	}
 
 	// Call the API
-	api, err = apicall("POST", apiURL.String(), *p, jsonBytes, false)
+	api, err = p.httpReq("POST", apiURL.String(), jsonBytes, false, true)
 	if err != nil {
 		return api, err
 	}
@@ -93,7 +93,7 @@ func (p *PCE) Put(object interface{}) (api APIResponse, err error) {
 
 	// Build the API URL
 	href := reflect.ValueOf(object).Elem().FieldByName("Href").Interface().(string)
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
 	if err != nil {
 		return api, fmt.Errorf("update label - %s", err)
 	}
@@ -108,7 +108,7 @@ func (p *PCE) Put(object interface{}) (api APIResponse, err error) {
 	}
 
 	// Call the API
-	api, err = apicall("PUT", apiURL.String(), *p, jsonBytes, false)
+	api, err = p.httpReq("PUT", apiURL.String(), jsonBytes, false, true)
 	if err != nil {
 		return api, err
 	}
@@ -123,13 +123,13 @@ func (p *PCE) DeleteHref(href string) (APIResponse, error) {
 	var api APIResponse
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2" + href)
 	if err != nil {
 		return api, fmt.Errorf("delete href - %s", err)
 	}
 
 	// Call the API
-	api, err = apicall("DELETE", apiURL.String(), *p, nil, false)
+	api, err = p.httpReq("DELETE", apiURL.String(), nil, false, true)
 	if err != nil {
 		return api, fmt.Errorf("delete href - %s", err)
 	}

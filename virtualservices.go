@@ -126,7 +126,7 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services/bulk_" + method)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/sec_policy/draft/virtual_services/bulk_" + method)
 	if err != nil {
 		return apiResps, fmt.Errorf("bulk vs error - %s", err)
 	}
@@ -163,7 +163,7 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 			return apiResps, fmt.Errorf("bulk vs error - %s", err)
 		}
 
-		api, err := apicall("PUT", apiURL.String(), *p, vsJSON, false)
+		api, err := p.httpReq("PUT", apiURL.String(), vsJSON, false, true)
 		api.ReqBody = string(vsJSON)
 
 		apiResps = append(apiResps, api)

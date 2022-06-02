@@ -88,7 +88,7 @@ func (p *PCE) UpdateVen(ven VEN) (api APIResponse, err error) {
 
 func (p *PCE) UpgradeVENs(vens []VEN, release string) (resp VENUpgradeResp, api APIResponse, err error) {
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens/upgrade")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens/upgrade")
 	if err != nil {
 		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
 	}
@@ -105,7 +105,7 @@ func (p *PCE) UpgradeVENs(vens []VEN, release string) (resp VENUpgradeResp, api 
 	if err != nil {
 		return VENUpgradeResp{}, api, err
 	}
-	api, err = apicall("PUT", apiURL.String(), *p, venUpgradeJSON, false)
+	api, err = p.httpReq("PUT", apiURL.String(), venUpgradeJSON, false, true)
 	if err != nil {
 		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
 	}

@@ -326,7 +326,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/bulk_" + method)
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/bulk_" + method)
 	if err != nil {
 		return apiResps, fmt.Errorf("bulk workload error - %s", err)
 	}
@@ -367,7 +367,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
 		}
 
-		api, err := apicall("PUT", apiURL.String(), *p, workloadsJSON, false)
+		api, err := p.httpReq("PUT", apiURL.String(), workloadsJSON, false, true)
 		if stdoutLogs {
 			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
 		}
@@ -740,13 +740,13 @@ func (a *Agent) GetID() string {
 func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, error) {
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2" + wkldHref + "/upgrade")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2" + wkldHref + "/upgrade")
 	if err != nil {
 		return APIResponse{}, fmt.Errorf("upgrade workload - %s", err)
 	}
 
 	// Call the API
-	api, err := apicall("POST", apiURL.String(), *p, json.RawMessage(fmt.Sprintf("{\"release\": \"%s\"}", targetVersion)), false)
+	api, err := p.httpReq("POST", apiURL.String(), json.RawMessage(fmt.Sprintf("{\"release\": \"%s\"}", targetVersion)), false, true)
 	if err != nil {
 		return api, fmt.Errorf("upgrade workload - %s", err)
 	}
@@ -766,7 +766,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/unpair")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/workloads/unpair")
 	if err != nil {
 		return nil, fmt.Errorf("unpair error - %s", err)
 	}
@@ -796,7 +796,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 			return nil, fmt.Errorf("unpair error - %s", err)
 		}
 		// Make the API call and append the response to the results
-		api, err := apicall("PUT", apiURL.String(), *p, payload, false)
+		api, err := p.httpReq("PUT", apiURL.String(), payload, false, true)
 		api.ReqBody = string(payload)
 		apiResps = append(apiResps, api)
 		if err != nil {

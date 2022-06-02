@@ -71,8 +71,8 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	var auth Authentication
 
 	// Build the API URL
-	fqdn := pceSanitization(p.FQDN)
-	if strings.Contains(p.FQDN, "illum.io") && !strings.Contains(p.FQDN, "demo") {
+	fqdn := p.cleanFQDN()
+	if strings.Contains(p.cleanFQDN(), "illum.io") && !strings.Contains(p.cleanFQDN(), "demo") {
 		fqdn = "login.illum.io"
 	}
 	if p.FQDN == "xpress1.ilabs.io" {
@@ -92,8 +92,9 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	q.Set("pce_fqdn", p.FQDN)
 	apiURL.RawQuery = q.Encode()
 
-	// Call the API - Use a PCE object since that's what apicall expects
-	api, err = apicall("POST", apiURL.String(), PCE{DisableTLSChecking: p.DisableTLSChecking, User: username, Key: password}, nil, false)
+	// Call the API - Use a temp PCE object to leverage http method
+	tempPCE := PCE{DisableTLSChecking: p.DisableTLSChecking, User: username, Key: password}
+	api, err = tempPCE.httpReq("POST", apiURL.String(), nil, false, true)
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - with login server %s - %s", fqdn, err)
 	}
@@ -116,7 +117,7 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 	}
 
 	// Build the API URL
-	apiURL, err := url.Parse("https://" + pceSanitization(p.FQDN) + ":" + strconv.Itoa(p.Port) + "/api/v2/users/login")
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/users/login")
 	if err != nil {
 		return login, response, fmt.Errorf("login error - %s", err)
 	}
@@ -220,7 +221,7 @@ func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIRe
 	}
 
 	// Call the API
-	apiResp, err := apicall("POST", apiURL.String(), *p, postJSON, false)
+	apiResp, err := p.httpReq("POST", apiURL.String(), postJSON, false, true)
 	if err != nil {
 		return login, append(a, apiResp), fmt.Errorf("LoginAPIKey - %s", err)
 	}
@@ -247,7 +248,7 @@ func (p *PCE) GetAllAPIKeys(userHref string) ([]APIKey, APIResponse, error) {
 	}
 
 	// Call the API
-	apiResp, err := apicall("GET", apiURL.String(), *p, nil, false)
+	apiResp, err := p.httpReq("GET", apiURL.String(), nil, false, true)
 	if err != nil {
 		return []APIKey{}, apiResp, fmt.Errorf("GetAllAPIKeys - %s", err)
 	}

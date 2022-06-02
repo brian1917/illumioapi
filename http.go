@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -40,8 +39,7 @@ type asyncResults struct {
 	} `json:"requested_by"`
 }
 
-func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, headers [][2]string) (APIResponse, error) {
-
+func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers [][2]string) (APIResponse, error) {
 	var asyncResults asyncResults
 
 	// Get the base URL
@@ -56,17 +54,17 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 
 	// Create HTTP client and request
 	client := &http.Client{}
-	if pce.DisableTLSChecking {
+	if p.DisableTLSChecking {
 		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 
-	req, err := http.NewRequest(httpAction, apiURL, httpBody)
+	req, err := http.NewRequest(action, apiURL, httpBody)
 	if err != nil {
 		return APIResponse{}, err
 	}
 
 	// Set basic authentication and headers
-	req.SetBasicAuth(pce.User, pce.Key)
+	req.SetBasicAuth(p.User, p.Key)
 	for _, h := range headers {
 		req.Header.Set(h[0], h[1])
 	}
@@ -83,7 +81,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	// Process Async requests
 	if async {
 		for asyncResults.Status != "done" {
-			asyncResults, err = polling(baseURL, pce, resp)
+			asyncResults, err = p.asyncPoll(baseURL, resp)
 			if err != nil {
 				return APIResponse{}, err
 			}
@@ -95,7 +93,7 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 		}
 
 		// Set basic authentication and headers
-		finalReq.SetBasicAuth(pce.User, pce.Key)
+		finalReq.SetBasicAuth(p.User, p.Key)
 		finalReq.Header.Set("Content-Type", "application/json")
 
 		// Make HTTP Request
@@ -127,10 +125,8 @@ func httpSetUp(httpAction, apiURL string, pce PCE, body []byte, async bool, head
 	return response, nil
 }
 
-// polling is used in async requests to check when the data is ready
-func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, error) {
-
-	var asyncResults asyncResults
+// asyncPoll is used in async requests to check when the data is ready
+func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults asyncResults, err error) {
 
 	// Create HTTP client and request
 	tr := &http.Transport{
@@ -143,7 +139,7 @@ func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, er
 	}
 
 	// Set basic authentication and headers
-	pollReq.SetBasicAuth(pce.User, pce.Key)
+	pollReq.SetBasicAuth(p.User, p.Key)
 	pollReq.Header.Set("Content-Type", "application/json")
 
 	// Wait for recommended time from Retry-After
@@ -172,69 +168,43 @@ func polling(baseURL string, pce PCE, origResp *http.Response) (asyncResults, er
 	return asyncResults, err
 }
 
-// apicall uses the httpSetup function with the header ContentType set to application/json header
+// httpReq makes an API call to the PCE with sepcified options
 // httpAction must be GET, POST, PUT, or DELETE.
 // apiURL is the full endpoint being called.
 // PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
 // async parameter should be set to true for any GET requests returning > 500 items.
-func apicall(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
-	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{{"Content-Type", "application/json"}})
-	retry := 0
-
-	for a.StatusCode == 429 {
-		// If we have already tried 3 times, exit
-		if retry > 2 {
-			return a, fmt.Errorf("received three 429 errors with 30 second pauses between attempts")
-		}
-		// Increment the retry counter
-		retry++
-		// Sleep for 30 seconds
-		time.Sleep(30 * time.Second)
-		// Retry the API call
-		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{{"Content-Type", "application/json"}})
+func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, jsonContentType bool) (APIResponse, error) {
+	// Set headers based on jsonContentType
+	headers := [][2]string{{"Content-Type", "application/json"}}
+	if !jsonContentType {
+		headers = nil
 	}
 
-	// Return once response code isn't 429 or if we've exceeded our attempts.
-	return a, e
-}
-
-// apicallNoContentType uses the httpSetup function without setting the header ContentType
-// httpAction must be GET, POST, PUT, or DELETE.
-// apiURL is the full endpoint being called.
-// PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
-// async parameter should be set to true for any GET requests returning > 500 items.
-func apicallNoContentType(httpAction, apiURL string, pce PCE, body []byte, async bool) (APIResponse, error) {
-	a, e := httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
-
+	// Make initial http call
+	api, err := p.httpSetup(action, apiURL, body, async, headers)
 	retry := 0
 
-	for a.StatusCode == 429 {
+	// If the status code is 429, try 3 times
+	for api.StatusCode == 429 {
 		// If we have already tried 3 times, exit
 		if retry > 2 {
-			return a, fmt.Errorf("received three 429 errors with 30 second pauses between attempts")
+			return api, errors.New("received three 429 errors with 30 second pauses between attempts")
 		}
-		// Increment the retry counter
+		// Increment the retry counter and sleep for 30 seconds
 		retry++
-		// Sleep for 30 seconds
 		time.Sleep(30 * time.Second)
 		// Retry the API call
-		a, e = httpSetUp(httpAction, apiURL, pce, body, async, [][2]string{})
+		api, err = p.httpSetup(action, apiURL, body, async, headers)
 	}
-
-	// Return once response code isn't 429 or if we've exceeded our attempts.
-	return a, e
-
+	// Return once response code isn't 429
+	return api, err
 }
 
-// pceSanitization cleans up the provided PCE FQDN in case of common errors
-func pceSanitization(pceFQDN string) string {
-
+// cleanFQDN cleans up the provided PCE FQDN in case of common errors
+func (p *PCE) cleanFQDN() string {
 	// Remove trailing slash if included
-	pceFQDN = strings.TrimSuffix(pceFQDN, "/")
-
+	p.FQDN = strings.TrimSuffix(p.FQDN, "/")
 	// Remove HTTPS if included
-	pceFQDN = strings.TrimPrefix(pceFQDN, "https://")
-
-	return pceFQDN
-
+	p.FQDN = strings.TrimPrefix(p.FQDN, "https://")
+	return p.FQDN
 }
