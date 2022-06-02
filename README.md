@@ -4,7 +4,7 @@
 
 ## Description
 
-Go package to interact with the Illumio API.
+Go package to interact with the Illumio PCE API.
 
 ## Version 2.0 Announcement
 Version 2.0 removes redundant code by using the new PCE CRUD methods, standardizes names, and cleans up other tech debt. Renamed or removed methods have been moved to `deprecated.go` to keep backwards compatibility.
