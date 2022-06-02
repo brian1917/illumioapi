@@ -26,6 +26,9 @@ wklds, _, _ := pce.GetWklds(nil)
 
 // Iterate through workloads and print hostname
 for _, w := range wklds {
-    fmt.Println(w.Hostname)
+    fmt.Println(w.
 }
+
+// Get just managed workloads using query parameter
+managedWklds, _, _ := pce.GetWklds(map[string]string{"managed":"true"})
 ```
