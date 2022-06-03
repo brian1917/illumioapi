@@ -229,6 +229,6 @@ func (p *PCE) GetAllVirtualServices(queryParameters map[string]string, pStatus s
 }
 
 // Deprecated: Use CreateRuleset instead.
-func (p *PCE) CreateRulSet(rs RuleSet) (createdRS RuleSet, api APIResponse, err error) {
+func (p *PCE) CreateRuleSet(rs RuleSet) (createdRS RuleSet, api APIResponse, err error) {
 	return p.CreateRuleset(rs)
 }
