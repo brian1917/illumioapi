@@ -208,7 +208,7 @@ func (p *PCE) GetTrafficAnalysisAPI(t TrafficAnalysisRequest) (returnedTraffic [
 	return p.CreateTrafficRequest(t)
 }
 
-// Deprecated: Use GetAllADUserGroups instead.
+// Deprecated: Use GetADUserGroups instead.
 func (p *PCE) GetAllADUserGroups() ([]ConsumingSecurityPrincipals, APIResponse, error) {
 	return p.GetADUserGroups(nil)
 }
@@ -223,6 +223,12 @@ func (p *PCE) GetAllVirtualServers(pStatus string) ([]VirtualServer, APIResponse
 	return p.GetVirtualServers(nil, pStatus)
 }
 
+// Deprecated: Use GetVirtualServices instead.
 func (p *PCE) GetAllVirtualServices(queryParameters map[string]string, pStatus string) ([]VirtualService, APIResponse, error) {
 	return p.GetVirtualServices(queryParameters, pStatus)
+}
+
+// Deprecated: Use CreateRuleset instead.
+func (p *PCE) CreateRulSset(rs RuleSet) (createdRS RuleSet, api APIResponse, err error) {
+	return p.CreateRuleset(rs)
 }

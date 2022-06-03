@@ -135,7 +135,7 @@ func (p *PCE) GetRulesets(queryParameters map[string]string, pStatus string) (ru
 }
 
 // CreateRuleSet creates a new ruleset in the PCE.
-func (p *PCE) CreateRuleSet(rs RuleSet) (createdRS RuleSet, api APIResponse, err error) {
+func (p *PCE) CreateRuleset(rs RuleSet) (createdRS RuleSet, api APIResponse, err error) {
 	api, err = p.Post("sec_policy/draft/rule_sets", &rs, &createdRS)
 	return createdRS, api, err
 }

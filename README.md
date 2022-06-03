@@ -8,7 +8,7 @@ Go package to interact with the Illumio PCE API.
 
 ## Deprecated Method Announcement - June 2, 2022
 Several methods have been deprecated as part of a naming convention standardization and leveraging the new PCE crud methods in `crud.go`. Old methods
-are maintained in `depreceated.go` to keep backwards compatibility.
+are maintained in `depreceated.go` to keep backwards compatibility. The deprecated functions will be removed in August 2022.
 
 ## Example Code
 All interaction with the PCE are done via methods on the PCE type. For example, the code below prints all hostnames:
