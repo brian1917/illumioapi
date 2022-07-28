@@ -23,6 +23,7 @@ type VEN struct {
 	TargetPceFqdn    string            `json:"target_pce_fqdn,omitempty"`
 	Workloads        *[]*Workload      `json:"workloads,omitempty"`
 	ContainerCluster *ContainerCluster `json:"container_cluster,omitempty"`
+	VenType          string            `json:"ven_type,omitempty"`
 }
 
 type VENUpgrade struct {
