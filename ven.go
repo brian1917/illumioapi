@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // VEN represents a VEN in the Illumio PCE.
@@ -24,6 +25,7 @@ type VEN struct {
 	Workloads        *[]*Workload      `json:"workloads,omitempty"`
 	ContainerCluster *ContainerCluster `json:"container_cluster,omitempty"`
 	VenType          string            `json:"ven_type,omitempty"`
+	Conditions       []Conditions      `json:"conditions,omitempty"`
 }
 
 type VENUpgrade struct {
@@ -40,6 +42,21 @@ type VENUpgradeError struct {
 	Token   string   `json:"token"`
 	Message string   `json:"message"`
 	Hrefs   []string `json:"hrefs"`
+}
+
+// Conditions are the list of conditions for VEN Health
+type Conditions struct {
+	FirstReportedTimestamp time.Time   `json:"first_reported_timestamp"`
+	LatestEvent            LatestEvent `json:"latest_event"`
+}
+
+// LatestEvent is for a Condition
+type LatestEvent struct {
+	NotificationType string    `json:"notification_type"`
+	Severity         string    `json:"severity"`
+	Href             string    `json:"href"`
+	Info             Info      `json:"info"`
+	Timestamp        time.Time `json:"timestamp"`
 }
 
 // LoadVenMap populates the workload maps based on p.WorkloadSlice
