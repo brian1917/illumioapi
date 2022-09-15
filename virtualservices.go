@@ -63,6 +63,7 @@ func (p *PCE) GetVirtualServices(queryParameters map[string]string, pStatus stri
 		api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_services", true, queryParameters, &virtualServices)
 	}
 	// Populate the map
+	p.VirtualServices = make(map[string]VirtualService)
 	for _, vs := range virtualServices {
 		p.VirtualServices[vs.Name] = vs
 		p.VirtualServices[vs.Href] = vs
