@@ -937,7 +937,8 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 	return time.Now().UTC().Sub(t).Hours()
 }
 
-// WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc
+// WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc.
+// Returns is the query parameter for those labels.
 // Each inner slice is an "AND" query
 // The slices are pieces together using "OR"
 // The PCE must be loaded with the labels
