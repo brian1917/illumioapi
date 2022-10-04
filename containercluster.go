@@ -1,5 +1,7 @@
 package illumioapi
 
+import "strings"
+
 // ContainerCluster represents a container cluster in the Illumio PCE
 type ContainerCluster struct {
 	Href             string `json:"href,omitempty"`
@@ -30,4 +32,9 @@ func (p *PCE) GetContainerClusters(queryParameters map[string]string) (container
 		p.ContainerClusters[c.Name] = c
 	}
 	return containerClusters, api, err
+}
+
+func (c *ContainerCluster) ID() string {
+	s := strings.Split(c.Href, "/")
+	return s[len(s)-1]
 }
