@@ -109,11 +109,10 @@ func (p *PCE) Put(object interface{}) (api APIResponse, err error) {
 
 	// Call the API
 	api, err = p.httpReq("PUT", apiURL.String(), jsonBytes, false, true)
+	api.ReqBody = string(jsonBytes)
 	if err != nil {
 		return api, err
 	}
-	// Add the request body to the API object
-	api.ReqBody = string(jsonBytes)
 
 	return api, nil
 }
