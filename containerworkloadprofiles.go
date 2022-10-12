@@ -25,7 +25,7 @@ type ContainerWorkloadProfileLabelRestriction struct {
 // ContainerWorkloadProfile represents a container workload profile in the Illumio PCE
 type ContainerWorkloadProfile struct {
 	Href            string                           `json:"href,omitempty"`
-	Name            *string                          `json:"name,omitempty"`
+	Name            *string                          `json:"name"` // API expects null for name to remove it. Always sent.
 	Namespace       string                           `json:"namespace,omitempty"`
 	Description     *string                          `json:"description,omitempty"`
 	EnforcementMode string                           `json:"enforcement_mode,omitempty"`
