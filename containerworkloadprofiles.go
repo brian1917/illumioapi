@@ -25,9 +25,9 @@ type ContainerWorkloadProfileLabelRestriction struct {
 // ContainerWorkloadProfile represents a container workload profile in the Illumio PCE
 type ContainerWorkloadProfile struct {
 	Href            string                           `json:"href,omitempty"`
-	Name            string                           `json:"name,omitempty"`
+	Name            *string                          `json:"name,omitempty"`
 	Namespace       string                           `json:"namespace,omitempty"`
-	Description     string                           `json:"description,omitempty"`
+	Description     *string                          `json:"description,omitempty"`
 	EnforcementMode string                           `json:"enforcement_mode,omitempty"`
 	VisibilityLevel string                           `json:"visibility_level,omitempty"`
 	Managed         *bool                            `json:"managed,omitempty"`
@@ -54,7 +54,9 @@ func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, contai
 	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 	for _, c := range containerWkldProfiles {
 		p.ContainerWorkloadProfiles[c.Href] = c
-		p.ContainerWorkloadProfiles[c.Name] = c
+		if c.Name != nil {
+			p.ContainerWorkloadProfiles[*c.Name] = c
+		}
 	}
 	return containerWkldProfiles, api, err
 }
