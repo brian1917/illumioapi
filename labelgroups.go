@@ -44,7 +44,7 @@ func (p *PCE) GetLabelGroups(queryParameters map[string]string, pStatus string) 
 		return labelGroups, api, fmt.Errorf("invalid pStatus")
 	}
 	api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", false, queryParameters, &labelGroups)
-	if len(labelGroups) > 500 {
+	if len(labelGroups) >= 500 {
 		labelGroups = nil
 		api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", true, queryParameters, &labelGroups)
 	}

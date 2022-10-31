@@ -57,7 +57,7 @@ func (p *PCE) GetServices(queryParameters map[string]string, pStatus string) (se
 		return services, api, fmt.Errorf("invalid pStatus")
 	}
 	api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", false, queryParameters, &services)
-	if len(services) > 500 {
+	if len(services) >= 500 {
 		services = nil
 		api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", true, queryParameters, &services)
 	}
