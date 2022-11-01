@@ -58,7 +58,7 @@ func (p *PCE) GetVirtualServices(queryParameters map[string]string, pStatus stri
 		return virtualServices, api, fmt.Errorf("invalid pStatus")
 	}
 	api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_services", false, queryParameters, &virtualServices)
-	if len(virtualServices) > 500 {
+	if len(virtualServices) >= 500 {
 		virtualServices = nil
 		api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_services", true, queryParameters, &virtualServices)
 	}
