@@ -116,7 +116,7 @@ type Statements struct {
 	TableName  string `json:"table_name"`
 }
 
-// GetRulesets returns a slice of labels from the PCE. pStatus must be "draft" or "active".
+// GetRulesets returns a slice of rulesets from the PCE. pStatus must be "draft" or "active".
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
@@ -140,7 +140,7 @@ func (p *PCE) CreateRuleset(rs RuleSet) (createdRS RuleSet, api APIResponse, err
 	return createdRS, api, err
 }
 
-// CreateRule creates a new rule List in the PCE.
+// CreateRule creates a new rule in the PCE.
 func (p *PCE) CreateRule(rulesetHref string, rule Rule) (createdRule Rule, api APIResponse, err error) {
 	api, err = p.Post(strings.TrimPrefix(rulesetHref, fmt.Sprintf("/orgs/%d/", p.Org))+"/sec_rules", &rule, &createdRule)
 	return createdRule, api, err

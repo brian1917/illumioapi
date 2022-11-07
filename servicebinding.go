@@ -15,7 +15,7 @@ type PortOverrides struct {
 	NewPort int `json:"new_port"`
 }
 
-// GetServiceBindings returns a slice of labels from the PCE.
+// GetServiceBindings returns a slice of service bindings from the PCE.
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.

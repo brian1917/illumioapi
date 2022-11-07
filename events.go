@@ -44,7 +44,7 @@ type Info struct {
 	SrcIP       string `json:"src_ip"`
 }
 
-// GetEvents returns a slice of labels from the PCE.
+// GetEvents returns a slice of events from the PCE.
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
