@@ -458,6 +458,18 @@ func (w *Workload) SanitizePut() {
 	w.SanitizeBulkUpdate()
 }
 
+// GetLabelByKey returns the label object based on the provided key and label map
+// A blank label is return if the label key is not used on the workload
+func (w *Workload) GetLabelByKey(key string, labelMap map[string]Label) Label {
+	key = strings.ToLower(key)
+	for _, l := range *w.Labels {
+		if strings.ToLower(labelMap[l.Href].Key) == key {
+			return labelMap[l.Href]
+		}
+	}
+	return Label{}
+}
+
 // GetRole takes a map of labels with the href string as the key and returns the role label for a workload.
 // To get the LabelMap call GetLabelMapH.
 func (w *Workload) GetRole(labelMap map[string]Label) Label {
