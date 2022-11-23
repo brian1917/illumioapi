@@ -83,9 +83,6 @@ func (p *PCE) GetLabelByHref(href string) (Label, APIResponse, error) {
 func (p *PCE) CreateLabel(label Label) (createdLabel Label, api APIResponse, err error) {
 	// Check to make sure the label key is valid
 	label.Key = strings.ToLower(label.Key)
-	if label.Key != "app" && label.Key != "env" && label.Key != "role" && label.Key != "loc" {
-		return Label{}, APIResponse{}, errors.New("label key is not app, env, role, or loc")
-	}
 	api, err = p.Post("labels", &label, &createdLabel)
 	return createdLabel, api, err
 }
