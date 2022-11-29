@@ -2,7 +2,6 @@ package illumioapi
 
 import (
 	"errors"
-	"strings"
 )
 
 // A Label represents an Illumio Label.
@@ -81,8 +80,6 @@ func (p *PCE) GetLabelByHref(href string) (Label, APIResponse, error) {
 
 // CreateLabel creates a new Label in the PCE.
 func (p *PCE) CreateLabel(label Label) (createdLabel Label, api APIResponse, err error) {
-	// Check to make sure the label key is valid
-	label.Key = strings.ToLower(label.Key)
 	api, err = p.Post("labels", &label, &createdLabel)
 	return createdLabel, api, err
 }
