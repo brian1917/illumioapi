@@ -101,6 +101,7 @@ type Rule struct {
 	UpdateType                  string                         `json:"update_type,omitempty"`
 	UpdatedAt                   string                         `json:"updated_at,omitempty"`
 	UpdatedBy                   *UpdatedBy                     `json:"updated_by,omitempty"`
+	UseWorkloadSubnets          []string                       `json:"use_workload_subnets,omitempty"`
 }
 
 // Scopes - more info to follow
