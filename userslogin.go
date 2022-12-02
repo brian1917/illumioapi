@@ -124,9 +124,22 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 
 	// Create HTTP client and request
 	client := &http.Client{}
+
+	// Create the http transport obect
+	httpTransport := &http.Transport{}
 	if p.DisableTLSChecking {
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+	if p.Proxy != "" {
+		proxyUrl, err := url.Parse(p.Proxy)
+		if err != nil {
+			return login, response, err
+		}
+		httpTransport.Proxy = http.ProxyURL(proxyUrl)
+	}
+
+	// Add to the client
+	client.Transport = httpTransport
 
 	req, err := http.NewRequest("GET", apiURL.String(), nil)
 	if err != nil {

@@ -54,9 +54,22 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 
 	// Create HTTP client and request
 	client := &http.Client{}
+
+	// Create the http transport obect
+	httpTransport := &http.Transport{}
 	if p.DisableTLSChecking {
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+	if p.Proxy != "" {
+		proxyUrl, err := url.Parse(p.Proxy)
+		if err != nil {
+			return APIResponse{}, err
+		}
+		httpTransport.Proxy = http.ProxyURL(proxyUrl)
+	}
+
+	// Add to the client
+	client.Transport = httpTransport
 
 	req, err := http.NewRequest(action, apiURL, httpBody)
 	if err != nil {
@@ -129,10 +142,24 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults asyncResults, err error) {
 
 	// Create HTTP client and request
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	client := &http.Client{}
+
+	// Create the http transport obect
+	httpTransport := &http.Transport{}
+	if p.DisableTLSChecking {
+		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
-	client := &http.Client{Transport: tr}
+	if p.Proxy != "" {
+		proxyUrl, err := url.Parse(p.Proxy)
+		if err != nil {
+			return asyncResults, err
+		}
+		httpTransport.Proxy = http.ProxyURL(proxyUrl)
+	}
+
+	// Add to the client
+	client.Transport = httpTransport
+
 	pollReq, err := http.NewRequest("GET", baseURL+origResp.Header.Get("Location"), nil)
 	if err != nil {
 		return asyncResults, err

@@ -16,6 +16,7 @@ type PCE struct {
 	Org                            int
 	User                           string
 	Key                            string
+	Proxy                          string
 	DisableTLSChecking             bool
 	LabelsSlice                    []Label               // All labels stored in a slice
 	Labels                         map[string]Label      // Labels can be looked up by href or key+value (no character between key and value)
