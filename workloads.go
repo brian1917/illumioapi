@@ -461,9 +461,11 @@ func (w *Workload) SanitizePut() {
 // GetLabelByKey returns the label object based on the provided key and label map
 // A blank label is return if the label key is not used on the workload
 func (w *Workload) GetLabelByKey(key string, labelMap map[string]Label) Label {
-	key = strings.ToLower(key)
+	if w.Labels == nil {
+		return Label{}
+	}
 	for _, l := range *w.Labels {
-		if strings.ToLower(labelMap[l.Href].Key) == key {
+		if strings.EqualFold(labelMap[l.Href].Key, key) {
 			return labelMap[l.Href]
 		}
 	}
