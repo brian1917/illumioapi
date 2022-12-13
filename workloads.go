@@ -76,17 +76,17 @@ type Workload struct {
 	Agent                 *Agent                `json:"agent,omitempty"`
 	CreatedAt             string                `json:"created_at,omitempty"`
 	CreatedBy             *CreatedBy            `json:"created_by,omitempty"`
-	DataCenter            string                `json:"data_center,omitempty"`
+	DataCenter            *string               `json:"data_center,omitempty"`
 	DataCenterZone        string                `json:"data_center_zone,omitempty"`
 	DeleteType            string                `json:"delete_type,omitempty"`
 	Deleted               *bool                 `json:"deleted,omitempty"`
 	DeletedAt             string                `json:"deleted_at,omitempty"`
 	DeletedBy             *DeletedBy            `json:"deleted_by,omitempty"`
-	Description           string                `json:"description,omitempty"`
-	DistinguishedName     string                `json:"distinguished_name,omitempty"`
+	Description           *string               `json:"description,omitempty"`
+	DistinguishedName     *string               `json:"distinguished_name,omitempty"`
 	EnforcementMode       string                `json:"enforcement_mode,omitempty"`
-	ExternalDataReference string                `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string                `json:"external_data_set,omitempty"`
+	ExternalDataReference *string               `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string               `json:"external_data_set,omitempty"`
 	Hostname              string                `json:"hostname,omitempty"`
 	Href                  string                `json:"href,omitempty"`
 	IgnoredInterfaceNames *[]string             `json:"ignored_interface_names,omitempty"`
@@ -95,10 +95,10 @@ type Workload struct {
 	Name                  string                `json:"name,omitempty"`
 	Namespace             string                `json:"namespace,omitempty"` // Only used in Container Workloads
 	Online                bool                  `json:"online,omitempty"`
-	OsDetail              string                `json:"os_detail,omitempty"`
-	OsID                  string                `json:"os_id,omitempty"`
+	OsDetail              *string               `json:"os_detail,omitempty"`
+	OsID                  *string               `json:"os_id,omitempty"`
 	PublicIP              string                `json:"public_ip,omitempty"`
-	ServicePrincipalName  string                `json:"service_principal_name,omitempty"`
+	ServicePrincipalName  *string               `json:"service_principal_name,omitempty"`
 	ServiceProvider       string                `json:"service_provider,omitempty"`
 	Services              *Services             `json:"services,omitempty"`
 	UpdatedAt             string                `json:"updated_at,omitempty"`
@@ -187,8 +187,10 @@ func (p *PCE) LoadWorkloadMap() {
 		if w.Name != "" {
 			p.Workloads[w.Name] = w
 		}
-		if w.ExternalDataSet != "" && w.ExternalDataReference != "" {
-			p.Workloads[w.ExternalDataSet+w.ExternalDataReference] = w
+		if w.ExternalDataReference != nil && w.ExternalDataSet != nil {
+			if *w.ExternalDataSet != "" && *w.ExternalDataReference != "" {
+				p.Workloads[*w.ExternalDataSet+*w.ExternalDataReference] = w
+			}
 		}
 	}
 }
@@ -422,12 +424,12 @@ func (w *Workload) SanitizeBulkUpdate() {
 
 	// Managed workloads
 	if w.GetMode() != "unmanaged" {
-		w.DistinguishedName = ""
+		w.DistinguishedName = nil
 		w.Hostname = ""
 		w.Interfaces = nil
 		w.Online = false
-		w.OsDetail = ""
-		w.OsID = ""
+		w.OsDetail = nil
+		w.OsID = nil
 		w.PublicIP = ""
 		w.Services = nil
 		w.Online = false
@@ -571,17 +573,21 @@ func (w *Workload) GetAppGroupL(labelMap map[string]Label) string {
 // The returned value in 20.1 and lower PCEs will be unmanaged, idle, build, test, enforced-no, enforced-low, enforced-high.
 // The enforced options represent no logging, low details, and high detail.
 func (w *Workload) GetMode() string {
+	spn := ""
+	if w.ServicePrincipalName != nil {
+		spn = *w.ServicePrincipalName
+	}
 
 	// Covers 20.2+ with the new API structure for VEN and enforcement_mode
 	if w.EnforcementMode != "" {
-		if (w.VEN == nil || w.VEN.Href == "") && w.ServicePrincipalName == "" {
+		if (w.VEN == nil || w.VEN.Href == "") && spn == "" {
 			return "unmanaged"
 		}
 		return w.EnforcementMode
 	}
 
 	// Covers prior to 20.2 when the API switched to enforcement_mode
-	if (w.Agent == nil || w.Agent.Href == "") && w.ServicePrincipalName == "" {
+	if (w.Agent == nil || w.Agent.Href == "") && spn == "" {
 		return "unmanaged"
 	}
 	if w.Agent.Config.Mode == "illuminated" && !w.Agent.Config.LogTraffic {
