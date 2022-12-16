@@ -74,12 +74,10 @@ func (p *PCE) Post(endpoint string, object, createdObject interface{}) (api APIR
 
 	// Call the API
 	api, err = p.httpReq("POST", apiURL.String(), jsonBytes, false, true)
+	api.ReqBody = string(jsonBytes)
 	if err != nil {
 		return api, err
 	}
-
-	// Add the request body to the API object
-	api.ReqBody = string(jsonBytes)
 
 	// Unmarshal new label
 	json.Unmarshal([]byte(api.RespBody), &createdObject)
