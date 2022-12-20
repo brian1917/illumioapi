@@ -87,6 +87,8 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		for _, l := range p.LabelsSlice {
 			p.Labels[l.Href] = l
 			p.Labels[l.Key+l.Value] = l
+			p.Labels[strings.ToLower(l.Key+l.Value)] = l
+			p.Labels[strings.ToLower(l.Key)+l.Value] = l
 		}
 	}
 
