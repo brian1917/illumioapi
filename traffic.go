@@ -17,14 +17,16 @@ import (
 
 // TrafficAnalysisRequest represents the payload object for the traffic analysis POST request
 type TrafficAnalysisRequest struct {
-	Sources                    Sources          `json:"sources"`
-	Destinations               Destinations     `json:"destinations"`
-	ExplorerServices           ExplorerServices `json:"services"`
-	StartDate                  time.Time        `json:"start_date,omitempty"`
-	EndDate                    time.Time        `json:"end_date,omitempty"`
-	PolicyDecisions            []string         `json:"policy_decisions"`
-	MaxResults                 int              `json:"max_results,omitempty"`
-	SourcesDestinationsQueryOp string           `json:"sources_destinations_query_op,omitempty"`
+	QueryName                       string           `json:"query_name,omitempty"`
+	Sources                         Sources          `json:"sources"`
+	Destinations                    Destinations     `json:"destinations"`
+	ExplorerServices                ExplorerServices `json:"services"`
+	StartDate                       time.Time        `json:"start_date,omitempty"`
+	EndDate                         time.Time        `json:"end_date,omitempty"`
+	PolicyDecisions                 []string         `json:"policy_decisions"`
+	MaxResults                      int              `json:"max_results,omitempty"`
+	SourcesDestinationsQueryOp      string           `json:"sources_destinations_query_op,omitempty"`
+	ExcludeWorkloadsFromIPListQuery *bool            `json:"exclude_workloads_from_ip_list_query,omitempty"`
 }
 
 // Sources represents the sources query portion of the explorer API
@@ -143,18 +145,41 @@ type TrafficQuery struct {
 	PortProtoExclude [][2]int
 	// PortRangeInclude and PortRangeExclude entries should be of the format [fromPort, toPort, protocol]
 	// Example - [1000, 2000, 6] is Ports 1000-2000 TCP.
-	PortRangeInclude      [][3]int
-	PortRangeExclude      [][3]int
-	ProcessInclude        []string
-	WindowsServiceInclude []string
-	ProcessExclude        []string
-	WindowsServiceExclude []string
-	StartTime             time.Time
-	EndTime               time.Time
-	PolicyStatuses        []string
-	MaxFLows              int
-	TransmissionExcludes  []string // Example: []string{"broadcast", "multicast"} will only get unicast traffic
-	QueryOperator         string   // Value should be "and" or "or". "and" is used by default
+	PortRangeInclude                [][3]int
+	PortRangeExclude                [][3]int
+	ProcessInclude                  []string
+	WindowsServiceInclude           []string
+	ProcessExclude                  []string
+	WindowsServiceExclude           []string
+	StartTime                       time.Time
+	EndTime                         time.Time
+	PolicyStatuses                  []string
+	MaxFLows                        int
+	TransmissionExcludes            []string // Example: []string{"broadcast", "multicast"} will only get unicast traffic
+	QueryOperator                   string   // Value should be "and" or "or". "and" is used by default
+	ExcludeWorkloadsFromIPListQuery bool     // The PCE UI uses a value of true by default
+}
+
+// RegionsItems
+type RegionsItems struct {
+	FlowsCount   int    `json:"flows_count,omitempty"`   // region result count after query limits and RBAC filtering are applied
+	MatchesCount int    `json:"matches_count,omitempty"` // region query result count
+	PceFqdn      string `json:"pce_fqdn"`                // fqdn of PCE region
+	Responded    bool   `json:"responded"`               // supercluster region responded with query results
+}
+
+// Root Asynchronous explorer query status
+type AsyncQuery struct {
+	CreatedAt       string                  `json:"created_at,omitempty"` // Timestamp in UTC when this query was created
+	CreatedBy       *CreatedBy              `json:"created_by,omitempty"`
+	FlowsCount      int                     `json:"flows_count,omitempty"`   // result count after query limits and RBAC filtering are applied
+	Href            string                  `json:"href,omitempty"`          // Query URI
+	MatchesCount    int                     `json:"matches_count,omitempty"` // query result count
+	QueryParameters *TrafficAnalysisRequest `json:"query_parameters"`        // Explorer query parameters
+	Regions         []*RegionsItems         `json:"regions,omitempty"`       // Region-specific response metadata
+	Result          string                  `json:"result,omitempty"`        // Result download URI, availble only if status is completed
+	Status          string                  `json:"status"`                  // Current query status
+	UpdatedAt       string                  `json:"updated_at,omitempty"`    // Timestamp in UTC when this async query was last updated.
 }
 
 // FlowUploadResp is the response from the traffic upload API
@@ -341,6 +366,16 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 		EndDate:         q.EndTime,
 		MaxResults:      q.MaxFLows}
 
+	_, api, err = p.GetVersion()
+	if err != nil {
+		return nil, api, err
+	}
+	if p.Version.Major > 19 {
+		traffic.ExcludeWorkloadsFromIPListQuery = &q.ExcludeWorkloadsFromIPListQuery
+	} else {
+		traffic.ExcludeWorkloadsFromIPListQuery = nil
+	}
+
 	// We are going to edit it here so we can omit if necessary
 	if strings.ToLower(q.QueryOperator) == "or" || strings.ToLower(q.QueryOperator) == "and" {
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
@@ -350,7 +385,53 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 }
 
 func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
-	api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
+	// Get the version
+	if p.Version.Major == 0 {
+		_, api, err := p.GetVersion()
+		if err != nil {
+			return nil, api, fmt.Errorf("error getting version - %s. api response is from get version", err)
+		}
+	}
+
+	// If the version is less than 22.5 (when API was removed)
+	if p.Version.Major < 22 || (p.Version.Major == 22 && p.Version.Minor < 5) {
+		api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
+		return returnedTraffic, api, err
+	}
+
+	var asyncQuery AsyncQuery
+	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
+	if err != nil {
+		return nil, api, err
+	}
+
+	// Check queries
+	for {
+		asyncQueries, api, err := p.GetAsyncQueries(nil)
+		if err != nil {
+			return nil, api, err
+		}
+		for _, aq := range asyncQueries {
+			if aq.Href == asyncQuery.Href && aq.Status == "completed" {
+				return p.GetResults(strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org)))
+			}
+		}
+		time.Sleep(3 * time.Second)
+	}
+
+}
+
+func (p *PCE) GetAsyncQueries(queryParameters map[string]string) (asyncQueries []AsyncQuery, api APIResponse, err error) {
+	api, err = p.GetCollection("traffic_flows/async_queries", false, queryParameters, &asyncQueries)
+	if len(asyncQueries) >= 500 {
+		asyncQueries = nil
+		api, err = p.GetCollection("traffic_flows/async_queries", true, queryParameters, &asyncQueries)
+	}
+	return asyncQueries, api, err
+}
+
+func (p *PCE) GetResults(result string) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
+	api, err = p.GetCollectionHeaders(result, false, nil, map[string]string{"Accept": "application/json"}, &returnedTraffic)
 	return returnedTraffic, api, err
 }
 
@@ -631,7 +712,7 @@ func (p *PCE) UploadTraffic(filename string, headerLine bool) (UploadFlowResults
 	for _, fs := range flowSlices {
 
 		// Call the API
-		api, err := p.httpReq("POST", apiURL.String(), []byte(strings.Join(fs, "\n")), false, false)
+		api, err := p.httpReq("POST", apiURL.String(), []byte(strings.Join(fs, "\n")), false, nil)
 		results.APIResps = append(results.APIResps, api)
 		if err != nil {
 			return results, err
