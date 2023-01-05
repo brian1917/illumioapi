@@ -94,7 +94,7 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 
 	// Call the API - Use a temp PCE object to leverage http method
 	tempPCE := PCE{DisableTLSChecking: p.DisableTLSChecking, User: username, Key: password}
-	api, err = tempPCE.httpReq("POST", apiURL.String(), nil, false, true)
+	api, err = tempPCE.httpReq("POST", apiURL.String(), nil, false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return auth, api, fmt.Errorf("authenticate error - with login server %s - %s", fqdn, err)
 	}
@@ -234,7 +234,7 @@ func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIRe
 	}
 
 	// Call the API
-	apiResp, err := p.httpReq("POST", apiURL.String(), postJSON, false, true)
+	apiResp, err := p.httpReq("POST", apiURL.String(), postJSON, false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return login, append(a, apiResp), fmt.Errorf("LoginAPIKey - %s", err)
 	}
@@ -261,7 +261,7 @@ func (p *PCE) GetAllAPIKeys(userHref string) ([]APIKey, APIResponse, error) {
 	}
 
 	// Call the API
-	apiResp, err := p.httpReq("GET", apiURL.String(), nil, false, true)
+	apiResp, err := p.httpReq("GET", apiURL.String(), nil, false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return []APIKey{}, apiResp, fmt.Errorf("GetAllAPIKeys - %s", err)
 	}

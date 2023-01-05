@@ -39,7 +39,7 @@ type asyncResults struct {
 	} `json:"requested_by"`
 }
 
-func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers [][2]string) (APIResponse, error) {
+func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers map[string]string) (APIResponse, error) {
 	var asyncResults asyncResults
 
 	// Get the base URL
@@ -78,8 +78,8 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 
 	// Set basic authentication and headers
 	req.SetBasicAuth(p.User, p.Key)
-	for _, h := range headers {
-		req.Header.Set(h[0], h[1])
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	if async {
 		req.Header.Set("Prefer", "respond-async")
@@ -200,12 +200,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 // apiURL is the full endpoint being called.
 // PUT and POST methods should have a body that is JSON run through the json.marshal function so it's a []byte.
 // async parameter should be set to true for any GET requests returning > 500 items.
-func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, jsonContentType bool) (APIResponse, error) {
-	// Set headers based on jsonContentType
-	headers := [][2]string{{"Content-Type", "application/json"}}
-	if !jsonContentType {
-		headers = nil
-	}
+func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, headers map[string]string) (APIResponse, error) {
 
 	// Make initial http call
 	api, err := p.httpSetup(action, apiURL, body, async, headers)

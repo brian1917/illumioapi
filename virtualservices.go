@@ -169,7 +169,7 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 			return apiResps, fmt.Errorf("bulk vs error - %s", err)
 		}
 
-		api, err := p.httpReq("PUT", apiURL.String(), vsJSON, false, true)
+		api, err := p.httpReq("PUT", apiURL.String(), vsJSON, false, map[string]string{"Content-Type": "application/json"})
 		api.ReqBody = string(vsJSON)
 
 		apiResps = append(apiResps, api)

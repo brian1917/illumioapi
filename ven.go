@@ -123,7 +123,7 @@ func (p *PCE) UpgradeVENs(vens []VEN, release string) (resp VENUpgradeResp, api 
 	if err != nil {
 		return VENUpgradeResp{}, api, err
 	}
-	api, err = p.httpReq("PUT", apiURL.String(), venUpgradeJSON, false, true)
+	api, err = p.httpReq("PUT", apiURL.String(), venUpgradeJSON, false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return VENUpgradeResp{}, api, fmt.Errorf("upgrade ven - %s", err)
 	}

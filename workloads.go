@@ -369,7 +369,7 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 			return apiResps, fmt.Errorf("bulk workload error - %s", err)
 		}
 
-		api, err := p.httpReq("PUT", apiURL.String(), workloadsJSON, false, true)
+		api, err := p.httpReq("PUT", apiURL.String(), workloadsJSON, false, map[string]string{"Content-Type": "application/json"})
 		if stdoutLogs {
 			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
 		}
@@ -766,7 +766,7 @@ func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, erro
 	}
 
 	// Call the API
-	api, err := p.httpReq("POST", apiURL.String(), json.RawMessage(fmt.Sprintf("{\"release\": \"%s\"}", targetVersion)), false, true)
+	api, err := p.httpReq("POST", apiURL.String(), json.RawMessage(fmt.Sprintf("{\"release\": \"%s\"}", targetVersion)), false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return api, fmt.Errorf("upgrade workload - %s", err)
 	}
@@ -816,7 +816,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 			return nil, fmt.Errorf("unpair error - %s", err)
 		}
 		// Make the API call and append the response to the results
-		api, err := p.httpReq("PUT", apiURL.String(), payload, false, true)
+		api, err := p.httpReq("PUT", apiURL.String(), payload, false, map[string]string{"Content-Type": "application/json"})
 		api.ReqBody = string(payload)
 		apiResps = append(apiResps, api)
 		if err != nil {
