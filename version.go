@@ -29,7 +29,7 @@ func (p *PCE) GetVersion() (version Version, api APIResponse, err error) {
 	}
 
 	// Call the API
-	api, err = p.httpReq("GET", apiURL.String(), nil, false, true)
+	api, err = p.httpReq("GET", apiURL.String(), nil, false, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return Version{}, api, fmt.Errorf("get version - %s", err)
 	}
@@ -53,6 +53,7 @@ func (p *PCE) GetVersion() (version Version, api APIResponse, err error) {
 			return Version{}, api, fmt.Errorf("calculating patch - %s", err)
 		}
 	}
+	p.Version = version
 
 	return version, api, nil
 }
