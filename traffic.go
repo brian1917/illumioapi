@@ -17,7 +17,7 @@ import (
 
 // TrafficAnalysisRequest represents the payload object for the traffic analysis POST request
 type TrafficAnalysisRequest struct {
-	QueryName                       string           `json:"query_name,omitempty"`
+	QueryName                       *string          `json:"query_name,omitempty"`
 	Sources                         Sources          `json:"sources"`
 	Destinations                    Destinations     `json:"destinations"`
 	ExplorerServices                ExplorerServices `json:"services"`
@@ -395,8 +395,17 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 
 	// If the version is less than 22.5 (when API was removed)
 	if p.Version.Major < 22 || (p.Version.Major == 22 && p.Version.Minor < 5) {
+		// Clear the query name
+		t.QueryName = nil
+		// Run the API
 		api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
 		return returnedTraffic, api, err
+	}
+
+	// Make sure a queryname is provided
+	if t.QueryName == nil {
+		x := ""
+		t.QueryName = &x
 	}
 
 	var asyncQuery AsyncQuery
