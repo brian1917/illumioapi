@@ -82,7 +82,7 @@ func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
 	// Make sure labels are just hrefs
 	newLabels := []ContainerWorkloadProfileLabel{}
 	for _, l := range *c.Labels {
-		newLabel := ContainerWorkloadProfileLabel{}
+		var newLabel ContainerWorkloadProfileLabel
 		if l.Assignment.Href != "" {
 			newLabel = ContainerWorkloadProfileLabel{Assignment: ContainerWorkloadProfileLabelAssignment{Href: l.Assignment.Href}, Key: l.Key}
 		} else {
