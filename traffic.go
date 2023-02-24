@@ -41,7 +41,7 @@ type ExplorerServices struct {
 	Exclude []Exclude `json:"exclude"`
 }
 
-//Destinations represents the destination query portion of the explorer API
+// Destinations represents the destination query portion of the explorer API
 type Destinations struct {
 	Include [][]Include `json:"include"`
 	Exclude []Exclude   `json:"exclude"`
@@ -169,7 +169,7 @@ type RegionsItems struct {
 }
 
 // Root Asynchronous explorer query status
-type AsyncQuery struct {
+type AsyncTrafficQuery struct {
 	CreatedAt       string                  `json:"created_at,omitempty"` // Timestamp in UTC when this query was created
 	CreatedBy       *CreatedBy              `json:"created_by,omitempty"`
 	FlowsCount      int                     `json:"flows_count,omitempty"`   // result count after query limits and RBAC filtering are applied
@@ -384,6 +384,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 	return p.CreateTrafficRequest(traffic)
 }
 
+// CreateTrafficRequest makes a traffic request and waits for the results
 func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
 	// Get the version
 	if p.Version.Major == 0 {
@@ -393,8 +394,8 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		}
 	}
 
-	// If the version is less than 22.5 (when API was removed)
-	if p.Version.Major < 22 || (p.Version.Major == 22 && p.Version.Minor < 5) {
+	// If the version is less than 21.2, use the old api endpoint
+	if p.Version.Major < 21 || (p.Version.Major == 21 && p.Version.Minor < 2) {
 		// Clear the query name
 		t.QueryName = nil
 		// Run the API
@@ -402,16 +403,9 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		return returnedTraffic, api, err
 	}
 
-	// Make sure a queryname is provided
-	if t.QueryName == nil {
-		x := ""
-		t.QueryName = &x
-	}
-
-	var asyncQuery AsyncQuery
-	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
+	asyncQuery, api, err := p.CreateAsyncTrafficRequest(t)
 	if err != nil {
-		return nil, api, err
+		return returnedTraffic, api, err
 	}
 
 	// Check queries
@@ -422,15 +416,25 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		}
 		for _, aq := range asyncQueries {
 			if aq.Href == asyncQuery.Href && aq.Status == "completed" {
-				return p.GetResults(strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org)))
+				return p.GetResults(aq)
 			}
 		}
 		time.Sleep(3 * time.Second)
 	}
-
 }
 
-func (p *PCE) GetAsyncQueries(queryParameters map[string]string) (asyncQueries []AsyncQuery, api APIResponse, err error) {
+// CreateAsyncTrafficRequest makes a traffic request and returns the async query to look up later
+func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery AsyncTrafficQuery, api APIResponse, err error) {
+	// Make sure a queryname is provided
+	if t.QueryName == nil {
+		x := ""
+		t.QueryName = &x
+	}
+	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
+	return asyncQuery, api, err
+}
+
+func (p *PCE) GetAsyncQueries(queryParameters map[string]string) (asyncQueries []AsyncTrafficQuery, api APIResponse, err error) {
 	api, err = p.GetCollection("traffic_flows/async_queries", false, queryParameters, &asyncQueries)
 	if len(asyncQueries) >= 500 {
 		asyncQueries = nil
@@ -439,7 +443,8 @@ func (p *PCE) GetAsyncQueries(queryParameters map[string]string) (asyncQueries [
 	return asyncQueries, api, err
 }
 
-func (p *PCE) GetResults(result string) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
+func (p *PCE) GetAsyncQueryResults(aq AsyncTrafficQuery) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
+	result := strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org))
 	api, err = p.GetCollectionHeaders(result, false, nil, map[string]string{"Accept": "application/json"}, &returnedTraffic)
 	return returnedTraffic, api, err
 }
