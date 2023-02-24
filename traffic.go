@@ -416,7 +416,7 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		}
 		for _, aq := range asyncQueries {
 			if aq.Href == asyncQuery.Href && aq.Status == "completed" {
-				return p.GetResults(aq)
+				return p.GetAsyncQueryResults(aq)
 			}
 		}
 		time.Sleep(3 * time.Second)
