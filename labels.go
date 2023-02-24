@@ -1,7 +1,7 @@
 package illumioapi
 
 import (
-	"errors"
+	"fmt"
 )
 
 // A Label represents an Illumio Label.
@@ -99,57 +99,62 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 	return api, err
 }
 
+// Credit for function to mxschmitt/golang-combinations
+// All returns all combinations for a given string array.
+// This is essentially a powerset of the given set except that the empty set is disregarded.
+func combinations[T any](set []T) (subsets [][]T) {
+	length := uint(len(set))
+
+	// Go through all possible combinations of objects
+	// from 1 (only first object in subset) to 2^length (all objects in subset)
+	for subsetBits := 1; subsetBits < (1 << length); subsetBits++ {
+		var subset []T
+
+		for object := uint(0); object < length; object++ {
+			// checks if object is contained in subset
+			// by checking if bit 'object' is set in subsetBits
+			if (subsetBits>>object)&1 == 1 {
+				// add object to subset
+				subset = append(subset, set[object])
+			}
+		}
+		// add subset to subsets
+		subsets = append(subsets, subset)
+	}
+	return subsets
+}
+
 // LabelsToRuleStructure takes a slice of labels and returns a slice of slices for how the labels would be organized as read by the PCE rule processing.
 // For example {"A-ERP", "A-CRM", "E-PROD"} will return [{"A-ERP, E-PROD"}. {"A-CRM", "E-PROD"}]
 func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
-	// Create 4 slices: roleLabels, appLabels, envLabels, locLabels and put each label in the correct one
-	var roleLabels, appLabels, envLabels, locLabels []Label
+	// Get all the unique keys
+	keys := make(map[string]bool)
 	for _, l := range labels {
-		switch l.Key {
-		case "role":
-			roleLabels = append(roleLabels, l)
-		case "app":
-			appLabels = append(appLabels, l)
-		case "env":
-			envLabels = append(envLabels, l)
-		case "loc":
-			locLabels = append(locLabels, l)
-		default:
-			return nil, errors.New("label key is not role, app, env, or loc")
+		if l.Key == "" {
+			return nil, fmt.Errorf("labels must have a key")
 		}
+		keys[l.Key] = true
 	}
-	// If any of the label slices are empty, put a filler that we will ignore in with blank key and value
-	targets := []*[]Label{&roleLabels, &appLabels, &envLabels, &locLabels}
-	for _, t := range targets {
-		if len(*t) == 0 {
-			*t = append(*t, Label{Key: "", Value: ""})
-		}
-	}
-	// Produce an array for every combination that is needed.
-	var results [][]Label
-	for _, r := range roleLabels {
-		for _, a := range appLabels {
-			for _, e := range envLabels {
-				for _, l := range locLabels {
-					n := []Label{}
-					if r.Value != "" {
-						n = append(n, r)
-					}
-					if a.Value != "" {
-						n = append(n, a)
-					}
-					if e.Value != "" {
-						n = append(n, e)
-					}
-					if l.Value != "" {
-						n = append(n, l)
-					}
-					results = append(results, n)
-				}
+
+	// Get all combinations
+	allCombinations := combinations(labels)
+
+	// Create the keep list
+	keep := [][]Label{}
+entryLoop:
+	for _, entry := range allCombinations {
+		// Check to make sure only one of each label type
+		labelKeyChecker := make(map[string]bool)
+		for _, member := range entry {
+			if _, exists := labelKeyChecker[member.Key]; exists {
+				continue entryLoop
 			}
+			labelKeyChecker[member.Key] = true
+		}
+		// Check to make sure all label types
+		if len(labelKeyChecker) == len(keys) {
+			keep = append(keep, entry)
 		}
 	}
-
-	return results, nil
-
+	return keep, nil
 }
