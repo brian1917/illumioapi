@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -117,7 +117,7 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 	}
 
 	// Process response
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return APIResponse{}, err
 	}
@@ -184,7 +184,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 	}
 
 	// Process Response
-	data, err := ioutil.ReadAll(pollResp.Body)
+	data, err := io.ReadAll(pollResp.Body)
 	if err != nil {
 		return asyncResults, err
 	}

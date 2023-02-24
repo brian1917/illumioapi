@@ -2,7 +2,7 @@ package illumioapi
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -33,7 +33,7 @@ func ParseTemplateFile(filename string) (IllumioSecurityTemplateFile, error) {
 	defer jsonFile.Close()
 
 	// Unmarshal the JSON
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 	var template []IllumioSecurityTemplateFile
 	json.Unmarshal(byteValue, &template)
 

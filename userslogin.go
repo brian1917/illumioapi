@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -163,7 +163,7 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 	}
 
 	// Process response
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return login, response, fmt.Errorf("login error - %s", err)
 	}
