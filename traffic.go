@@ -58,6 +58,7 @@ type PortProtos struct {
 // Example - Label and Workload cannot both be non-nil
 // Example - Port and Proto can both be non-nil (e.g., port 3306 and proto 6)
 type Include struct {
+	Actors         string     `json:"actors,omitempty"`
 	Label          *Label     `json:"label,omitempty"`
 	Workload       *Workload  `json:"workload,omitempty"`
 	IPList         *IPList    `json:"ip_list,omitempty"`
