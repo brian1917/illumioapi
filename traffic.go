@@ -437,10 +437,7 @@ func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery As
 
 func (p *PCE) GetAsyncQueries(queryParameters map[string]string) (asyncQueries []AsyncTrafficQuery, api APIResponse, err error) {
 	api, err = p.GetCollection("traffic_flows/async_queries", false, queryParameters, &asyncQueries)
-	if len(asyncQueries) >= 500 {
-		asyncQueries = nil
-		api, err = p.GetCollection("traffic_flows/async_queries", true, queryParameters, &asyncQueries)
-	}
+	// Async Queries does not use the async collection
 	return asyncQueries, api, err
 }
 
