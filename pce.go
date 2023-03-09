@@ -41,6 +41,8 @@ type PCE struct {
 	ContainerWorkloadsSlice        []Workload
 	ContainerWorkloadProfiles      map[string]ContainerWorkloadProfile
 	ContainerWorkloadProfilesSlice []ContainerWorkloadProfile
+	EnforcementBoundaries          map[string]EnforcementBoundary
+	EnforcementBoundariesSlice     []EnforcementBoundary
 }
 
 // LoadInput tells the p.Load method what objects to load
@@ -59,6 +61,7 @@ type LoadInput struct {
 	VENs                        bool
 	ContainerClusters           bool
 	ContainerWorkloads          bool
+	EnforcementBoundaries       bool
 }
 
 // Load fills the PCE object maps
@@ -241,6 +244,20 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		for _, cw := range p.ContainerWorkloadsSlice {
 			p.ContainerWorkloads[cw.Name] = cw
 			p.ContainerWorkloads[cw.Href] = cw
+		}
+	}
+
+	// Enforcement Boundaries
+	if l.EnforcementBoundaries {
+		p.EnforcementBoundariesSlice, a, err = p.GetEnforcementBoundaries(nil, provisionStatus)
+		apiResps["GetAllEnforcementBoundaries"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting all enforcement boundaries - %s", err)
+		}
+		p.EnforcementBoundaries = map[string]EnforcementBoundary{}
+		for _, eb := range p.EnforcementBoundariesSlice {
+			p.EnforcementBoundaries[eb.Name] = eb
+			p.EnforcementBoundaries[eb.Href] = eb
 		}
 	}
 
