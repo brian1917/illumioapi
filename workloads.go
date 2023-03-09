@@ -750,7 +750,7 @@ func (w *Workload) GetVisibilityLevel() string {
 	}
 }
 
-//GetID returns the ID from the Href of an Agent
+// GetID returns the ID from the Href of an Agent
 func (a *Agent) GetID() string {
 	x := strings.Split(a.Href, "/")
 	return x[len(x)-1]
@@ -957,22 +957,22 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 	return time.Now().UTC().Sub(t).Hours()
 }
 
-// WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers: role, app, env, and loc.
+// WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers (e.g., role, app, env, bu, etc.)
 // Returns is the query parameter for those labels.
 // Each inner slice is an "AND" query
 // The slices are pieces together using "OR"
 // The PCE must be loaded with the labels
-func (p *PCE) WorkloadQueryLabelParameter(data [][]string) (string, error) {
+func (p *PCE) WorkloadQueryLabelParameter(labelSlices [][]string) (queryParameter string, err error) {
 
 	// Find the headers
 	headers := make(map[int]string)
-	for i, header := range data[0] {
+	for i, header := range labelSlices[0] {
 		headers[i] = header
 	}
 
 	// Iterate through each entry
 	outer := []string{}
-	for row, dataSet := range data {
+	for row, dataSet := range labelSlices {
 		// Skip the first row
 		if row == 0 {
 			continue
@@ -998,7 +998,5 @@ func (p *PCE) WorkloadQueryLabelParameter(data [][]string) (string, error) {
 		outer = append(outer, fmt.Sprintf("[%s]", strings.Join(inner, ",")))
 	}
 
-	labelParamters := fmt.Sprintf("[%s]", strings.Join(outer, ","))
-
-	return labelParamters, nil
+	return fmt.Sprintf("[%s]", strings.Join(outer, ",")), nil
 }

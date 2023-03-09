@@ -72,7 +72,7 @@ type RuleSet struct {
 	IPTablesRules         []*IPTablesRules `json:"ip_tables_rules,omitempty"`
 	Name                  string           `json:"name,omitempty"`
 	Rules                 []*Rule          `json:"rules,omitempty"`
-	Scopes                [][]*Scopes      `json:"scopes,omitempty"`
+	Scopes                *[][]*Scopes     `json:"scopes,omitempty"`
 	UpdateType            string           `json:"update_type,omitempty"`
 	UpdatedAt             string           `json:"updated_at,omitempty"`
 	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
