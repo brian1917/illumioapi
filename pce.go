@@ -256,7 +256,9 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		}
 		p.EnforcementBoundaries = map[string]EnforcementBoundary{}
 		for _, eb := range p.EnforcementBoundariesSlice {
-			p.EnforcementBoundaries[eb.Name] = eb
+			if eb.Name != nil {
+				p.EnforcementBoundaries[*eb.Name] = eb
+			}
 			p.EnforcementBoundaries[eb.Href] = eb
 		}
 	}

@@ -1,18 +1,20 @@
 package illumioapi
 
 type EnforcementBoundary struct {
-	Href            string            `json:"href,omitempty"`
-	Name            string            `json:"name,omitempty"`
-	Providers       []Providers       `json:"providers,omitempty"`
-	Consumers       []Consumers       `json:"consumers,omitempty"`
-	IngressServices []IngressServices `json:"ingress_services,omitempty"`
-	CreatedAt       string            `json:"created_at,omitempty"`
-	CreatedBy       *CreatedBy        `json:"created_by,omitempty"`
-	DeletedAt       string            `json:"deleted_at,omitempty"`
-	DeletedBy       *DeletedBy        `json:"deleted_by,omitempty"`
-	UpdateType      string            `json:"update_type,omitempty"`
-	UpdatedAt       string            `json:"updated_at,omitempty"`
-	UpdatedBy       *UpdatedBy        `json:"updated_by,omitempty"`
+	Href            string             `json:"href,omitempty"`
+	Name            *string            `json:"name,omitempty"`
+	Providers       *[]Providers       `json:"providers,omitempty"`
+	Consumers       *[]Consumers       `json:"consumers,omitempty"`
+	IngressServices *[]IngressServices `json:"ingress_services,omitempty"`
+	Enabled         *bool              `json:"enabled,omitempty"`
+	NetworkType     *string            `json:"network_type,omitempty"` //  ["brn", "non_brn", "all"]
+	CreatedAt       *string            `json:"created_at,omitempty"`
+	CreatedBy       *CreatedBy         `json:"created_by,omitempty"`
+	DeletedAt       *string            `json:"deleted_at,omitempty"`
+	DeletedBy       *DeletedBy         `json:"deleted_by,omitempty"`
+	UpdateType      *string            `json:"update_type,omitempty"`
+	UpdatedAt       *string            `json:"updated_at,omitempty"`
+	UpdatedBy       *UpdatedBy         `json:"updated_by,omitempty"`
 }
 
 // GetEnforcementBoundaries returns a slice of enforcement boundaries from the PCE.
@@ -45,12 +47,12 @@ func (p *PCE) CreateEnforcementBoundary(eb EnforcementBoundary) (createdEB Enfor
 // The provided enforcement boundary object must include an Href.
 // Properties that cannot be included in the PUT method will be ignored.
 func (p *PCE) UpdateEnforcementBoundary(eb EnforcementBoundary) (APIResponse, error) {
-	eb.CreatedAt = ""
+	eb.CreatedAt = nil
 	eb.CreatedBy = nil
-	eb.UpdateType = ""
-	eb.UpdatedAt = ""
+	eb.UpdateType = nil
+	eb.UpdatedAt = nil
 	eb.UpdatedBy = nil
-	eb.DeletedAt = ""
+	eb.DeletedAt = nil
 	eb.DeletedBy = nil
 
 	return p.Put(&eb)
