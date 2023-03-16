@@ -5,15 +5,21 @@ import (
 )
 
 // CompatibilityReport is a compatibility report for a VEN in Idle status
+// A CompatibilityReport is never created or updated so JSON does not require omit_empty
 type CompatibilityReport struct {
 	LastUpdatedAt time.Time `json:"last_updated_at"`
 	Results       Results   `json:"results"`
 	QualifyStatus string    `json:"qualify_status"`
 }
 
-// QualifyTest is part of compatibility report. Using interface types because API format is not guaranteed.
+// Results contain a lists of compatibility report qualifying tests
+type Results struct {
+	QualifyTests *[]QualifyTest `json:"qualify_tests"`
+}
+
+// A QualifyTest is a test run by the compatibility check
 type QualifyTest struct {
-	Status                    string      `json:"status"`
+	Status                    *string     `json:"status"`
 	IpsecServiceEnabled       interface{} `json:"ipsec_service_enabled"`
 	Ipv4ForwardingEnabled     interface{} `json:"ipv4_forwarding_enabled"`
 	Ipv4ForwardingPktCnt      interface{} `json:"ipv4_forwarding_pkt_cnt"`
@@ -27,11 +33,6 @@ type QualifyTest struct {
 	GroupPolicy               interface{} `json:"Group_policy"`
 	RequiredPackagesInstalled interface{} `json:"required_packages_installed"`
 	RequiredPackagesMissing   *[]string   `json:"required_packages_missing"`
-}
-
-// Results are the list of qualify tests
-type Results struct {
-	QualifyTests []QualifyTest `json:"qualify_tests"`
 }
 
 // GetCompatibilityReport returns the compatibility report for a VEN

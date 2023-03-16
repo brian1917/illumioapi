@@ -5,39 +5,39 @@ import (
 )
 
 type ContainerWorkloadProfileAssignLabel struct {
-	Href string `json:"href,omitempty"`
+	Href *string `json:"href,omitempty"`
 }
 
 type ContainerWorkloadProfileLabel struct {
-	Key         string                                     `json:"key,omitempty"`
-	Assignment  ContainerWorkloadProfileLabelAssignment    `json:"assignment,omitempty"`
-	Restriction []ContainerWorkloadProfileLabelRestriction `json:"restriction,omitempty"`
+	Key         *string                                     `json:"key,omitempty"`
+	Assignment  *ContainerWorkloadProfileLabelAssignment    `json:"assignment,omitempty"`
+	Restriction *[]ContainerWorkloadProfileLabelRestriction `json:"restriction,omitempty"`
 }
 type ContainerWorkloadProfileLabelAssignment struct {
-	Href  string `json:"href,omitempty"`
-	Value string `json:"value,omitempty"`
+	Href  *string `json:"href,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 type ContainerWorkloadProfileLabelRestriction struct {
-	Href  string `json:"href"`
-	Value string `json:"value"`
+	Href  *string `json:"href,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 
 // ContainerWorkloadProfile represents a container workload profile in the Illumio PCE
 type ContainerWorkloadProfile struct {
-	Href            string                           `json:"href,omitempty"`
+	Href            *string                          `json:"href,omitempty"`
 	Name            *string                          `json:"name"` // API expects null for name to remove it. Always sent.
-	Namespace       string                           `json:"namespace,omitempty"`
+	Namespace       *string                          `json:"namespace,omitempty"`
 	Description     *string                          `json:"description,omitempty"`
-	EnforcementMode string                           `json:"enforcement_mode,omitempty"`
-	VisibilityLevel string                           `json:"visibility_level,omitempty"`
+	EnforcementMode *string                          `json:"enforcement_mode,omitempty"`
+	VisibilityLevel *string                          `json:"visibility_level,omitempty"`
 	Managed         *bool                            `json:"managed,omitempty"`
 	Linked          *bool                            `json:"linked,omitempty"`
 	Labels          *[]ContainerWorkloadProfileLabel `json:"labels,omitempty"`
-	CreatedAt       string                           `json:"created_at,omitempty"`
+	CreatedAt       *string                          `json:"created_at,omitempty"`
 	CreatedBy       *CreatedBy                       `json:"created_by,omitempty"`
-	UpdatedAt       string                           `json:"updated_at,omitempty"`
+	UpdatedAt       *string                          `json:"updated_at,omitempty"`
 	UpdatedBy       *UpdatedBy                       `json:"updated_by,omitempty"`
-	ClusterName     string                           `json:"-"`
+	ClusterName     *string                          `json:"-"`
 }
 
 // GetContainerWkldProfiles returns a slice of container workload profiles from the PCE.
@@ -53,7 +53,9 @@ func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, contai
 	p.ContainerWorkloadProfilesSlice = containerWkldProfiles
 	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 	for _, c := range containerWkldProfiles {
-		p.ContainerWorkloadProfiles[c.Href] = c
+		if c.Href != nil {
+			p.ContainerWorkloadProfiles[*c.Href] = c
+		}
 		if c.Name != nil {
 			p.ContainerWorkloadProfiles[*c.Name] = c
 		}
@@ -72,25 +74,25 @@ func (p *PCE) UpdateContainerWkldProfiles(cp ContainerWorkloadProfile) (APIRespo
 
 // SanitizeContainerWorkloadProfilePut removes fields not acceptable to the put method.
 func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
-	c.CreatedAt = ""
+	c.CreatedAt = nil
 	c.CreatedBy = nil
 	c.Linked = nil
-	c.UpdatedAt = ""
+	c.UpdatedAt = nil
 	c.UpdatedBy = nil
-	c.Namespace = ""
+	c.Namespace = nil
 
 	// Make sure labels are just hrefs
 	newLabels := []ContainerWorkloadProfileLabel{}
 	for _, l := range *c.Labels {
 		var newLabel ContainerWorkloadProfileLabel
-		if l.Assignment.Href != "" {
-			newLabel = ContainerWorkloadProfileLabel{Assignment: ContainerWorkloadProfileLabelAssignment{Href: l.Assignment.Href}, Key: l.Key}
+		if ptrToStr(l.Assignment.Href) != "" {
+			newLabel = ContainerWorkloadProfileLabel{Assignment: &ContainerWorkloadProfileLabelAssignment{Href: l.Assignment.Href}, Key: l.Key}
 		} else {
 			newRestrictions := []ContainerWorkloadProfileLabelRestriction{}
-			for _, r := range l.Restriction {
+			for _, r := range ptrToSlice(l.Restriction) {
 				newRestrictions = append(newRestrictions, ContainerWorkloadProfileLabelRestriction{Href: r.Href})
 			}
-			newLabel = ContainerWorkloadProfileLabel{Key: l.Key, Restriction: newRestrictions}
+			newLabel = ContainerWorkloadProfileLabel{Key: l.Key, Restriction: &newRestrictions}
 		}
 		newLabels = append(newLabels, newLabel)
 	}
@@ -100,15 +102,15 @@ func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
 
 // GetLabelByKey returns the value for a provided label key
 func (c *ContainerWorkloadProfile) GetLabelByKey(key string) string {
-	for _, l := range *c.Labels {
+	for _, l := range ptrToSlice(c.Labels) {
 		// Skip if it's not the key specified
-		if l.Key != key {
+		if ptrToStr(l.Key) != key {
 			continue
 		}
-		if len(l.Restriction) > 0 {
+		if len(ptrToSlice(l.Restriction)) > 0 {
 			return ""
 		}
-		return l.Assignment.Value
+		return ptrToStr(l.Assignment.Value)
 	}
 	return ""
 }
@@ -124,14 +126,14 @@ func (c *ContainerWorkloadProfile) SetLabel(label Label, pce *PCE) error {
 	newLabels := []ContainerWorkloadProfileLabel{}
 
 	// Iterate through the existing labels
-	for _, existingLabel := range *c.Labels {
+	for _, existingLabel := range ptrToSlice(c.Labels) {
 		// If the key isn't target, keep it
-		if existingLabel.Key != label.Key {
+		if ptrToStr(existingLabel.Key) != label.Key {
 			newLabels = append(newLabels, existingLabel)
 		}
 	}
 	// Add the new label
-	newLabels = append(newLabels, ContainerWorkloadProfileLabel{Key: label.Key, Assignment: ContainerWorkloadProfileLabelAssignment{Href: label.Href, Value: label.Value}})
+	newLabels = append(newLabels, ContainerWorkloadProfileLabel{Key: &label.Key, Assignment: &ContainerWorkloadProfileLabelAssignment{Href: &label.Href, Value: &label.Value}})
 
 	// Update the labels
 	c.Labels = &newLabels
@@ -148,7 +150,7 @@ func (c *ContainerWorkloadProfile) RemoveLabel(key string) error {
 	// Iterate through the existing labels
 	for _, existingLabel := range *c.Labels {
 		// If the key isn't target, keep it
-		if existingLabel.Key != key {
+		if ptrToStr(existingLabel.Key) != key {
 			newLabels = append(newLabels, existingLabel)
 		}
 	}

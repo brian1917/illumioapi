@@ -98,7 +98,7 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 		}
 		// Enforcement Boundaries
 		if strings.Contains(h, "/enforcement_boundaries/") {
-			enforcementBoundaries = append(enforcementBoundaries, &EnforcementBoundary{Href: h})
+			enforcementBoundaries = append(enforcementBoundaries, &EnforcementBoundary{Href: &h})
 		}
 
 	}

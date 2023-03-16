@@ -1,7 +1,10 @@
 package illumioapi
 
+import "errors"
+
+// An EnforcementBoundary represents an enforcement boundary in the PCE
 type EnforcementBoundary struct {
-	Href            string             `json:"href,omitempty"`
+	Href            *string            `json:"href,omitempty"`
 	Name            *string            `json:"name,omitempty"`
 	Providers       *[]Providers       `json:"providers,omitempty"`
 	Consumers       *[]Consumers       `json:"consumers,omitempty"`
@@ -61,5 +64,8 @@ func (p *PCE) UpdateEnforcementBoundary(eb EnforcementBoundary) (APIResponse, er
 // DeleteEnforcementBoundary removes an enforcement boundary from the PCE.
 // The provided enforcement boundary object must include an Href.
 func (p *PCE) DeleteEnforcementBoundary(eb EnforcementBoundary) (APIResponse, error) {
-	return p.DeleteHref(eb.Href)
+	if eb.Href == nil {
+		return APIResponse{}, errors.New("href cannot be nil")
+	}
+	return p.DeleteHref(*eb.Href)
 }

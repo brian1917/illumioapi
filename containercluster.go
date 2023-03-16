@@ -2,16 +2,16 @@ package illumioapi
 
 import "strings"
 
-// ContainerCluster represents a container cluster in the Illumio PCE
+// ContainerCluster represents a container cluster in the PCE
 type ContainerCluster struct {
-	Href             string `json:"href,omitempty"`
-	Name             string `json:"name,omitempty"`
-	Description      string `json:"description,omitempty"`
-	ContainerRuntime string `json:"container_runtime,omitempty"`
-	ManagerType      string `json:"manager_type,omitempty"`
-	Online           *bool  `json:"online,omitempty"`
-	KubelinkVersion  string `json:"kubelink_version,omitempty"`
-	PceFqdn          string `json:"pce_fqdn,omitempty"`
+	Href             *string `json:"href,omitempty"`
+	Name             *string `json:"name,omitempty"`
+	Description      *string `json:"description,omitempty"`
+	ContainerRuntime *string `json:"container_runtime,omitempty"`
+	ManagerType      *string `json:"manager_type,omitempty"`
+	Online           *bool   `json:"online,omitempty"`
+	KubelinkVersion  *string `json:"kubelink_version,omitempty"`
+	PceFqdn          *string `json:"pce_fqdn,omitempty"`
 }
 
 // GetContainerClusters returns a slice of ContainerCluster in the PCE.
@@ -28,13 +28,17 @@ func (p *PCE) GetContainerClusters(queryParameters map[string]string) (container
 	p.ContainerClustersSlice = containerClusters
 	p.ContainerClusters = make(map[string]ContainerCluster)
 	for _, c := range containerClusters {
-		p.ContainerClusters[c.Href] = c
-		p.ContainerClusters[c.Name] = c
+		if c.Href != nil {
+			p.ContainerClusters[*c.Href] = c
+		}
+		if c.Name != nil {
+			p.ContainerClusters[*c.Name] = c
+		}
 	}
 	return containerClusters, api, err
 }
 
 func (c *ContainerCluster) ID() string {
-	s := strings.Split(c.Href, "/")
+	s := strings.Split(ptrToStr(c.Href), "/")
 	return s[len(s)-1]
 }

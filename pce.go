@@ -259,7 +259,9 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 			if eb.Name != nil {
 				p.EnforcementBoundaries[*eb.Name] = eb
 			}
-			p.EnforcementBoundaries[eb.Href] = eb
+			if eb.Href != nil {
+				p.EnforcementBoundaries[*eb.Href] = eb
+			}
 		}
 	}
 
