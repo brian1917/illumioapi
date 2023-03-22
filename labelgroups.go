@@ -5,26 +5,27 @@ import (
 	"strings"
 )
 
-// LabelGroup represents a Label Group in the Illumio PCE
+// LabelGroup represents a Label Group in the PCE.
 type LabelGroup struct {
-	Description           string       `json:"description,omitempty"`
-	ExternalDataReference string       `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string       `json:"external_data_set,omitempty"`
 	Href                  string       `json:"href,omitempty"`
-	Key                   string       `json:"key,omitempty"`
-	Labels                []*Label     `json:"labels,omitempty"`
 	Name                  string       `json:"name,omitempty"`
-	SubGroups             []*SubGroups `json:"sub_groups,omitempty"`
+	Description           *string      `json:"description,omitempty"`
+	Key                   string       `json:"key,omitempty"`
+	Labels                *[]Label     `json:"labels,omitempty"`
+	SubGroups             *[]SubGroups `json:"sub_groups,omitempty"`
 	Usage                 *Usage       `json:"usage,omitempty"`
+	ExternalDataReference *string      `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string      `json:"external_data_set,omitempty"`
 }
 
-// SubGroups represent SubGroups for Label Groups
+// SubGroups are used by label groups.
 type SubGroups struct {
 	Href string `json:"href"`
 	Name string `json:"name,omitempty"`
 }
 
-// Usage covers how a LabelGroup is used in the PCE
+// Usage covers how a LabelGroup is used in the PCE.
+// Usage is never created or updated.
 type Usage struct {
 	LabelGroup         bool `json:"label_group"`
 	Rule               bool `json:"rule"`
@@ -36,19 +37,25 @@ type Usage struct {
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetLabelGroups(queryParameters map[string]string, pStatus string) (labelGroups []LabelGroup, api APIResponse, err error) {
+func (p *PCE) GetLabelGroups(queryParameters map[string]string, pStatus string) (api APIResponse, err error) {
 
 	// Validate pStatus
 	pStatus = strings.ToLower(pStatus)
 	if pStatus != "active" && pStatus != "draft" {
-		return labelGroups, api, fmt.Errorf("invalid pStatus")
+		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", false, queryParameters, &labelGroups)
-	if len(labelGroups) >= 500 {
-		labelGroups = nil
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", true, queryParameters, &labelGroups)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", false, queryParameters, &p.LabelGroupsSlice)
+	if len(p.LabelGroupsSlice) >= 500 {
+		p.LabelGroupsSlice = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", true, queryParameters, &p.LabelGroupsSlice)
 	}
-	return labelGroups, api, err
+	p.LabelGroups = make(map[string]LabelGroup)
+	for _, lg := range p.LabelGroupsSlice {
+		p.LabelGroups[lg.Href] = lg
+		p.LabelGroups[lg.Name] = lg
+		p.LabelGroups[lg.Key+lg.Name] = lg
+	}
+	return api, err
 }
 
 // CreateLabelGroup creates a new label group in the PCE.
@@ -77,7 +84,7 @@ func (p *PCE) ExpandLabelGroup(href string) (labelHrefs []string) {
 	labelHrefs = append(labelHrefs, a...)
 
 	// Iterate through the subgroups of the original label group
-	for _, sg := range p.LabelGroups[href].SubGroups {
+	for _, sg := range ptrToSlice(p.LabelGroups[href].SubGroups) {
 		// Get the labels in that subgroup and the additional subgroups
 		l, moreSGs := p.expandLabelGroup(sg.Href)
 		// Append the labels
@@ -105,10 +112,10 @@ func (p *PCE) ExpandLabelGroup(href string) (labelHrefs []string) {
 }
 
 func (p *PCE) expandLabelGroup(href string) (labelHrefs []string, moreSGs []string) {
-	for _, l := range p.LabelGroups[href].Labels {
+	for _, l := range ptrToSlice(p.LabelGroups[href].Labels) {
 		labelHrefs = append(labelHrefs, l.Href)
 	}
-	for _, sg := range p.LabelGroups[href].SubGroups {
+	for _, sg := range ptrToSlice(p.LabelGroups[href].SubGroups) {
 		moreSGs = append(moreSGs, sg.Href)
 	}
 	return labelHrefs, moreSGs

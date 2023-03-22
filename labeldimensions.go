@@ -1,20 +1,20 @@
 package illumioapi
 
 type LabelDimension struct {
-	Href                  string              `json:"href"`
-	Key                   string              `json:"key"`
-	DisplayName           string              `json:"display_name"`
-	CreatedAt             string              `json:"created_at"`
-	UpdatedAt             string              `json:"updated_at"`
-	Deleted               bool                `json:"deleted"`
-	DeletedAt             string              `json:"deleted_at"`
-	Usage                 LabelDimensionUsage `json:"usage"`
-	Caps                  []string            `json:"caps"`
-	ExternalDataSet       string              `json:"external_data_set,omitempty"`
-	ExternalDataReference string              `json:"external_data_reference,omitempty"`
-	CreatedBy             CreatedBy           `json:"created_by"`
-	UpdatedBy             UpdatedBy           `json:"updated_by"`
-	DeletedBy             DeletedBy           `json:"deleted_by"`
+	Href                  string               `json:"href"`
+	Key                   string               `json:"key"`
+	DisplayName           string               `json:"display_name"`
+	Usage                 *LabelDimensionUsage `json:"usage"`
+	Caps                  *[]string            `json:"caps"`
+	ExternalDataSet       *string              `json:"external_data_set,omitempty"`
+	ExternalDataReference *string              `json:"external_data_reference,omitempty"`
+	Deleted               *bool                `json:"deleted"`
+	CreatedAt             string               `json:"created_at"`
+	CreatedBy             *Href                `json:"created_by"`
+	UpdatedAt             string               `json:"updated_at"`
+	UpdatedBy             *Href                `json:"updated_by"`
+	DeletedAt             string               `json:"deleted_at"`
+	DeletedBy             *Href                `json:"deleted_by"`
 }
 
 type LabelDimensionUsage struct {

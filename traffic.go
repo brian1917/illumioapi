@@ -15,66 +15,41 @@ import (
 	"time"
 )
 
-// TrafficAnalysisRequest represents the payload object for the traffic analysis POST request
+// TrafficAnalysisRequest is is to the traffic analysis POST request
 type TrafficAnalysisRequest struct {
-	QueryName                       *string          `json:"query_name,omitempty"`
-	Sources                         Sources          `json:"sources"`
-	Destinations                    Destinations     `json:"destinations"`
-	ExplorerServices                ExplorerServices `json:"services"`
-	StartDate                       time.Time        `json:"start_date,omitempty"`
-	EndDate                         time.Time        `json:"end_date,omitempty"`
-	PolicyDecisions                 []string         `json:"policy_decisions"`
-	MaxResults                      int              `json:"max_results,omitempty"`
-	SourcesDestinationsQueryOp      string           `json:"sources_destinations_query_op,omitempty"`
-	ExcludeWorkloadsFromIPListQuery *bool            `json:"exclude_workloads_from_ip_list_query,omitempty"`
+	QueryName                       *string           `json:"query_name,omitempty"` //Option to send blank query name
+	Sources                         *SrcOrDst         `json:"sources"`
+	Destinations                    *SrcOrDst         `json:"destinations"`
+	ExplorerServices                *ExplorerServices `json:"services"`
+	StartDate                       time.Time         `json:"start_date,omitempty"`
+	EndDate                         time.Time         `json:"end_date,omitempty"`
+	PolicyDecisions                 *[]string         `json:"policy_decisions"`
+	MaxResults                      int               `json:"max_results,omitempty"`
+	SourcesDestinationsQueryOp      string            `json:"sources_destinations_query_op,omitempty"`
+	ExcludeWorkloadsFromIPListQuery *bool             `json:"exclude_workloads_from_ip_list_query,omitempty"`
 }
 
 // Sources represents the sources query portion of the explorer API
-type Sources struct {
-	Include [][]Include `json:"include"`
-	Exclude []Exclude   `json:"exclude"`
+type SrcOrDst struct {
+	Include [][]IncludeOrExclude `json:"include"`
+	Exclude []IncludeOrExclude   `json:"exclude"`
 }
 
 // ExplorerServices represent services to be included or excluded in the explorer query
 type ExplorerServices struct {
-	Include []Include `json:"include"`
-	Exclude []Exclude `json:"exclude"`
-}
-
-// Destinations represents the destination query portion of the explorer API
-type Destinations struct {
-	Include [][]Include `json:"include"`
-	Exclude []Exclude   `json:"exclude"`
+	Include []IncludeOrExclude `json:"include"`
+	Exclude []IncludeOrExclude `json:"exclude"`
 }
 
 // PortProtos represents the ports and protocols query portion of the exporer API
 type PortProtos struct {
-	Include []Include `json:"include"`
-	Exclude []Exclude `json:"exclude"`
+	Include []IncludeOrExclude `json:"include"`
+	Exclude []IncludeOrExclude `json:"exclude"`
 }
 
-// Include represents the type of objects used in an include query.
-// The include struct should be label only, workload only, IP address only, Port and/or protocol only.
-// Example - Label and Workload cannot both be non-nil
-// Example - Port and Proto can both be non-nil (e.g., port 3306 and proto 6)
-type Include struct {
+// IncludeOrExclude is used in traffic queries.
+type IncludeOrExclude struct {
 	Actors         string     `json:"actors,omitempty"`
-	Label          *Label     `json:"label,omitempty"`
-	Workload       *Workload  `json:"workload,omitempty"`
-	IPList         *IPList    `json:"ip_list,omitempty"`
-	IPAddress      *IPAddress `json:"ip_address,omitempty"`
-	Port           int        `json:"port,omitempty"`
-	ToPort         int        `json:"to_port,omitempty"`
-	Proto          int        `json:"proto,omitempty"`
-	Process        string     `json:"process_name,omitempty"`
-	WindowsService string     `json:"windows_service_name,omitempty"`
-}
-
-// Exclude represents the type of objects used in an include query.
-// The exclude struct should only have the following combinations: label only, workload only, IP address only, Port and/or protocol only.
-// Example - Label and Workload cannot both be non-nil
-// Example - Port and Proto can both be non-nil (e.g., port 3306 and proto 6)
-type Exclude struct {
 	Label          *Label     `json:"label,omitempty"`
 	Workload       *Workload  `json:"workload,omitempty"`
 	IPList         *IPList    `json:"ip_list,omitempty"`
@@ -172,12 +147,12 @@ type RegionsItems struct {
 // Root Asynchronous explorer query status
 type AsyncTrafficQuery struct {
 	CreatedAt       string                  `json:"created_at,omitempty"` // Timestamp in UTC when this query was created
-	CreatedBy       *CreatedBy              `json:"created_by,omitempty"`
+	CreatedBy       *Href                   `json:"created_by,omitempty"`
 	FlowsCount      int                     `json:"flows_count,omitempty"`   // result count after query limits and RBAC filtering are applied
 	Href            string                  `json:"href,omitempty"`          // Query URI
 	MatchesCount    int                     `json:"matches_count,omitempty"` // query result count
 	QueryParameters *TrafficAnalysisRequest `json:"query_parameters"`        // Explorer query parameters
-	Regions         []*RegionsItems         `json:"regions,omitempty"`       // Region-specific response metadata
+	Regions         *[]RegionsItems         `json:"regions,omitempty"`       // Region-specific response metadata
 	Result          string                  `json:"result,omitempty"`        // Result download URI, availble only if status is completed
 	Status          string                  `json:"status"`                  // Current query status
 	UpdatedAt       string                  `json:"updated_at,omitempty"`    // Timestamp in UTC when this async query was last updated.
@@ -203,14 +178,14 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 	// Includes
 
 	// Create the two Include slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
-	sourceInc := make([][]Include, 0)
-	destInc := make([][]Include, 0)
+	sourceInc := make([][]IncludeOrExclude, 0)
+	destInc := make([][]IncludeOrExclude, 0)
 
 	// Populate a slice with our provided query lists
 	includeQueryLists := [][][]string{q.SourcesInclude, q.DestinationsInclude}
 
 	// Create a slice of pointers to the newly created slices. So we can fill in the iterations.
-	inclTargets := []*[][]Include{&sourceInc, &destInc}
+	inclTargets := []*[][]IncludeOrExclude{&sourceInc, &destInc}
 
 	// Iterate through the q.SourcesInclude (n=0) and q.DestinationsInclude (n=1)
 	for n, includeQueryList := range includeQueryLists {
@@ -220,17 +195,17 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 			if len(includeArray) > 0 {
 
 				// Create the inside array
-				insideInc := []Include{}
+				insideInc := []IncludeOrExclude{}
 
 				// Iterate through each and fill the inside Array
 				for _, a := range includeArray {
 					switch ParseObjectType(a) {
 					case "label":
-						insideInc = append(insideInc, Include{Label: &Label{Href: a}})
+						insideInc = append(insideInc, IncludeOrExclude{Label: &Label{Href: a}})
 					case "workload":
-						insideInc = append(insideInc, Include{Workload: &Workload{Href: a}})
+						insideInc = append(insideInc, IncludeOrExclude{Workload: &Workload{Href: a}})
 					case "iplist":
-						insideInc = append(insideInc, Include{IPList: &IPList{Href: a}})
+						insideInc = append(insideInc, IncludeOrExclude{IPList: &IPList{Href: a}})
 					case "unknown":
 						if net.ParseIP(a) == nil {
 							v := "source"
@@ -239,14 +214,14 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 							}
 							return nil, APIResponse{}, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
 						}
-						insideInc = append(insideInc, Include{IPAddress: &IPAddress{Value: a}})
+						insideInc = append(insideInc, IncludeOrExclude{IPAddress: &IPAddress{Value: a}})
 					}
 				}
 
 				// Append the inside array to the correct outter array
 				*inclTargets[n] = append(*inclTargets[n], insideInc)
 			} else {
-				*inclTargets[n] = append(*inclTargets[n], make([]Include, 0))
+				*inclTargets[n] = append(*inclTargets[n], make([]IncludeOrExclude, 0))
 			}
 
 		}
@@ -255,10 +230,10 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 	// Excludes
 
 	// Create the two Exclude slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
-	sourceExcl, destExcl := make([]Exclude, 0), make([]Exclude, 0)
+	sourceExcl, destExcl := make([]IncludeOrExclude, 0), make([]IncludeOrExclude, 0)
 
 	// Create a slice of pointers to the newly created slices. So we can fill in the iterations.
-	exclTargets := []*[]Exclude{&sourceExcl, &destExcl}
+	exclTargets := []*[]IncludeOrExclude{&sourceExcl, &destExcl}
 
 	// Populate a slice with our provided query lists
 	excludeQueryLists := [][]string{q.SourcesExclude, q.DestinationsExclude}
@@ -282,11 +257,11 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 			// Add to the exclude
 			switch pceObjType {
 			case "label":
-				*exclTargets[n] = append(*exclTargets[n], Exclude{Label: &Label{Href: exclude}})
+				*exclTargets[n] = append(*exclTargets[n], IncludeOrExclude{Label: &Label{Href: exclude}})
 			case "workload":
-				*exclTargets[n] = append(*exclTargets[n], Exclude{Workload: &Workload{Href: exclude}})
+				*exclTargets[n] = append(*exclTargets[n], IncludeOrExclude{Workload: &Workload{Href: exclude}})
 			case "iplist":
-				*exclTargets[n] = append(*exclTargets[n], Exclude{IPList: &IPList{Href: exclude}})
+				*exclTargets[n] = append(*exclTargets[n], IncludeOrExclude{IPList: &IPList{Href: exclude}})
 			case "unknown":
 				if net.ParseIP(exclude) == nil {
 					v := "source"
@@ -295,7 +270,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 					}
 					return nil, APIResponse{}, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
 				}
-				*exclTargets[n] = append(*exclTargets[n], Exclude{IPAddress: &IPAddress{Value: exclude}})
+				*exclTargets[n] = append(*exclTargets[n], IncludeOrExclude{IPAddress: &IPAddress{Value: exclude}})
 			}
 		}
 	}
@@ -303,66 +278,66 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 	// Services
 
 	// Create the array
-	serviceInclude := make([]Include, 0)
-	serviceExclude := make([]Exclude, 0)
+	serviceInclude := make([]IncludeOrExclude, 0)
+	serviceExclude := make([]IncludeOrExclude, 0)
 
 	// Port and protocol - include
 	for _, portProto := range q.PortProtoInclude {
-		serviceInclude = append(serviceInclude, Include{Port: portProto[0], Proto: portProto[1]})
+		serviceInclude = append(serviceInclude, IncludeOrExclude{Port: portProto[0], Proto: portProto[1]})
 	}
 
 	// Port and protocol - exclude
 	for _, portProto := range q.PortProtoExclude {
-		serviceExclude = append(serviceExclude, Exclude{Port: portProto[0], Proto: portProto[1]})
+		serviceExclude = append(serviceExclude, IncludeOrExclude{Port: portProto[0], Proto: portProto[1]})
 	}
 
 	// Port Range - include
 	for _, portRange := range q.PortRangeInclude {
-		serviceInclude = append(serviceInclude, Include{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
+		serviceInclude = append(serviceInclude, IncludeOrExclude{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
 	}
 
 	// Port Range - exclude
 	for _, portRange := range q.PortRangeExclude {
-		serviceExclude = append(serviceExclude, Exclude{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
+		serviceExclude = append(serviceExclude, IncludeOrExclude{Port: portRange[0], ToPort: portRange[1], Proto: portRange[2]})
 	}
 
 	// Process - include
 	for _, process := range q.ProcessInclude {
-		serviceInclude = append(serviceInclude, Include{Process: process})
+		serviceInclude = append(serviceInclude, IncludeOrExclude{Process: process})
 	}
 
 	// Process - exclude
 	for _, process := range q.ProcessExclude {
-		serviceExclude = append(serviceExclude, Exclude{Process: process})
+		serviceExclude = append(serviceExclude, IncludeOrExclude{Process: process})
 	}
 
 	// Windows Service - include
 	for _, winSrv := range q.WindowsServiceInclude {
-		serviceInclude = append(serviceInclude, Include{WindowsService: winSrv})
+		serviceInclude = append(serviceInclude, IncludeOrExclude{WindowsService: winSrv})
 	}
 
 	// Windows Service - exclude
 	for _, winSrv := range q.WindowsServiceExclude {
-		serviceExclude = append(serviceExclude, Exclude{WindowsService: winSrv})
+		serviceExclude = append(serviceExclude, IncludeOrExclude{WindowsService: winSrv})
 	}
 
 	// Traffic transmission type
 	for _, excl := range q.TransmissionExcludes {
-		destExcl = append(destExcl, Exclude{Transmission: excl})
+		destExcl = append(destExcl, IncludeOrExclude{Transmission: excl})
 	}
 
 	// Build the TrafficAnalysisRequest struct
 	traffic := TrafficAnalysisRequest{
-		Sources: Sources{
+		Sources: &SrcOrDst{
 			Include: sourceInc,
 			Exclude: sourceExcl},
-		Destinations: Destinations{
+		Destinations: &SrcOrDst{
 			Include: destInc,
 			Exclude: destExcl},
-		ExplorerServices: ExplorerServices{
+		ExplorerServices: &ExplorerServices{
 			Include: serviceInclude,
 			Exclude: serviceExclude},
-		PolicyDecisions: q.PolicyStatuses,
+		PolicyDecisions: &q.PolicyStatuses,
 		StartDate:       q.StartTime,
 		EndDate:         q.EndTime,
 		MaxResults:      q.MaxFLows}
@@ -428,8 +403,7 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery AsyncTrafficQuery, api APIResponse, err error) {
 	// Make sure a queryname is provided
 	if t.QueryName == nil {
-		x := ""
-		t.QueryName = &x
+		t.QueryName = ptr("")
 	}
 	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
 	return asyncQuery, api, err
@@ -776,11 +750,11 @@ func DedupeExplorerTraffic(first, second []TrafficAnalysis) []TrafficAnalysis {
 func createExplorerMapKey(entry TrafficAnalysis) string {
 	key := entry.Dst.FQDN + entry.Dst.IP
 	if entry.Dst.Workload != nil {
-		key = key + entry.Dst.Workload.Hostname
+		key = key + ptrToStr(entry.Dst.Workload.Hostname)
 	}
 	key = key + strconv.Itoa(entry.ExpSrv.Port) + entry.ExpSrv.Process + strconv.Itoa(entry.ExpSrv.Proto) + entry.ExpSrv.User + entry.ExpSrv.WindowsService + strconv.Itoa(entry.NumConnections) + entry.PolicyDecision + entry.Src.FQDN + entry.Src.IP
 	if entry.Src.Workload != nil {
-		key = key + entry.Src.Workload.Hostname
+		key = key + ptrToStr(entry.Src.Workload.Hostname)
 	}
 	key = key + entry.TimestampRange.FirstDetected + entry.TimestampRange.LastDetected + entry.Transmission
 	return key

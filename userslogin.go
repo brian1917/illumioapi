@@ -13,30 +13,20 @@ import (
 	"strings"
 )
 
-// ProductVersion represents the version of the product
-type ProductVersion struct {
-	Build           int    `json:"build,omitempty"`
-	EngineeringInfo string `json:"engineering_info,omitempty"`
-	LongDisplay     string `json:"long_display,omitempty"`
-	ReleaseInfo     string `json:"release_info,omitempty"`
-	ShortDisplay    string `json:"short_display,omitempty"`
-	Version         string `json:"version,omitempty"`
-}
-
 // UserLogin represents a user logging in via password to get a session key
 type UserLogin struct {
-	AuthUsername                string          `json:"auth_username,omitempty"`
-	FullName                    string          `json:"full_name,omitempty"`
-	Href                        string          `json:"href,omitempty"`
-	InactivityExpirationMinutes int             `json:"inactivity_expiration_minutes,omitempty"`
-	LastLoginIPAddress          string          `json:"last_login_ip_address,omitempty"`
-	LastLoginOn                 string          `json:"last_login_on,omitempty"`
-	ProductVersion              *ProductVersion `json:"product_version,omitempty"`
-	SessionToken                string          `json:"session_token,omitempty"`
-	TimeZone                    string          `json:"time_zone,omitempty"`
-	Type                        string          `json:"type,omitempty"`
-	Orgs                        []*Org          `json:"orgs,omitempty"`
-	Username                    string          `json:"username,omitempty"` // Added for events
+	AuthUsername                string   `json:"auth_username,omitempty"`
+	FullName                    string   `json:"full_name,omitempty"`
+	Href                        string   `json:"href,omitempty"`
+	InactivityExpirationMinutes int      `json:"inactivity_expiration_minutes,omitempty"`
+	LastLoginIPAddress          string   `json:"last_login_ip_address,omitempty"`
+	LastLoginOn                 string   `json:"last_login_on,omitempty"`
+	ProductVersion              *Version `json:"product_version,omitempty"`
+	SessionToken                string   `json:"session_token,omitempty"`
+	TimeZone                    string   `json:"time_zone,omitempty"`
+	Type                        string   `json:"type,omitempty"`
+	Orgs                        []*Org   `json:"orgs,omitempty"`
+	Username                    string   `json:"username,omitempty"` // Added for events
 }
 
 // Org is an an organization in a SaaS PCE

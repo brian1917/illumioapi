@@ -5,34 +5,34 @@ import (
 	"strings"
 )
 
-// PairingProfile represents a pairing profile in the Illumio PCE
+// PairingProfile is a pairing profile in PCE.
 type PairingProfile struct {
-	AllowedUsesPerKey     string     `json:"allowed_uses_per_key,omitempty"`
-	AppLabelLock          bool       `json:"app_label_lock"`
-	CreatedAt             string     `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy `json:"created_by,omitempty"`
-	Description           string     `json:"description,omitempty"`
-	Enabled               bool       `json:"enabled"`
-	EnvLabelLock          bool       `json:"env_label_lock"`
-	ExternalDataReference string     `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string     `json:"external_data_set,omitempty"`
-	Href                  string     `json:"href,omitempty"`
-	IsDefault             bool       `json:"is_default,omitempty"`
-	KeyLifespan           string     `json:"key_lifespan,omitempty"`
-	Labels                []*Label   `json:"labels,omitempty"`
-	LastPairingAt         string     `json:"last_pairing_at,omitempty"`
-	LocLabelLock          bool       `json:"loc_label_lock"`
-	LogTraffic            bool       `json:"log_traffic"`
-	LogTrafficLock        bool       `json:"log_traffic_lock"`
-	Mode                  string     `json:"mode,omitempty"`
-	ModeLock              bool       `json:"mode_lock"`
-	Name                  string     `json:"name,omitempty"`
-	RoleLabelLock         bool       `json:"role_label_lock"`
-	TotalUseCount         int        `json:"total_use_count,omitempty"`
-	UpdatedAt             string     `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy `json:"updated_by,omitempty"`
-	VisibilityLevel       string     `json:"visibility_level,omitempty"`
-	VisibilityLevelLock   bool       `json:"visibility_level_lock"`
+	Href                  string   `json:"href,omitempty"`
+	Name                  string   `json:"name,omitempty"`
+	Description           *string  `json:"description,omitempty"`
+	IsDefault             *bool    `json:"is_default,omitempty"`
+	Enabled               *bool    `json:"enabled"`
+	Mode                  string   `json:"mode,omitempty"`
+	VisibilityLevel       string   `json:"visibility_level,omitempty"`
+	Labels                *[]Label `json:"labels,omitempty"`
+	AllowedUsesPerKey     string   `json:"allowed_uses_per_key,omitempty"`
+	LogTraffic            *bool    `json:"log_traffic"`
+	AppLabelLock          *bool    `json:"app_label_lock"`
+	EnvLabelLock          *bool    `json:"env_label_lock"`
+	LocLabelLock          *bool    `json:"loc_label_lock"`
+	RoleLabelLock         *bool    `json:"role_label_lock"`
+	ModeLock              *bool    `json:"mode_lock"`
+	VisibilityLevelLock   *bool    `json:"visibility_level_lock"`
+	LogTrafficLock        *bool    `json:"log_traffic_lock"`
+	KeyLifespan           string   `json:"key_lifespan,omitempty"`
+	TotalUseCount         int      `json:"total_use_count,omitempty"`
+	ExternalDataReference *string  `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string  `json:"external_data_set,omitempty"`
+	LastPairingAt         string   `json:"last_pairing_at,omitempty"`
+	CreatedAt             string   `json:"created_at,omitempty"`
+	CreatedBy             *Href    `json:"created_by,omitempty"`
+	UpdatedAt             string   `json:"updated_at,omitempty"`
+	UpdatedBy             *Href    `json:"updated_by,omitempty"`
 }
 
 // PairingKey represents a VEN pairing key

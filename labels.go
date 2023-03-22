@@ -2,33 +2,28 @@ package illumioapi
 
 import (
 	"fmt"
+	"strings"
 )
 
 // A Label represents an Illumio Label.
 type Label struct {
-	CreatedAt             string      `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy  `json:"created_by,omitempty"`
-	Deleted               bool        `json:"deleted,omitempty"`
-	ExternalDataReference string      `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string      `json:"external_data_set,omitempty"`
-	Href                  string      `json:"href,omitempty"`
-	Key                   string      `json:"key,omitempty"`
-	UpdatedAt             string      `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy  `json:"updated_by,omitempty"`
-	Value                 string      `json:"value,omitempty"`
-	LabelUsage            *LabelUsage `json:"usage,omitempty"`
+	Href                  string         `json:"href,omitempty"`
+	Key                   string         `json:"key,omitempty"`
+	Value                 string         `json:"value,omitempty"`
+	LabelUsage            *LabelUsage    `json:"usage,omitempty"`
+	Assignment            *Assignment    `json:"assignment,omitempty"`
+	Restriction           *[]Restriction `json:"restriction,omitempty"`
+	Deleted               *bool          `json:"deleted,omitempty"`
+	ExternalDataReference *string        `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string        `json:"external_data_set,omitempty"`
+	CreatedAt             string         `json:"created_at,omitempty"`
+	CreatedBy             *Href          `json:"created_by,omitempty"`
+	UpdatedAt             string         `json:"updated_at,omitempty"`
+	UpdatedBy             *Href          `json:"updated_by,omitempty"`
 }
 
-// CreatedBy represents the CreatedBy property of an object
-type CreatedBy struct {
-	Href string `json:"href"`
-}
-
-// UpdatedBy represents the UpdatedBy property of an object
-type UpdatedBy struct {
-	Href string `json:"href"`
-}
-
+// LabelUsage shows how labels are used in the PCE
+// LabelUsage is never created or updated
 type LabelUsage struct {
 	VirtualServer                     bool `json:"virtual_server"`
 	LabelGroup                        bool `json:"label_group"`
@@ -47,23 +42,45 @@ type LabelUsage struct {
 	VirtualService                    bool `json:"virtual_service"`
 }
 
+// Restriction is used for container workload profile labels
+type Restriction struct {
+	Href  string `json:"href,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type Assignment struct {
+	Href  string `json:"href,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 // GetLabels returns a slice of labels from the PCE.
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetLabels(queryParameters map[string]string) (labels []Label, api APIResponse, err error) {
-	api, err = p.GetCollection("labels", false, queryParameters, &labels)
-	if len(labels) >= 500 {
-		labels = nil
-		api, err = p.GetCollection("labels", true, queryParameters, &labels)
+func (p *PCE) GetLabels(queryParameters map[string]string) (api APIResponse, err error) {
+	api, err = p.GetCollection("labels", false, queryParameters, &p.LabelsSlice)
+	if len(p.LabelsSlice) >= 500 {
+		p.LabelsSlice = nil
+		api, err = p.GetCollection("labels", true, queryParameters, &p.LabelsSlice)
 	}
-	return labels, api, err
+	// Populate the PCE objects
+	p.Labels = make(map[string]Label)
+	for _, l := range p.LabelsSlice {
+		p.Labels[l.Href] = l
+		p.Labels[l.Key+l.Value] = l
+		p.Labels[strings.ToLower(l.Key+l.Value)] = l
+		p.Labels[strings.ToLower(l.Key)+l.Value] = l
+	}
+
+	return api, err
 }
 
 // GetLabelByKeyValue finds a label based on the key and value. A blank label is return if no exact match.
+// This method uses GetLabels so the PCE label maps and slices will be updated with all labels matching the criteria.
+// Only exact label is returned.
 func (p *PCE) GetLabelByKeyValue(key, value string) (Label, APIResponse, error) {
-	labels, api, err := p.GetLabels(map[string]string{"key": key, "value": value})
-	for _, label := range labels {
+	api, err := p.GetLabels(map[string]string{"key": key, "value": value})
+	for _, label := range p.LabelsSlice {
 		if label.Value == value {
 			return label, api, err
 		}

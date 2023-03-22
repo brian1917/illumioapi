@@ -8,15 +8,18 @@ import (
 	"strings"
 )
 
-// Version represents the version of the PCE
+// Version is the PCE version
+// Versions are never created or updated
 type Version struct {
-	Version      string `json:"version"`
-	Build        int    `json:"build"`
-	LongDisplay  string `json:"long_display"`
-	ShortDisplay string `json:"short_display"`
-	Major        int
-	Minor        int
-	Patch        int
+	Version         string `json:"version"`
+	Build           int    `json:"build"`
+	LongDisplay     string `json:"long_display"`
+	ShortDisplay    string `json:"short_display"`
+	EngineeringInfo string `json:"engineering_info"`
+	ReleaseInfo     string `json:"release_info,omitempty"`
+	Major           int
+	Minor           int
+	Patch           int
 }
 
 // GetVersion returns the version of the PCE

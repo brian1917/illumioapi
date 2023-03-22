@@ -4,63 +4,41 @@ import (
 	"errors"
 )
 
-type ContainerWorkloadProfileAssignLabel struct {
-	Href *string `json:"href,omitempty"`
-}
-
-type ContainerWorkloadProfileLabel struct {
-	Key         *string                                     `json:"key,omitempty"`
-	Assignment  *ContainerWorkloadProfileLabelAssignment    `json:"assignment,omitempty"`
-	Restriction *[]ContainerWorkloadProfileLabelRestriction `json:"restriction,omitempty"`
-}
-type ContainerWorkloadProfileLabelAssignment struct {
-	Href  *string `json:"href,omitempty"`
-	Value *string `json:"value,omitempty"`
-}
-type ContainerWorkloadProfileLabelRestriction struct {
-	Href  *string `json:"href,omitempty"`
-	Value *string `json:"value,omitempty"`
-}
-
-// ContainerWorkloadProfile represents a container workload profile in the Illumio PCE
+// ContainerWorkloadProfile is a Kubernetes namespace
 type ContainerWorkloadProfile struct {
-	Href            *string                          `json:"href,omitempty"`
-	Name            *string                          `json:"name"` // API expects null for name to remove it. Always sent.
-	Namespace       *string                          `json:"namespace,omitempty"`
-	Description     *string                          `json:"description,omitempty"`
-	EnforcementMode *string                          `json:"enforcement_mode,omitempty"`
-	VisibilityLevel *string                          `json:"visibility_level,omitempty"`
-	Managed         *bool                            `json:"managed,omitempty"`
-	Linked          *bool                            `json:"linked,omitempty"`
-	Labels          *[]ContainerWorkloadProfileLabel `json:"labels,omitempty"`
-	CreatedAt       *string                          `json:"created_at,omitempty"`
-	CreatedBy       *CreatedBy                       `json:"created_by,omitempty"`
-	UpdatedAt       *string                          `json:"updated_at,omitempty"`
-	UpdatedBy       *UpdatedBy                       `json:"updated_by,omitempty"`
-	ClusterName     *string                          `json:"-"`
+	Href            string   `json:"href,omitempty"`
+	Name            *string  `json:"name"` // API expects null for name to remove it. Always sent.
+	Namespace       string   `json:"namespace,omitempty"`
+	Description     *string  `json:"description,omitempty"`
+	Labels          *[]Label `json:"labels,omitempty"`
+	EnforcementMode *string  `json:"enforcement_mode,omitempty"`
+	VisibilityLevel *string  `json:"visibility_level,omitempty"`
+	Managed         *bool    `json:"managed,omitempty"`
+	Linked          *bool    `json:"linked,omitempty"`
+	ClusterName     string   `json:"-"`
+	CreatedAt       string   `json:"created_at,omitempty"`
+	CreatedBy       *Href    `json:"created_by,omitempty"`
+	UpdatedAt       string   `json:"updated_at,omitempty"`
+	UpdatedBy       *Href    `json:"updated_by,omitempty"`
 }
 
 // GetContainerWkldProfiles returns a slice of container workload profiles from the PCE.
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, containerClusterID string) (containerWkldProfiles []ContainerWorkloadProfile, api APIResponse, err error) {
-	api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", false, queryParameters, &containerWkldProfiles)
-	if len(containerWkldProfiles) >= 500 {
-		containerWkldProfiles = nil
-		api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", true, queryParameters, &containerWkldProfiles)
+func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, containerClusterID string) (api APIResponse, err error) {
+	api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", false, queryParameters, &p.ContainerWorkloadProfilesSlice)
+	if len(p.ContainerWorkloadProfilesSlice) >= 500 {
+		p.ContainerWorkloadProfilesSlice = nil
+		api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", true, queryParameters, &p.ContainerWorkloadProfilesSlice)
 	}
-	p.ContainerWorkloadProfilesSlice = containerWkldProfiles
-	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
-	for _, c := range containerWkldProfiles {
-		if c.Href != nil {
-			p.ContainerWorkloadProfiles[*c.Href] = c
-		}
+	for _, c := range p.ContainerWorkloadProfilesSlice {
+		p.ContainerWorkloadProfiles[c.Href] = c
 		if c.Name != nil {
 			p.ContainerWorkloadProfiles[*c.Name] = c
 		}
 	}
-	return containerWkldProfiles, api, err
+	return api, err
 }
 
 // UpdateContainerWkldProfiles updates an existing container workload profile in the Illumio PCE
@@ -74,25 +52,25 @@ func (p *PCE) UpdateContainerWkldProfiles(cp ContainerWorkloadProfile) (APIRespo
 
 // SanitizeContainerWorkloadProfilePut removes fields not acceptable to the put method.
 func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
-	c.CreatedAt = nil
+	c.CreatedAt = ""
 	c.CreatedBy = nil
 	c.Linked = nil
-	c.UpdatedAt = nil
+	c.UpdatedAt = ""
 	c.UpdatedBy = nil
-	c.Namespace = nil
+	c.Namespace = ""
 
 	// Make sure labels are just hrefs
-	newLabels := []ContainerWorkloadProfileLabel{}
+	newLabels := []Label{}
 	for _, l := range *c.Labels {
-		var newLabel ContainerWorkloadProfileLabel
-		if ptrToStr(l.Assignment.Href) != "" {
-			newLabel = ContainerWorkloadProfileLabel{Assignment: &ContainerWorkloadProfileLabelAssignment{Href: l.Assignment.Href}, Key: l.Key}
+		var newLabel Label
+		if l.Assignment.Href != "" {
+			newLabel = Label{Assignment: &Assignment{Href: l.Assignment.Href}, Key: l.Key}
 		} else {
-			newRestrictions := []ContainerWorkloadProfileLabelRestriction{}
+			newRestrictions := []Restriction{}
 			for _, r := range ptrToSlice(l.Restriction) {
-				newRestrictions = append(newRestrictions, ContainerWorkloadProfileLabelRestriction{Href: r.Href})
+				newRestrictions = append(newRestrictions, Restriction{Href: r.Href})
 			}
-			newLabel = ContainerWorkloadProfileLabel{Key: l.Key, Restriction: &newRestrictions}
+			newLabel = Label{Key: l.Key, Restriction: &newRestrictions}
 		}
 		newLabels = append(newLabels, newLabel)
 	}
@@ -104,13 +82,13 @@ func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
 func (c *ContainerWorkloadProfile) GetLabelByKey(key string) string {
 	for _, l := range ptrToSlice(c.Labels) {
 		// Skip if it's not the key specified
-		if ptrToStr(l.Key) != key {
+		if l.Key != key {
 			continue
 		}
 		if len(ptrToSlice(l.Restriction)) > 0 {
 			return ""
 		}
-		return ptrToStr(l.Assignment.Value)
+		return l.Assignment.Value
 	}
 	return ""
 }
@@ -123,17 +101,17 @@ func (c *ContainerWorkloadProfile) SetLabel(label Label, pce *PCE) error {
 	}
 
 	// Create the new label array
-	newLabels := []ContainerWorkloadProfileLabel{}
+	newLabels := []Label{}
 
 	// Iterate through the existing labels
 	for _, existingLabel := range ptrToSlice(c.Labels) {
 		// If the key isn't target, keep it
-		if ptrToStr(existingLabel.Key) != label.Key {
+		if existingLabel.Key != label.Key {
 			newLabels = append(newLabels, existingLabel)
 		}
 	}
 	// Add the new label
-	newLabels = append(newLabels, ContainerWorkloadProfileLabel{Key: &label.Key, Assignment: &ContainerWorkloadProfileLabelAssignment{Href: &label.Href, Value: &label.Value}})
+	newLabels = append(newLabels, Label{Key: label.Key, Assignment: &Assignment{Href: label.Href, Value: label.Value}})
 
 	// Update the labels
 	c.Labels = &newLabels
@@ -145,12 +123,12 @@ func (c *ContainerWorkloadProfile) SetLabel(label Label, pce *PCE) error {
 func (c *ContainerWorkloadProfile) RemoveLabel(key string) error {
 
 	// Create the new label array
-	newLabels := []ContainerWorkloadProfileLabel{}
+	newLabels := []Label{}
 
 	// Iterate through the existing labels
 	for _, existingLabel := range *c.Labels {
 		// If the key isn't target, keep it
-		if ptrToStr(existingLabel.Key) != key {
+		if existingLabel.Key != key {
 			newLabels = append(newLabels, existingLabel)
 		}
 	}

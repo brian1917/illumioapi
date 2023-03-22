@@ -5,15 +5,16 @@ import (
 )
 
 // Event represents an auditable event in the Illumio PCE
+// Events cannot be created or updated.
 type Event struct {
-	Href           string          `json:"href"`
-	Timestamp      time.Time       `json:"timestamp"`
-	PceFqdn        string          `json:"pce_fqdn"`
-	EventCreatedBy EventCreatedBy  `json:"created_by"`
-	EventType      string          `json:"event_type"`
-	Status         string          `json:"status"`
-	Severity       string          `json:"severity"`
-	Notifications  []Notifications `json:"notifications"`
+	Href           string           `json:"href"`
+	Timestamp      time.Time        `json:"timestamp"`
+	PceFqdn        string           `json:"pce_fqdn"`
+	EventCreatedBy *EventCreatedBy  `json:"created_by"`
+	EventType      string           `json:"event_type"`
+	Status         string           `json:"status"`
+	Severity       string           `json:"severity"`
+	Notifications  *[]Notifications `json:"notifications"`
 }
 
 // EventCreatedBy is who created the event
@@ -27,14 +28,13 @@ type EventCreatedBy struct {
 }
 
 // System is an empty struct for system-generated events
-type System struct {
-}
+type System struct{}
 
 // Notifications are event notifications
 type Notifications struct {
 	UUID             string `json:"uuid"`
 	NotificationType string `json:"notification_type"`
-	Info             Info   `json:"info"`
+	Info             *Info  `json:"info"`
 }
 
 // Info are notification info

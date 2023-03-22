@@ -33,11 +33,6 @@ type SecureConnectGateways struct {
 	Href string `json:"href"`
 }
 
-// VirtualServers reresent virtual servers in provisioning
-type VirtualServers struct {
-	Href string `json:"href"`
-}
-
 // ProvisionCS provisions a ChangeSubset
 func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (api APIResponse, err error) {
 	provision := Provision{ChangeSubset: &cs, UpdateDescription: comment}
@@ -98,7 +93,7 @@ func (p *PCE) ProvisionHref(hrefs []string, comment string) (APIResponse, error)
 		}
 		// Enforcement Boundaries
 		if strings.Contains(h, "/enforcement_boundaries/") {
-			enforcementBoundaries = append(enforcementBoundaries, &EnforcementBoundary{Href: &h})
+			enforcementBoundaries = append(enforcementBoundaries, &EnforcementBoundary{Href: h})
 		}
 
 	}

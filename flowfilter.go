@@ -1,11 +1,14 @@
 package illumioapi
 
+// A flowfilter is a collector filter
 type FlowFilter struct {
-	Href         string `json:"href,omitempty"`
-	Action       string `json:"action,omitempty"`       // drop or aggregate
-	Transmission string `json:"transmission,omitempty"` // broadcast, multicast, unicast
-	Target       Target `json:"target,omitempty"`
+	Href         string  `json:"href,omitempty"`
+	Action       string  `json:"action,omitempty"`       // drop or aggregate
+	Transmission string  `json:"transmission,omitempty"` // broadcast, multicast, unicast
+	Target       *Target `json:"target,omitempty"`
 }
+
+// Target is part of the collector flow filter
 type Target struct {
 	Proto   int    `json:"proto,omitempty"`
 	SrcIP   string `json:"src_ip,omitempty"`

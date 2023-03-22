@@ -1,15 +1,11 @@
 package illumioapi
 
-import (
-	"time"
-)
-
-// CompatibilityReport is a compatibility report for a VEN in Idle status
-// A CompatibilityReport is never created or updated so JSON does not require omit_empty
+// CompatibilityReport is available in idle workloads.
+// A CompatibilityReport is never created or updated.
 type CompatibilityReport struct {
-	LastUpdatedAt time.Time `json:"last_updated_at"`
-	Results       Results   `json:"results"`
-	QualifyStatus string    `json:"qualify_status"`
+	Results       *Results `json:"results"`
+	LastUpdatedAt string   `json:"last_updated_at"`
+	QualifyStatus string   `json:"qualify_status"`
 }
 
 // Results contain a lists of compatibility report qualifying tests
@@ -19,7 +15,7 @@ type Results struct {
 
 // A QualifyTest is a test run by the compatibility check
 type QualifyTest struct {
-	Status                    *string     `json:"status"`
+	Status                    string      `json:"status"`
 	IpsecServiceEnabled       interface{} `json:"ipsec_service_enabled"`
 	Ipv4ForwardingEnabled     interface{} `json:"ipv4_forwarding_enabled"`
 	Ipv4ForwardingPktCnt      interface{} `json:"ipv4_forwarding_pkt_cnt"`

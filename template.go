@@ -17,10 +17,10 @@ type IllumioSecurityTemplate struct {
 	Version               int        `json:"version"`
 	OsFamily              string     `json:"os_family"`
 	Icon                  string     `json:"icon"`
-	CompatiblePceVersions []int      `json:"compatible_pce_versions"`
-	Labels                []*Label   `json:"labels,omitempty"`
-	IPLists               []*IPList  `json:"ip_lists,omitempty"`
-	Services              []*Service `json:"services,omitempty"`
+	CompatiblePceVersions *[]int     `json:"compatible_pce_versions"`
+	Labels                *[]Label   `json:"labels,omitempty"`
+	IPLists               *[]IPList  `json:"ip_lists,omitempty"`
+	Services              *[]Service `json:"services,omitempty"`
 }
 
 // ParseTemplateFile imports a JSON template file into the PCE

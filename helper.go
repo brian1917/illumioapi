@@ -13,3 +13,7 @@ func ptrToSlice[T any](slice *[]T) []T {
 	}
 	return *slice
 }
+
+func ptr[T any](v T) *T {
+	return &v
+}

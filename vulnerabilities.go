@@ -1,30 +1,32 @@
 package illumioapi
 
-// Vulnerability represents a vulnerability in the Illumio PCE
+// Vulnerabilities are part of vulnerability maps.
+// They are never created or updated.
 type Vulnerability struct {
-	CreatedAt   string     `json:"created_at,omitempty"`
-	CreatedBy   *CreatedBy `json:"created_by,omitempty"`
-	CveIds      []string   `json:"cve_ids,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Href        string     `json:"href,omitempty"`
-	Name        string     `json:"name,omitempty"`
-	Score       int        `json:"score,omitempty"`
-	UpdatedAt   string     `json:"updated_at,omitempty"`
-	UpdatedBy   *UpdatedBy `json:"updated_by,omitempty"`
+	Href        string   `json:"href,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Score       int      `json:"score,omitempty"`
+	CveIds      []string `json:"cve_ids,omitempty"`
+	CreatedAt   string   `json:"created_at,omitempty"`
+	CreatedBy   *Href    `json:"created_by,omitempty"`
+	UpdatedAt   string   `json:"updated_at,omitempty"`
+	UpdatedBy   *Href    `json:"updated_by,omitempty"`
 }
 
-// VulnerabilityReport represents a vulnerability report in the Illumio PCE
+// VulnerabilityReport are part of vulnerability maps.
+// They are never created or updated.
 type VulnerabilityReport struct {
-	Authoritative      bool       `json:"authoritative,omitempty"`
-	CreatedAt          string     `json:"created_at,omitempty"`
-	CreatedBy          *CreatedBy `json:"created_by,omitempty"`
-	Href               string     `json:"href,omitempty"`
-	Name               string     `json:"name,omitempty"`
-	NumVulnerabilities int        `json:"num_vulnerabilities,omitempty"`
-	ReportType         string     `json:"report_type,omitempty"`
-	ScannedIps         []string   `json:"scanned_ips,omitempty"`
-	UpdatedAt          string     `json:"updated_at,omitempty"`
-	UpdatedBy          *UpdatedBy `json:"updated_by,omitempty"`
+	Href               string   `json:"href,omitempty"`
+	Name               string   `json:"name,omitempty"`
+	Authoritative      bool     `json:"authoritative,omitempty"`
+	NumVulnerabilities int      `json:"num_vulnerabilities,omitempty"`
+	ReportType         string   `json:"report_type,omitempty"`
+	ScannedIps         []string `json:"scanned_ips,omitempty"`
+	CreatedAt          string   `json:"created_at,omitempty"`
+	CreatedBy          *Href    `json:"created_by,omitempty"`
+	UpdatedAt          string   `json:"updated_at,omitempty"`
+	UpdatedBy          *Href    `json:"updated_by,omitempty"`
 }
 
 // GetVulns returns a slice of vulnerabilities from the PCE.

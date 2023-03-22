@@ -12,29 +12,95 @@ import (
 	"time"
 )
 
+// A Workload represents a workload in the PCE
+type Workload struct {
+	Href                  string                `json:"href,omitempty"`
+	Description           *string               `json:"description,omitempty"`
+	Name                  *string               `json:"name,omitempty"`
+	Hostname              *string               `json:"hostname,omitempty"`
+	Labels                *[]Label              `json:"labels,omitempty"`
+	Interfaces            *[]Interface          `json:"interfaces,omitempty"`
+	IgnoredInterfaceNames *[]string             `json:"ignored_interface_names,omitempty"`
+	PublicIP              *string               `json:"public_ip,omitempty"`
+	Online                *bool                 `json:"online,omitempty"`
+	EnforcementMode       *string               `json:"enforcement_mode,omitempty"`
+	VisibilityLevel       *string               `json:"visibility_level,omitempty"`
+	OsDetail              *string               `json:"os_detail,omitempty"`
+	OsID                  *string               `json:"os_id,omitempty"`
+	Services              *WkldServices         `json:"services,omitempty"`
+	DistinguishedName     *string               `json:"distinguished_name,omitempty"`
+	ServicePrincipalName  *string               `json:"service_principal_name,omitempty"`
+	VEN                   *VEN                  `json:"ven,omitempty"`
+	Agent                 *Agent                `json:"agent,omitempty"`
+	ServiceProvider       *string               `json:"service_provider,omitempty"`
+	DataCenter            *string               `json:"data_center,omitempty"`
+	DataCenterZone        *string               `json:"data_center_zone,omitempty"`
+	Namespace             *string               `json:"namespace,omitempty"` // Only used in Container Workloads
+	VulnerabilitySummary  *VulnerabilitySummary `json:"vulnerability_summary,omitempty"`
+	ExternalDataReference *string               `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string               `json:"external_data_set,omitempty"`
+	CreatedAt             string                `json:"created_at,omitempty"`
+	CreatedBy             *Href                 `json:"created_by,omitempty"`
+	DeleteType            string                `json:"delete_type,omitempty"`
+	Deleted               *bool                 `json:"deleted,omitempty"`
+	DeletedAt             string                `json:"deleted_at,omitempty"`
+	DeletedBy             *Href                 `json:"deleted_by,omitempty"`
+	UpdatedAt             string                `json:"updated_at,omitempty"`
+	UpdatedBy             *Href                 `json:"updated_by,omitempty"`
+}
+
+// An Interface represent the network interface of a workload
+// An interface can never be updated or created
+type Interface struct {
+	Name                  string `json:"name,omitempty"`
+	FriendlyName          string `json:"friendly_name,omitempty"`
+	Address               string `json:"address,omitempty"`
+	CidrBlock             *int   `json:"cidr_block,omitempty"` // Pointer to handle /0 vs. no Cidr provided
+	DefaultGatewayAddress string `json:"default_gateway_address,omitempty"`
+	LinkState             string `json:"link_state,omitempty"`
+}
+
+// WkldServices represent the Services running on a Workload
+type WkldServices struct {
+	OpenServicePorts *[]OpenServicePort `json:"open_service_ports,omitempty"`
+	UptimeSeconds    int                `json:"uptime_seconds,omitempty"`
+	CreatedAt        string             `json:"created_at,omitempty"`
+}
+
+// OpenServicePorts represents open ports for a service running on a workload
+type OpenServicePort struct {
+	Address        string `json:"address,omitempty"`
+	Package        string `json:"package,omitempty"`
+	Port           int    `json:"port,omitempty"`
+	ProcessName    string `json:"process_name,omitempty"`
+	Protocol       int    `json:"protocol,omitempty"`
+	User           string `json:"user,omitempty"`
+	WinServiceName string `json:"win_service_name,omitempty"`
+}
+
+type VulnerabilitySummary struct {
+	NumVulnerabilities         int                        `json:"num_vulnerabilities,omitempty"`
+	MaxVulnerabilityScore      int                        `json:"max_vulnerability_score,omitempty"`
+	VulnerabilityScore         int                        `json:"vulnerability_score,omitempty"`
+	VulnerablePortExposure     int                        `json:"vulnerable_port_exposure,omitempty"`
+	VulnerablePortWideExposure VulnerablePortWideExposure `json:"vulnerable_port_wide_exposure,omitempty"`
+	VulnerabilityExposureScore int                        `json:"vulnerability_exposure_score,omitempty"`
+}
+
+type VulnerablePortWideExposure struct {
+	Any    bool `json:"any"`
+	IPList bool `json:"ip_list"`
+}
+
 // An Agent is an Agent on a Workload
 type Agent struct {
-	ActivePceFqdn string         `json:"active_pce_fqdn,omitempty"`
-	Config        *Config        `json:"config,omitempty"`
 	Href          string         `json:"href,omitempty"`
+	ActivePceFqdn string         `json:"active_pce_fqdn,omitempty"`
+	TargetPceFqdn string         `json:"target_pce_fqdn,omitempty"`
+	Config        *Config        `json:"config,omitempty"`
 	SecureConnect *SecureConnect `json:"secure_connect,omitempty"`
 	Status        *Status        `json:"status,omitempty"`
-	TargetPceFqdn string         `json:"target_pce_fqdn,omitempty"`
 	Hostname      string         `json:"hostname,omitempty"` // Added this for events
-}
-
-// AgentHealth represents the Agent Health of the Status of a Workload
-type AgentHealth struct {
-	AuditEvent string `json:"audit_event,omitempty"`
-	Severity   string `json:"severity,omitempty"`
-	Type       string `json:"type,omitempty"`
-}
-
-// AgentHealthErrors represents the Agent Health Errors of the Status of a Workload
-// This is depreciated - use AgentHealth
-type AgentHealthErrors struct {
-	Errors   []string `json:"errors,omitempty"`
-	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Config represents the Configuration of an Agent on a Workload
@@ -45,84 +111,14 @@ type Config struct {
 	VisibilityLevel          string `json:"visibility_level,omitempty"`
 }
 
-// DeletedBy represents the Deleted By property of an object
-type DeletedBy struct {
-	Href string `json:"href,omitempty"`
-}
-
-// An Interface represent the Interfaces of a Workload
-type Interface struct {
-	Address               string `json:"address,omitempty"`
-	CidrBlock             *int   `json:"cidr_block,omitempty"`
-	DefaultGatewayAddress string `json:"default_gateway_address,omitempty"`
-	FriendlyName          string `json:"friendly_name,omitempty"`
-	LinkState             string `json:"link_state,omitempty"`
-	Name                  string `json:"name,omitempty"`
-}
-
-// OpenServicePorts represents open ports for a service running on a workload
-type OpenServicePorts struct {
-	Address        string `json:"address,omitempty"`
-	Package        string `json:"package,omitempty"`
-	Port           int    `json:"port,omitempty"`
-	ProcessName    string `json:"process_name,omitempty"`
-	Protocol       int    `json:"protocol,omitempty"`
-	User           string `json:"user,omitempty"`
-	WinServiceName string `json:"win_service_name,omitempty"`
-}
-
-// A Workload represents a workload in the PCE
-type Workload struct {
-	Agent                 *Agent                `json:"agent,omitempty"`
-	CreatedAt             string                `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy            `json:"created_by,omitempty"`
-	DataCenter            *string               `json:"data_center,omitempty"`
-	DataCenterZone        string                `json:"data_center_zone,omitempty"`
-	DeleteType            string                `json:"delete_type,omitempty"`
-	Deleted               *bool                 `json:"deleted,omitempty"`
-	DeletedAt             string                `json:"deleted_at,omitempty"`
-	DeletedBy             *DeletedBy            `json:"deleted_by,omitempty"`
-	Description           *string               `json:"description,omitempty"`
-	DistinguishedName     *string               `json:"distinguished_name,omitempty"`
-	EnforcementMode       string                `json:"enforcement_mode,omitempty"`
-	ExternalDataReference *string               `json:"external_data_reference,omitempty"`
-	ExternalDataSet       *string               `json:"external_data_set,omitempty"`
-	Hostname              string                `json:"hostname,omitempty"`
-	Href                  string                `json:"href,omitempty"`
-	IgnoredInterfaceNames *[]string             `json:"ignored_interface_names,omitempty"`
-	Interfaces            []*Interface          `json:"interfaces,omitempty"`
-	Labels                *[]*Label             `json:"labels,omitempty"` // This breaks the removing all labels
-	Name                  string                `json:"name,omitempty"`
-	Namespace             string                `json:"namespace,omitempty"` // Only used in Container Workloads
-	Online                bool                  `json:"online,omitempty"`
-	OsDetail              *string               `json:"os_detail,omitempty"`
-	OsID                  *string               `json:"os_id,omitempty"`
-	PublicIP              string                `json:"public_ip,omitempty"`
-	ServicePrincipalName  *string               `json:"service_principal_name,omitempty"`
-	ServiceProvider       string                `json:"service_provider,omitempty"`
-	Services              *Services             `json:"services,omitempty"`
-	UpdatedAt             string                `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy            `json:"updated_by,omitempty"`
-	VEN                   *VEN                  `json:"ven,omitempty"`
-	VisibilityLevel       string                `json:"visibility_level,omitempty"`
-	VulnerabilitySummary  *VulnerabilitySummary `json:"vulnerability_summary,omitempty"`
-}
-
 // SecureConnect represents SecureConnect for an Agent on a Workload
 type SecureConnect struct {
 	MatchingIssuerName string `json:"matching_issuer_name,omitempty"`
 }
 
-// Services represent the Services running on a Workload
-type Services struct {
-	CreatedAt        string              `json:"created_at,omitempty"`
-	OpenServicePorts []*OpenServicePorts `json:"open_service_ports,omitempty"`
-	UptimeSeconds    int                 `json:"uptime_seconds,omitempty"`
-}
-
 // Status represents the Status of an Agent on a Workload
 type Status struct {
-	AgentHealth              []*AgentHealth     `json:"agent_health,omitempty"`
+	AgentHealth              *[]AgentHealth     `json:"agent_health,omitempty"`
 	AgentHealthErrors        *AgentHealthErrors `json:"agent_health_errors,omitempty"`
 	AgentVersion             string             `json:"agent_version,omitempty"`
 	FirewallRuleCount        int                `json:"firewall_rule_count,omitempty"`
@@ -137,6 +133,20 @@ type Status struct {
 	Status                   string             `json:"status,omitempty"`
 	UID                      string             `json:"uid,omitempty"`
 	UptimeSeconds            int                `json:"uptime_seconds,omitempty"`
+}
+
+// AgentHealth represents the Agent Health of the Status of a Workload
+type AgentHealth struct {
+	AuditEvent string `json:"audit_event,omitempty"`
+	Severity   string `json:"severity,omitempty"`
+	Type       string `json:"type,omitempty"`
+}
+
+// AgentHealthErrors represents the Agent Health Errors of the Status of a Workload
+// This is depreciated - use AgentHealth
+type AgentHealthErrors struct {
+	Errors   []string `json:"errors,omitempty"`
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Unpair is the payload for using the API to unpair workloads.
@@ -163,81 +173,77 @@ type IncreaseTrafficUpdateReq struct {
 	Workloads []Workload `json:"workloads"`
 }
 
-type VulnerabilitySummary struct {
-	NumVulnerabilities         int                        `json:"num_vulnerabilities,omitempty"`
-	MaxVulnerabilityScore      int                        `json:"max_vulnerability_score,omitempty"`
-	VulnerabilityScore         int                        `json:"vulnerability_score,omitempty"`
-	VulnerablePortExposure     int                        `json:"vulnerable_port_exposure,omitempty"`
-	VulnerablePortWideExposure VulnerablePortWideExposure `json:"vulnerable_port_wide_exposure,omitempty"`
-	VulnerabilityExposureScore int                        `json:"vulnerability_exposure_score,omitempty"`
-}
-type VulnerablePortWideExposure struct {
-	Any    bool `json:"any"`
-	IPList bool `json:"ip_list"`
-}
-
-// LoadWorkloadMap will populate the workload maps based on p.WorkloadSlice
-func (p *PCE) LoadWorkloadMap() {
-	p.Workloads = make(map[string]Workload)
-	for _, w := range p.WorkloadsSlice {
-		p.Workloads[w.Href] = w
-		if w.Hostname != "" {
-			p.Workloads[w.Hostname] = w
-		}
-		if w.Name != "" {
-			p.Workloads[w.Name] = w
-		}
-		if w.ExternalDataReference != nil && w.ExternalDataSet != nil {
-			if *w.ExternalDataSet != "" && *w.ExternalDataReference != "" {
-				p.Workloads[*w.ExternalDataSet+*w.ExternalDataReference] = w
-			}
-		}
-	}
-}
-
 // GetWklds returns a slice of workloads from the PCE.
 // queryParameters can be used for filtering in the form of ["parameter"]="value"
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetWklds(queryParameters map[string]string) ([]Workload, APIResponse, error) {
-	var wklds []Workload
-	api, err := p.GetCollection("workloads", false, queryParameters, &wklds)
-	if len(wklds) >= 500 {
-		wklds = nil
-		api, err = p.GetCollection("workloads", true, queryParameters, &wklds)
+func (p *PCE) GetWklds(queryParameters map[string]string) (api APIResponse, err error) {
+	api, err = p.GetCollection("workloads", false, queryParameters, &p.WorkloadsSlice)
+	if len(p.WorkloadsSlice) >= 500 {
+		p.WorkloadsSlice = nil
+		api, err = p.GetCollection("workloads", true, queryParameters, &p.WorkloadsSlice)
 	}
 	// Load the PCE with the returned workloads
-	p.WorkloadsSlice = wklds
-	p.LoadWorkloadMap()
-	return wklds, api, err
+	p.Workloads = make(map[string]Workload)
+	for _, w := range p.WorkloadsSlice {
+		p.Workloads[w.Href] = w
+		if ptrToStr(w.Hostname) != "" {
+			p.Workloads[*w.Hostname] = w
+		}
+		if ptrToStr(w.Name) != "" {
+			p.Workloads[*w.Name] = w
+		}
+		if ptrToStr(w.ExternalDataReference) != "" && ptrToStr(w.ExternalDataSet) != "" {
+			p.Workloads[*w.ExternalDataSet+*w.ExternalDataReference] = w
+		}
+	}
+	return api, err
+}
+
+// GetContainerWklds returns a slice of container workloads from the PCE.
+// queryParameters can be used for filtering in the form of ["parameter"]="value".
+// The first API call to the PCE does not use the async option.
+// If the slice length is >=500, it re-runs with async.
+func (p *PCE) GetContainerWklds(queryParameters map[string]string) (api APIResponse, err error) {
+	api, err = p.GetCollection("container_workloads", false, queryParameters, &p.ContainerWorkloadsSlice)
+	if len(p.ContainerWorkloadsSlice) >= 500 {
+		p.ContainerWorkloadsSlice = nil
+		api, err = p.GetCollection("container_workloads", true, queryParameters, &p.ContainerWorkloadsSlice)
+	}
+	p.ContainerWorkloads = make(map[string]Workload)
+	for _, w := range p.ContainerWorkloadsSlice {
+		p.ContainerWorkloads[w.Href] = w
+		p.ContainerWorkloads[ptrToStr(w.Hostname)] = w
+		p.ContainerWorkloads[ptrToStr(w.Name)] = w
+	}
+	return api, err
 }
 
 // GetWkldByHref returns the workload with a specific href
-func (p *PCE) GetWkldByHref(href string) (Workload, APIResponse, error) {
-	var wkld Workload
-	api, err := p.GetHref(href, &wkld)
+func (p *PCE) GetWkldByHref(href string) (wkld Workload, api APIResponse, err error) {
+	api, err = p.GetHref(href, &wkld)
 	return wkld, api, err
 }
 
 // GetWkldByHostname gets a workload based on the hostname.
+// GetWkldByBostname calls GetWklds which will replace the workload slice and maps
 // An empty workload is returned if there is no exact match.
-func (p *PCE) GetWkldByHostname(hostname string) (Workload, APIResponse, error) {
-	wklds, a, err := p.GetWklds(map[string]string{"hostname": hostname})
+func (p *PCE) GetWkldByHostname(hostname string) (wkld Workload, api APIResponse, err error) {
+	a, err := p.GetWklds(map[string]string{"hostname": hostname})
 	if err != nil {
-		return Workload{}, a, err
+		return wkld, api, err
 	}
-	for _, w := range wklds {
-		if w.Hostname == hostname {
+	for _, w := range p.WorkloadsSlice {
+		if ptrToStr(w.Hostname) == hostname {
 			return w, a, nil
 		}
 	}
-	return Workload{}, a, nil
+	return wkld, api, err
 }
 
 // CreateWkld creates a new unmanaged workload in the Illumio PCE
-func (p *PCE) CreateWkld(wkld Workload) (Workload, APIResponse, error) {
-	var createdWkld Workload
-	api, err := p.Post("workloads", &wkld, &createdWkld)
+func (p *PCE) CreateWkld(wkld Workload) (createdWkld Workload, api APIResponse, err error) {
+	api, err = p.Post("workloads", &wkld, &createdWkld)
 	return createdWkld, api, err
 }
 
@@ -269,22 +275,22 @@ func (p *PCE) UpdateWkld(workload Workload) (APIResponse, error) {
 // It does not call the Illumio API to update the workload in the PCE. Use pce.UpdateWorkload() or bulk update for that.
 // The method returns the labelMapH in case it needs to create a new label.
 func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error) {
-	var updatedLabels []*Label
+	var updatedLabels []Label
 	var newLabel Label
 	var err error
 	var ok bool
 
 	// Iterate through each of the workloads labels
-	for _, l := range *w.Labels {
+	for _, l := range ptrToSlice(w.Labels) {
 		// If they key isn't the target key, we add it to the updated labels
 		if pce.Labels[l.Href].Key != targetKey {
-			updatedLabels = append(updatedLabels, &Label{Href: l.Href})
+			updatedLabels = append(updatedLabels, Label{Href: l.Href})
 		}
 	}
 
-	// If our new label isn't blank, we need to get it's href and attach to array
+	// If new label isn't blank, get it's href and attach to array
 	if newValue == "" {
-		*w.Labels = updatedLabels
+		w.Labels = &updatedLabels
 		return pce, nil
 	}
 
@@ -299,9 +305,9 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 		pce.Labels[newLabel.Key+newLabel.Value] = newLabel
 	}
 	// Append the new label to our label slice
-	updatedLabels = append(updatedLabels, &Label{Href: newLabel.Href})
+	updatedLabels = append(updatedLabels, Label{Href: newLabel.Href})
 
-	*w.Labels = updatedLabels
+	w.Labels = &updatedLabels
 	return pce, nil
 }
 
@@ -425,14 +431,13 @@ func (w *Workload) SanitizeBulkUpdate() {
 	// Managed workloads
 	if w.GetMode() != "unmanaged" {
 		w.DistinguishedName = nil
-		w.Hostname = ""
+		w.Hostname = nil
 		w.Interfaces = nil
-		w.Online = false
+		w.Online = nil
 		w.OsDetail = nil
 		w.OsID = nil
-		w.PublicIP = ""
+		w.PublicIP = nil
 		w.Services = nil
-		w.Online = false
 		w.Agent.Status = nil
 		w.Agent.SecureConnect = nil
 		w.Agent.ActivePceFqdn = "" // For supercluster-paired workloads
@@ -441,17 +446,17 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.VEN = nil // The VEN is not updateable.
 	}
 
-	if w.EnforcementMode != "" {
+	if ptrToStr(w.EnforcementMode) != "" {
 		w.Agent = nil
 	}
 
 	// Replace Labels with Hrefs
-	newLabels := []*Label{}
-	for _, l := range *w.Labels {
+	newLabels := &[]Label{}
+	for _, l := range ptrToSlice(w.Labels) {
 		newLabel := Label{Href: l.Href}
-		newLabels = append(newLabels, &newLabel)
+		*newLabels = append(*newLabels, newLabel)
 	}
-	*w.Labels = newLabels
+	w.Labels = newLabels
 
 }
 
@@ -474,96 +479,26 @@ func (w *Workload) GetLabelByKey(key string, labelMap map[string]Label) Label {
 	return Label{}
 }
 
-// GetRole takes a map of labels with the href string as the key and returns the role label for a workload.
-// To get the LabelMap call GetLabelMapH.
-func (w *Workload) GetRole(labelMap map[string]Label) Label {
-	if w.Labels == nil {
-		return Label{}
-	}
-	for _, l := range *w.Labels {
-		if labelMap[l.Href].Key == "role" {
-			return labelMap[l.Href]
-		}
-	}
-	return Label{}
-}
-
-// GetApp takes a map of labels with the href string as the key and returns the app label for a workload.
-// To get the LabelMap call GetLabelMapH.
-func (w *Workload) GetApp(labelMap map[string]Label) Label {
-	if w.Labels == nil {
-		return Label{}
-	}
-	for _, l := range *w.Labels {
-		if labelMap[l.Href].Key == "app" {
-			return labelMap[l.Href]
-		}
-	}
-	return Label{}
-}
-
-// GetEnv takes a map of labels with the href string as the key and returns the env label for a workload.
-// To get the LabelMap call GetLabelMapH.
-func (w *Workload) GetEnv(labelMap map[string]Label) Label {
-	if w.Labels == nil {
-		return Label{}
-	}
-	for _, l := range *w.Labels {
-		if labelMap[l.Href].Key == "env" {
-			return labelMap[l.Href]
-		}
-	}
-	return Label{}
-}
-
-// GetLoc takes a map of labels with the href string as the key and returns the loc label for a workload.
-// To get the LabelMap call GetLabelMapH.
-func (w *Workload) GetLoc(labelMap map[string]Label) Label {
-	if w.Labels == nil {
-		return Label{}
-	}
-	for _, l := range *w.Labels {
-		if labelMap[l.Href].Key == "loc" {
-			return labelMap[l.Href]
-		}
-	}
-	return Label{}
-}
-
-// LabelsMatch checks if the workload matches the provided labels.
-// Blank values ("") for role, app, env, or loc mean no label assigned for that key.
-// A single asterisk (*) can be used to represent any in a particular key.
-// For example, using "*" for role will return true as long as the app, env, and loc match.
-func (w *Workload) LabelsMatch(role, app, env, loc string, labelMap map[string]Label) bool {
-	if (role == "*" || w.GetRole(labelMap).Value == role) &&
-		(app == "*" || w.GetApp(labelMap).Value == app) &&
-		(env == "*" || w.GetEnv(labelMap).Value == env) &&
-		(loc == "*" || w.GetLoc(labelMap).Value == loc) {
-		return true
-	}
-	return false
-}
-
 // GetAppGroup returns the app group string of a workload in the format of App | Env.
 // If the workload does not have an app or env label, "NO APP GROUP" is returned.
 // Use GetAppGroupL to include the loc label in the app group.
 func (w *Workload) GetAppGroup(labelMap map[string]Label) string {
-	if w.GetApp(labelMap).Href == "" || w.GetEnv(labelMap).Href == "" {
+	if w.GetLabelByKey("app", labelMap).Href == "" || w.GetLabelByKey("env", labelMap).Href == "" {
 		return "NO APP GROUP"
 	}
 
-	return fmt.Sprintf("%s | %s", w.GetApp(labelMap).Value, w.GetEnv(labelMap).Value)
+	return fmt.Sprintf("%s | %s", w.GetLabelByKey("app", labelMap).Value, w.GetLabelByKey("env", labelMap).Value)
 }
 
 // GetAppGroupL returns the app group string of a workload in the format of App | Env | Loc.
 // If the workload does not have an app, env, or loc label, "NO APP GROUP" is returned.
 // Use GetAppGroup to only use app and env in App Group.
 func (w *Workload) GetAppGroupL(labelMap map[string]Label) string {
-	if w.GetApp(labelMap).Href == "" || w.GetEnv(labelMap).Href == "" || w.GetLoc(labelMap).Href == "" {
+	if w.GetLabelByKey("app", labelMap).Href == "" || w.GetLabelByKey("env", labelMap).Href == "" || w.GetLabelByKey("loc", labelMap).Href == "" {
 		return "NO APP GROUP"
 	}
 
-	return fmt.Sprintf("%s | %s | %s", w.GetApp(labelMap).Value, w.GetEnv(labelMap).Value, w.GetLoc(labelMap).Value)
+	return fmt.Sprintf("%s | %s | %s", w.GetLabelByKey("app", labelMap).Value, w.GetLabelByKey("env", labelMap).Value, w.GetLabelByKey("loc", labelMap).Value)
 }
 
 // GetMode returns the mode of the workloads.
@@ -579,11 +514,11 @@ func (w *Workload) GetMode() string {
 	}
 
 	// Covers 20.2+ with the new API structure for VEN and enforcement_mode
-	if w.EnforcementMode != "" {
+	if ptrToStr(w.EnforcementMode) != "" {
 		if (w.VEN == nil || w.VEN.Href == "") && spn == "" {
 			return "unmanaged"
 		}
-		return w.EnforcementMode
+		return ptrToStr(w.EnforcementMode)
 	}
 
 	// Covers prior to 20.2 when the API switched to enforcement_mode
@@ -626,7 +561,7 @@ func (w *Workload) SetMode(m string) error {
 
 	// If the VEN href is populated, use the new method and properties
 	if w.VEN != nil && w.VEN.Href != "" && (m == "visibility_only" || m == "full" || m == "selective" || m == "idle") {
-		w.EnforcementMode = m
+		w.EnforcementMode = &m
 		return nil
 	}
 
@@ -635,13 +570,13 @@ func (w *Workload) SetMode(m string) error {
 
 	case "idle":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "idle"
+			w.EnforcementMode = ptr("idle")
 		} else {
 			w.Agent.Config.Mode = "idle"
 		}
 	case "build":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "visibility_only"
+			w.EnforcementMode = ptr("visibility_only")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -652,7 +587,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "test":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "visibility_only"
+			w.EnforcementMode = ptr("visibility_only")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -663,7 +598,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-no":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "full"
+			w.EnforcementMode = ptr("full")
 			if err := w.SetVisibilityLevel("flow_off"); err != nil {
 				return err
 			}
@@ -675,7 +610,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-low":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "full"
+			w.EnforcementMode = ptr("full")
 			if err := w.SetVisibilityLevel("flow_drops"); err != nil {
 				return err
 			}
@@ -687,7 +622,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-high":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = "full"
+			w.EnforcementMode = ptr("full")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -727,7 +662,7 @@ func (w *Workload) SetVisibilityLevel(v string) error {
 		return fmt.Errorf("%s is not a valid visibility_level. See SetVisibilityLevel documentation for valid levels", v)
 	}
 
-	w.VisibilityLevel = v
+	w.VisibilityLevel = ptr(v)
 	return nil
 }
 
@@ -738,7 +673,7 @@ func (w *Workload) GetVisibilityLevel() string {
 		return "unmanaged"
 	}
 
-	switch w.VisibilityLevel {
+	switch ptrToStr(w.VisibilityLevel) {
 	case "flow_summary":
 		return "blocked_allowed"
 	case "flow_drops":
@@ -746,7 +681,7 @@ func (w *Workload) GetVisibilityLevel() string {
 	case "flow_off":
 		return "off"
 	default:
-		return w.VisibilityLevel
+		return ptrToStr(w.VisibilityLevel)
 	}
 }
 
@@ -829,7 +764,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 // GetDefaultGW returns the default gateway for a workload.
 // If the workload does not have a default gateway (many unmanaged workloads) it will return "NA"
 func (w *Workload) GetDefaultGW() string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return i.DefaultGatewayAddress
 		}
@@ -840,7 +775,7 @@ func (w *Workload) GetDefaultGW() string {
 // GetIPWithDefaultGW returns the IP address of the interface that has the default gateway
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetIPWithDefaultGW() string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return i.Address
 		}
@@ -851,7 +786,7 @@ func (w *Workload) GetIPWithDefaultGW() string {
 // GetNetMaskWithDefaultGW returns the netmask of the ip address that has the default gateway
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetMaskWithDefaultGW() string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return w.GetNetMask(i.Address)
 		}
@@ -862,7 +797,7 @@ func (w *Workload) GetNetMaskWithDefaultGW() string {
 // GetNetworkWithDefaultGateway returns the CIDR notation of the network of the interface with the default gateway.
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetworkWithDefaultGateway() string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" && i.CidrBlock != nil {
 			_, net, err := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
 			if err != nil {
@@ -879,7 +814,7 @@ func (w *Workload) GetNetworkWithDefaultGateway() string {
 // If the CIDR value is not known (e.g., unmanaged workloads) it returns "NA"
 // If the provided IP address is not attached to the workload, GetCIDR returns "NA".
 func (w *Workload) GetCIDR(ip string) string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				return fmt.Sprintf("/%d", *i.CidrBlock)
@@ -893,7 +828,7 @@ func (w *Workload) GetCIDR(ip string) string {
 // GetInterfaceName returns the interface name for a workload's IP address
 // If the provided IP address is not attached to the workload, GetInterfaceName returns "NA".
 func (w *Workload) GetInterfaceName(ip string) string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.Address == ip {
 			return i.Name
 		}
@@ -906,7 +841,7 @@ func (w *Workload) GetInterfaceName(ip string) string {
 // If the value is not known (e.g., unmanaged workloads) it returns "NA"
 // If the provided IP address is not attached to the workload, GetNetMask returns "NA".
 func (w *Workload) GetNetMask(ip string) string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
@@ -926,7 +861,7 @@ func (w *Workload) GetNetMask(ip string) string {
 
 // GetNetwork returns the network of a workload's IP address.
 func (w *Workload) GetNetwork(ip string) string {
-	for _, i := range w.Interfaces {
+	for _, i := range ptrToSlice(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
@@ -958,9 +893,9 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 }
 
 // WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers (e.g., role, app, env, bu, etc.)
-// Returns is the query parameter for those labels.
+// Returns the query parameter for those labels.
 // Each inner slice is an "AND" query
-// The slices are pieces together using "OR"
+// The slices are put together using "OR"
 // The PCE must be loaded with the labels
 func (p *PCE) WorkloadQueryLabelParameter(labelSlices [][]string) (queryParameter string, err error) {
 

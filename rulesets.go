@@ -5,110 +5,81 @@ import (
 	"strings"
 )
 
-// Actors - more info to follow
-type Actors struct {
-	Actors     string      `json:"actors,omitempty"`
-	Label      *Label      `json:"label,omitempty"`
-	LabelGroup *LabelGroup `json:"label_group,omitempty"`
-	Workload   *Workload   `json:"workload,omitempty"`
-}
-
-// Consumers - more info to follow
-type Consumers struct {
-	Actors         string          `json:"actors,omitempty"`
-	IPList         *IPList         `json:"ip_list,omitempty"`
-	Label          *Label          `json:"label,omitempty"`
-	LabelGroup     *LabelGroup     `json:"label_group,omitempty"`
-	VirtualService *VirtualService `json:"virtual_service,omitempty"`
-	Workload       *Workload       `json:"workload,omitempty"`
-}
-
-// IngressServices - more info to follow
-type IngressServices struct {
-	Port     *int    `json:"port,omitempty"`
-	Protocol *int    `json:"proto,omitempty"`
-	ToPort   *int    `json:"to_port,omitempty"`
-	Href     *string `json:"href,omitempty"`
-}
-
-// IPTablesRules - more info to follow
-type IPTablesRules struct {
-	Actors      []*Actors     `json:"actors"`
-	Description string        `json:"description,omitempty"`
-	Enabled     bool          `json:"enabled"`
-	Href        string        `json:"href"`
-	IPVersion   string        `json:"ip_version"`
-	Statements  []*Statements `json:"statements"`
-}
-
-// Providers - more info to follow
-type Providers struct {
-	Actors         string          `json:"actors,omitempty"`
-	IPList         *IPList         `json:"ip_list,omitempty"`
-	Label          *Label          `json:"label,omitempty"`
-	LabelGroup     *LabelGroup     `json:"label_group,omitempty"`
-	VirtualServer  *VirtualServer  `json:"virtual_server,omitempty"`
-	VirtualService *VirtualService `json:"virtual_service,omitempty"`
-	Workload       *Workload       `json:"workload,omitempty"`
-}
-
-// ResolveLabelsAs - more info to follow
-type ResolveLabelsAs struct {
-	Consumers []string `json:"consumers"`
-	Providers []string `json:"providers"`
-}
-
 // RuleSet - more info to follow
 type RuleSet struct {
-	CreatedAt             string           `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy       `json:"created_by,omitempty"`
-	DeletedAt             string           `json:"deleted_at,omitempty"`
-	DeletedBy             *DeletedBy       `json:"deleted_by,omitempty"`
-	Description           string           `json:"description,omitempty"`
-	Enabled               *bool            `json:"enabled,omitempty"`
-	ExternalDataReference string           `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string           `json:"external_data_set,omitempty"`
 	Href                  string           `json:"href,omitempty"`
-	IPTablesRules         []*IPTablesRules `json:"ip_tables_rules,omitempty"`
 	Name                  string           `json:"name,omitempty"`
-	Rules                 []*Rule          `json:"rules,omitempty"`
-	Scopes                *[][]*Scopes     `json:"scopes,omitempty"`
+	Description           *string          `json:"description,omitempty"`
+	Scopes                *[][]Scopes      `json:"scopes,omitempty"`
+	Enabled               *bool            `json:"enabled,omitempty"`
+	Rules                 *[]Rule          `json:"rules,omitempty"`
+	IPTablesRules         *[]IPTablesRules `json:"ip_tables_rules,omitempty"`
+	ExternalDataReference *string          `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string          `json:"external_data_set,omitempty"`
 	UpdateType            string           `json:"update_type,omitempty"`
+	CreatedAt             string           `json:"created_at,omitempty"`
+	CreatedBy             *Href            `json:"created_by,omitempty"`
+	DeletedAt             string           `json:"deleted_at,omitempty"`
+	DeletedBy             *Href            `json:"deleted_by,omitempty"`
 	UpdatedAt             string           `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy       `json:"updated_by,omitempty"`
-}
-
-// Rule - more info to follow
-type Rule struct {
-	CreatedAt                   string                         `json:"created_at,omitempty"`
-	CreatedBy                   *CreatedBy                     `json:"created_by,omitempty"`
-	DeletedAt                   string                         `json:"deleted_at,omitempty"`
-	DeletedBy                   *DeletedBy                     `json:"deleted_by,omitempty"`
-	Consumers                   []*Consumers                   `json:"consumers,omitempty"`
-	ConsumingSecurityPrincipals []*ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
-	Description                 string                         `json:"description,omitempty"`
-	Enabled                     *bool                          `json:"enabled,omitempty"`
-	ExternalDataReference       string                         `json:"external_data_reference,omitempty"`
-	ExternalDataSet             string                         `json:"external_data_set,omitempty"`
-	Href                        string                         `json:"href,omitempty"`
-	IngressServices             *[]*IngressServices            `json:"ingress_services,omitempty"`
-	Providers                   []*Providers                   `json:"providers,omitempty"`
-	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
-	SecConnect                  *bool                          `json:"sec_connect,omitempty"`
-	Stateless                   *bool                          `json:"stateless,omitempty"`
-	MachineAuth                 *bool                          `json:"machine_auth,omitempty"`
-	UnscopedConsumers           *bool                          `json:"unscoped_consumers,omitempty"`
-	UpdateType                  string                         `json:"update_type,omitempty"`
-	UpdatedAt                   string                         `json:"updated_at,omitempty"`
-	UpdatedBy                   *UpdatedBy                     `json:"updated_by,omitempty"`
-	UseWorkloadSubnets          []string                       `json:"use_workload_subnets,omitempty"`
-	NetworkType                 string                         `json:"network_type,omitempty"` //  ["brn", "non_brn", "all"]
+	UpdatedBy             *Href            `json:"updated_by,omitempty"`
 }
 
 // Scopes - more info to follow
 type Scopes struct {
 	Label      *Label      `json:"label,omitempty"`
 	LabelGroup *LabelGroup `json:"label_group,omitempty"`
+}
+
+// Rule - more info to follow
+type Rule struct {
+	Href                        string                         `json:"href,omitempty"`
+	Description                 *string                        `json:"description,omitempty"`
+	Enabled                     *bool                          `json:"enabled,omitempty"`
+	Consumers                   *[]ConsumerOrProvider          `json:"consumers,omitempty"`
+	Providers                   *[]ConsumerOrProvider          `json:"providers,omitempty"`
+	ConsumingSecurityPrincipals *[]ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
+	IngressServices             *[]IngressServices             `json:"ingress_services,omitempty"`
+	SecConnect                  *bool                          `json:"sec_connect,omitempty"`
+	Stateless                   *bool                          `json:"stateless,omitempty"`
+	MachineAuth                 *bool                          `json:"machine_auth,omitempty"`
+	UnscopedConsumers           *bool                          `json:"unscoped_consumers,omitempty"`
+	ResolveLabelsAs             *ResolveLabelsAs               `json:"resolve_labels_as,omitempty"`
+	UseWorkloadSubnets          *[]string                      `json:"use_workload_subnets,omitempty"`
+	NetworkType                 string                         `json:"network_type,omitempty"` //  ["brn", "non_brn", "all"]
+	ExternalDataReference       *string                        `json:"external_data_reference,omitempty"`
+	ExternalDataSet             *string                        `json:"external_data_set,omitempty"`
+	CreatedAt                   string                         `json:"created_at,omitempty"`
+	CreatedBy                   *Href                          `json:"created_by,omitempty"`
+	DeletedAt                   string                         `json:"deleted_at,omitempty"`
+	DeletedBy                   *Href                          `json:"deleted_by,omitempty"`
+	UpdateType                  string                         `json:"update_type,omitempty"`
+	UpdatedAt                   string                         `json:"updated_at,omitempty"`
+	UpdatedBy                   *Href                          `json:"updated_by,omitempty"`
+}
+
+// IngressServices - more info to follow
+type IngressServices struct {
+	Port     *int   `json:"port,omitempty"`
+	Protocol *int   `json:"proto,omitempty"`
+	ToPort   *int   `json:"to_port,omitempty"`
+	Href     string `json:"href,omitempty"`
+}
+
+// ResolveLabelsAs - more info to follow
+type ResolveLabelsAs struct {
+	Consumers *[]string `json:"consumers"`
+	Providers *[]string `json:"providers"`
+}
+
+// IPTablesRules - more info to follow
+type IPTablesRules struct {
+	Actors      *[]Actors     `json:"actors"`
+	Description *string       `json:"description,omitempty"`
+	Enabled     *bool         `json:"enabled"`
+	Href        string        `json:"href"`
+	IPVersion   string        `json:"ip_version"`
+	Statements  *[]Statements `json:"statements"`
 }
 
 // Statements are part of a custom IPTables rule
@@ -122,18 +93,18 @@ type Statements struct {
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetRulesets(queryParameters map[string]string, pStatus string) (ruleSets []RuleSet, api APIResponse, err error) {
-	api, err = p.GetCollection("sec_policy/"+pStatus+"/rule_sets", false, queryParameters, &ruleSets)
-	if len(ruleSets) >= 500 {
-		ruleSets = nil
-		api, err = p.GetCollection("sec_policy/"+pStatus+"/rule_sets", true, queryParameters, &ruleSets)
+func (p *PCE) GetRulesets(queryParameters map[string]string, pStatus string) (api APIResponse, err error) {
+	api, err = p.GetCollection("sec_policy/"+pStatus+"/rule_sets", false, queryParameters, &p.RuleSetsSlice)
+	if len(p.RuleSetsSlice) >= 500 {
+		p.RuleSetsSlice = nil
+		api, err = p.GetCollection("sec_policy/"+pStatus+"/rule_sets", true, queryParameters, &p.RuleSetsSlice)
 	}
 	p.RuleSets = make(map[string]RuleSet)
-	for _, rs := range ruleSets {
+	for _, rs := range p.RuleSetsSlice {
 		p.RuleSets[rs.Href] = rs
 		p.RuleSets[rs.Name] = rs
 	}
-	return ruleSets, api, err
+	return api, err
 }
 
 // CreateRuleSet creates a new ruleset in the PCE.

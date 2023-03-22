@@ -5,24 +5,23 @@ import (
 	"strings"
 )
 
-// Service represent a service in the Illumio PCE
+// Service represent a service in the PCE
 type Service struct {
-	CreatedAt             string            `json:"created_at,omitempty"`
-	CreatedBy             *CreatedBy        `json:"created_by,omitempty"`
-	DeletedAt             string            `json:"deleted_at,omitempty"`
-	DeletedBy             *DeletedBy        `json:"deleted_by,omitempty"`
-	Description           string            `json:"description,omitempty"`
-	DescriptionURL        string            `json:"description_url,omitempty"`
-	ExternalDataReference string            `json:"external_data_reference,omitempty"`
-	ExternalDataSet       string            `json:"external_data_set,omitempty"`
 	Href                  string            `json:"href,omitempty"`
 	Name                  string            `json:"name"`
+	Description           string            `json:"description,omitempty"`
 	ProcessName           string            `json:"process_name,omitempty"`
-	ServicePorts          []*ServicePort    `json:"service_ports,omitempty"`
+	ServicePorts          *[]ServicePort    `json:"service_ports,omitempty"`
+	WindowsServices       *[]WindowsService `json:"windows_services,omitempty"`
+	ExternalDataReference *string           `json:"external_data_reference,omitempty"`
+	ExternalDataSet       *string           `json:"external_data_set,omitempty"`
 	UpdateType            string            `json:"update_type,omitempty"`
+	CreatedAt             string            `json:"created_at,omitempty"`
+	CreatedBy             *Href             `json:"created_by,omitempty"`
+	DeletedAt             string            `json:"deleted_at,omitempty"`
+	DeletedBy             *Href             `json:"deleted_by,omitempty"`
 	UpdatedAt             string            `json:"updated_at,omitempty"`
-	UpdatedBy             *UpdatedBy        `json:"updated_by,omitempty"`
-	WindowsServices       []*WindowsService `json:"windows_services,omitempty"`
+	UpdatedBy             *Href             `json:"updated_by,omitempty"`
 }
 
 // ServicePort represent port and protocol information for a non-Windows service
@@ -35,7 +34,7 @@ type ServicePort struct {
 	ToPort   int `json:"to_port,omitempty"`
 }
 
-// WindowsService represents port and protocol information for a Windows service
+// WindowsService represents port, protocol, and process information for a Windows service
 type WindowsService struct {
 	IcmpCode    int    `json:"icmp_code,omitempty"`
 	IcmpType    int    `json:"icmp_type,omitempty"`
@@ -50,18 +49,23 @@ type WindowsService struct {
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
-func (p *PCE) GetServices(queryParameters map[string]string, pStatus string) (services []Service, api APIResponse, err error) {
+func (p *PCE) GetServices(queryParameters map[string]string, pStatus string) (api APIResponse, err error) {
 	// Validate pStatus
 	pStatus = strings.ToLower(pStatus)
 	if pStatus != "active" && pStatus != "draft" {
-		return services, api, fmt.Errorf("invalid pStatus")
+		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", false, queryParameters, &services)
-	if len(services) >= 500 {
-		services = nil
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", true, queryParameters, &services)
+	api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", false, queryParameters, &p.ServicesSlice)
+	if len(p.ServicesSlice) >= 500 {
+		p.ServicesSlice = nil
+		api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", true, queryParameters, &p.ServicesSlice)
 	}
-	return services, api, err
+	p.Services = make(map[string]Service)
+	for _, s := range p.ServicesSlice {
+		p.Services[s.Href] = s
+		p.Services[s.Name] = s
+	}
+	return api, err
 }
 
 // CreateService creates a new service in the PCE.
@@ -86,7 +90,7 @@ func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 
 	// Create a string for Windows Services
-	for _, ws := range s.WindowsServices {
+	for _, ws := range ptrToSlice(s.WindowsServices) {
 		var svcSlice []string
 		if ws.Port != 0 && ws.Protocol != 0 {
 			if ws.ToPort != 0 {
@@ -108,7 +112,7 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 	}
 
 	// Process Service Ports
-	for _, sp := range s.ServicePorts {
+	for _, sp := range ptrToSlice(s.ServicePorts) {
 		var svcSlice []string
 		if sp.Port != 0 && sp.Protocol != 0 {
 			if sp.ToPort != 0 {
@@ -129,14 +133,14 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 }
 
 // ToExplorer takes a service and returns an explorer query include and exclude
-func (s *Service) ToExplorer() ([]Include, []Exclude) {
-	includes := []Include{}
-	excludes := []Exclude{}
+func (s *Service) ToExplorer() ([]IncludeOrExclude, []IncludeOrExclude) {
+	includes := []IncludeOrExclude{}
+	excludes := []IncludeOrExclude{}
 
 	// Process WindowsServices
-	for _, ws := range s.WindowsServices {
-		include := Include{}
-		exclude := Exclude{}
+	for _, ws := range ptrToSlice(s.WindowsServices) {
+		include := IncludeOrExclude{}
+		exclude := IncludeOrExclude{}
 		check := false
 		if ws.Port != 0 {
 			include.Port = ws.Port
@@ -170,9 +174,9 @@ func (s *Service) ToExplorer() ([]Include, []Exclude) {
 	}
 
 	// Service Ports
-	for _, s := range s.ServicePorts {
-		include := Include{}
-		exclude := Exclude{}
+	for _, s := range ptrToSlice(s.ServicePorts) {
+		include := IncludeOrExclude{}
+		exclude := IncludeOrExclude{}
 		check := false
 		if s.Port != 0 {
 			include.Port = s.Port
