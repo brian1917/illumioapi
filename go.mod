@@ -1,3 +1,3 @@
-module github.com/brian1917/illumioapi/v2
+module github.com/brian1917/illumioapi
 
 go 1.19
