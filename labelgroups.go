@@ -84,7 +84,7 @@ func (p *PCE) ExpandLabelGroup(href string) (labelHrefs []string) {
 	labelHrefs = append(labelHrefs, a...)
 
 	// Iterate through the subgroups of the original label group
-	for _, sg := range ptrToSlice(p.LabelGroups[href].SubGroups) {
+	for _, sg := range PtrToVal(p.LabelGroups[href].SubGroups) {
 		// Get the labels in that subgroup and the additional subgroups
 		l, moreSGs := p.expandLabelGroup(sg.Href)
 		// Append the labels
@@ -112,10 +112,10 @@ func (p *PCE) ExpandLabelGroup(href string) (labelHrefs []string) {
 }
 
 func (p *PCE) expandLabelGroup(href string) (labelHrefs []string, moreSGs []string) {
-	for _, l := range ptrToSlice(p.LabelGroups[href].Labels) {
+	for _, l := range PtrToVal(p.LabelGroups[href].Labels) {
 		labelHrefs = append(labelHrefs, l.Href)
 	}
-	for _, sg := range ptrToSlice(p.LabelGroups[href].SubGroups) {
+	for _, sg := range PtrToVal(p.LabelGroups[href].SubGroups) {
 		moreSGs = append(moreSGs, sg.Href)
 	}
 	return labelHrefs, moreSGs

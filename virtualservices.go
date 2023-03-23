@@ -246,7 +246,7 @@ func (vs *VirtualService) Sanitize() {
 	}
 	// Adjust the labels and services to be HREF only
 	hrefOnlyLabels := []Label{}
-	for _, l := range ptrToSlice(vs.Labels) {
+	for _, l := range PtrToVal(vs.Labels) {
 		hrefOnlyLabels = append(hrefOnlyLabels, Label{Href: l.Href})
 	}
 	vs.Labels = &hrefOnlyLabels

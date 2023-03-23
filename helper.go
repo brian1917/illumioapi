@@ -1,19 +1,16 @@
 package illumioapi
 
-func ptrToStr(ptr *string) string {
+// PtrToVal returns the value of a pointer
+// If the pointer is nil, a blank value is returned
+func PtrToVal[T any](ptr *T) T {
 	if ptr == nil {
-		return ""
+		var t T
+		return t
 	}
 	return *ptr
 }
 
-func ptrToSlice[T any](slice *[]T) []T {
-	if slice == nil {
-		return []T{}
-	}
-	return *slice
-}
-
-func ptr[T any](v T) *T {
+// Ptr returns a pointer to any object
+func Ptr[T any](v T) *T {
 	return &v
 }

@@ -187,13 +187,13 @@ func (p *PCE) GetWklds(queryParameters map[string]string) (api APIResponse, err 
 	p.Workloads = make(map[string]Workload)
 	for _, w := range p.WorkloadsSlice {
 		p.Workloads[w.Href] = w
-		if ptrToStr(w.Hostname) != "" {
+		if PtrToVal(w.Hostname) != "" {
 			p.Workloads[*w.Hostname] = w
 		}
-		if ptrToStr(w.Name) != "" {
+		if PtrToVal(w.Name) != "" {
 			p.Workloads[*w.Name] = w
 		}
-		if ptrToStr(w.ExternalDataReference) != "" && ptrToStr(w.ExternalDataSet) != "" {
+		if PtrToVal(w.ExternalDataReference) != "" && PtrToVal(w.ExternalDataSet) != "" {
 			p.Workloads[*w.ExternalDataSet+*w.ExternalDataReference] = w
 		}
 	}
@@ -213,8 +213,8 @@ func (p *PCE) GetContainerWklds(queryParameters map[string]string) (api APIRespo
 	p.ContainerWorkloads = make(map[string]Workload)
 	for _, w := range p.ContainerWorkloadsSlice {
 		p.ContainerWorkloads[w.Href] = w
-		p.ContainerWorkloads[ptrToStr(w.Hostname)] = w
-		p.ContainerWorkloads[ptrToStr(w.Name)] = w
+		p.ContainerWorkloads[PtrToVal(w.Hostname)] = w
+		p.ContainerWorkloads[PtrToVal(w.Name)] = w
 	}
 	return api, err
 }
@@ -234,7 +234,7 @@ func (p *PCE) GetWkldByHostname(hostname string) (wkld Workload, api APIResponse
 		return wkld, api, err
 	}
 	for _, w := range p.WorkloadsSlice {
-		if ptrToStr(w.Hostname) == hostname {
+		if PtrToVal(w.Hostname) == hostname {
 			return w, a, nil
 		}
 	}
@@ -281,7 +281,7 @@ func (w *Workload) ChangeLabel(pce PCE, targetKey, newValue string) (PCE, error)
 	var ok bool
 
 	// Iterate through each of the workloads labels
-	for _, l := range ptrToSlice(w.Labels) {
+	for _, l := range PtrToVal(w.Labels) {
 		// If they key isn't the target key, we add it to the updated labels
 		if pce.Labels[l.Href].Key != targetKey {
 			updatedLabels = append(updatedLabels, Label{Href: l.Href})
@@ -446,13 +446,13 @@ func (w *Workload) SanitizeBulkUpdate() {
 		w.VEN = nil // The VEN is not updateable.
 	}
 
-	if ptrToStr(w.EnforcementMode) != "" {
+	if PtrToVal(w.EnforcementMode) != "" {
 		w.Agent = nil
 	}
 
 	// Replace Labels with Hrefs
 	newLabels := &[]Label{}
-	for _, l := range ptrToSlice(w.Labels) {
+	for _, l := range PtrToVal(w.Labels) {
 		newLabel := Label{Href: l.Href}
 		*newLabels = append(*newLabels, newLabel)
 	}
@@ -514,11 +514,11 @@ func (w *Workload) GetMode() string {
 	}
 
 	// Covers 20.2+ with the new API structure for VEN and enforcement_mode
-	if ptrToStr(w.EnforcementMode) != "" {
+	if PtrToVal(w.EnforcementMode) != "" {
 		if (w.VEN == nil || w.VEN.Href == "") && spn == "" {
 			return "unmanaged"
 		}
-		return ptrToStr(w.EnforcementMode)
+		return PtrToVal(w.EnforcementMode)
 	}
 
 	// Covers prior to 20.2 when the API switched to enforcement_mode
@@ -570,13 +570,13 @@ func (w *Workload) SetMode(m string) error {
 
 	case "idle":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("idle")
+			w.EnforcementMode = Ptr("idle")
 		} else {
 			w.Agent.Config.Mode = "idle"
 		}
 	case "build":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("visibility_only")
+			w.EnforcementMode = Ptr("visibility_only")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -587,7 +587,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "test":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("visibility_only")
+			w.EnforcementMode = Ptr("visibility_only")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -598,7 +598,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-no":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("full")
+			w.EnforcementMode = Ptr("full")
 			if err := w.SetVisibilityLevel("flow_off"); err != nil {
 				return err
 			}
@@ -610,7 +610,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-low":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("full")
+			w.EnforcementMode = Ptr("full")
 			if err := w.SetVisibilityLevel("flow_drops"); err != nil {
 				return err
 			}
@@ -622,7 +622,7 @@ func (w *Workload) SetMode(m string) error {
 
 	case "enforced-high":
 		if w.VEN != nil && w.VEN.Href != "" {
-			w.EnforcementMode = ptr("full")
+			w.EnforcementMode = Ptr("full")
 			if err := w.SetVisibilityLevel("flow_summary"); err != nil {
 				return err
 			}
@@ -662,7 +662,7 @@ func (w *Workload) SetVisibilityLevel(v string) error {
 		return fmt.Errorf("%s is not a valid visibility_level. See SetVisibilityLevel documentation for valid levels", v)
 	}
 
-	w.VisibilityLevel = ptr(v)
+	w.VisibilityLevel = Ptr(v)
 	return nil
 }
 
@@ -673,7 +673,7 @@ func (w *Workload) GetVisibilityLevel() string {
 		return "unmanaged"
 	}
 
-	switch ptrToStr(w.VisibilityLevel) {
+	switch PtrToVal(w.VisibilityLevel) {
 	case "flow_summary":
 		return "blocked_allowed"
 	case "flow_drops":
@@ -681,7 +681,7 @@ func (w *Workload) GetVisibilityLevel() string {
 	case "flow_off":
 		return "off"
 	default:
-		return ptrToStr(w.VisibilityLevel)
+		return PtrToVal(w.VisibilityLevel)
 	}
 }
 
@@ -764,7 +764,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 // GetDefaultGW returns the default gateway for a workload.
 // If the workload does not have a default gateway (many unmanaged workloads) it will return "NA"
 func (w *Workload) GetDefaultGW() string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return i.DefaultGatewayAddress
 		}
@@ -775,7 +775,7 @@ func (w *Workload) GetDefaultGW() string {
 // GetIPWithDefaultGW returns the IP address of the interface that has the default gateway
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetIPWithDefaultGW() string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return i.Address
 		}
@@ -786,7 +786,7 @@ func (w *Workload) GetIPWithDefaultGW() string {
 // GetNetMaskWithDefaultGW returns the netmask of the ip address that has the default gateway
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetMaskWithDefaultGW() string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" {
 			return w.GetNetMask(i.Address)
 		}
@@ -797,7 +797,7 @@ func (w *Workload) GetNetMaskWithDefaultGW() string {
 // GetNetworkWithDefaultGateway returns the CIDR notation of the network of the interface with the default gateway.
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetworkWithDefaultGateway() string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.DefaultGatewayAddress != "" && i.CidrBlock != nil {
 			_, net, err := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
 			if err != nil {
@@ -814,7 +814,7 @@ func (w *Workload) GetNetworkWithDefaultGateway() string {
 // If the CIDR value is not known (e.g., unmanaged workloads) it returns "NA"
 // If the provided IP address is not attached to the workload, GetCIDR returns "NA".
 func (w *Workload) GetCIDR(ip string) string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				return fmt.Sprintf("/%d", *i.CidrBlock)
@@ -828,7 +828,7 @@ func (w *Workload) GetCIDR(ip string) string {
 // GetInterfaceName returns the interface name for a workload's IP address
 // If the provided IP address is not attached to the workload, GetInterfaceName returns "NA".
 func (w *Workload) GetInterfaceName(ip string) string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.Address == ip {
 			return i.Name
 		}
@@ -841,7 +841,7 @@ func (w *Workload) GetInterfaceName(ip string) string {
 // If the value is not known (e.g., unmanaged workloads) it returns "NA"
 // If the provided IP address is not attached to the workload, GetNetMask returns "NA".
 func (w *Workload) GetNetMask(ip string) string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))
@@ -861,7 +861,7 @@ func (w *Workload) GetNetMask(ip string) string {
 
 // GetNetwork returns the network of a workload's IP address.
 func (w *Workload) GetNetwork(ip string) string {
-	for _, i := range ptrToSlice(w.Interfaces) {
+	for _, i := range PtrToVal(w.Interfaces) {
 		if i.Address == ip {
 			if i.CidrBlock != nil {
 				_, ipNet, _ := net.ParseCIDR(fmt.Sprintf("%s/%d", i.Address, *i.CidrBlock))

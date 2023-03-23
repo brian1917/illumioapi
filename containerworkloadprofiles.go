@@ -67,7 +67,7 @@ func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
 			newLabel = Label{Assignment: &Assignment{Href: l.Assignment.Href}, Key: l.Key}
 		} else {
 			newRestrictions := []Restriction{}
-			for _, r := range ptrToSlice(l.Restriction) {
+			for _, r := range PtrToVal(l.Restriction) {
 				newRestrictions = append(newRestrictions, Restriction{Href: r.Href})
 			}
 			newLabel = Label{Key: l.Key, Restriction: &newRestrictions}
@@ -80,12 +80,12 @@ func (c *ContainerWorkloadProfile) SanitizeContainerWorkloadProfilePut() {
 
 // GetLabelByKey returns the value for a provided label key
 func (c *ContainerWorkloadProfile) GetLabelByKey(key string) string {
-	for _, l := range ptrToSlice(c.Labels) {
+	for _, l := range PtrToVal(c.Labels) {
 		// Skip if it's not the key specified
 		if l.Key != key {
 			continue
 		}
-		if len(ptrToSlice(l.Restriction)) > 0 {
+		if len(PtrToVal(l.Restriction)) > 0 {
 			return ""
 		}
 		return l.Assignment.Value
@@ -104,7 +104,7 @@ func (c *ContainerWorkloadProfile) SetLabel(label Label, pce *PCE) error {
 	newLabels := []Label{}
 
 	// Iterate through the existing labels
-	for _, existingLabel := range ptrToSlice(c.Labels) {
+	for _, existingLabel := range PtrToVal(c.Labels) {
 		// If the key isn't target, keep it
 		if existingLabel.Key != label.Key {
 			newLabels = append(newLabels, existingLabel)

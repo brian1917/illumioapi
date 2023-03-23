@@ -403,7 +403,7 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery AsyncTrafficQuery, api APIResponse, err error) {
 	// Make sure a queryname is provided
 	if t.QueryName == nil {
-		t.QueryName = ptr("")
+		t.QueryName = Ptr("")
 	}
 	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
 	return asyncQuery, api, err
@@ -750,11 +750,11 @@ func DedupeExplorerTraffic(first, second []TrafficAnalysis) []TrafficAnalysis {
 func createExplorerMapKey(entry TrafficAnalysis) string {
 	key := entry.Dst.FQDN + entry.Dst.IP
 	if entry.Dst.Workload != nil {
-		key = key + ptrToStr(entry.Dst.Workload.Hostname)
+		key = key + PtrToVal(entry.Dst.Workload.Hostname)
 	}
 	key = key + strconv.Itoa(entry.ExpSrv.Port) + entry.ExpSrv.Process + strconv.Itoa(entry.ExpSrv.Proto) + entry.ExpSrv.User + entry.ExpSrv.WindowsService + strconv.Itoa(entry.NumConnections) + entry.PolicyDecision + entry.Src.FQDN + entry.Src.IP
 	if entry.Src.Workload != nil {
-		key = key + ptrToStr(entry.Src.Workload.Hostname)
+		key = key + PtrToVal(entry.Src.Workload.Hostname)
 	}
 	key = key + entry.TimestampRange.FirstDetected + entry.TimestampRange.LastDetected + entry.Transmission
 	return key

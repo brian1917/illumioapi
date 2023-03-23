@@ -227,10 +227,10 @@ func (p *PCE) FindObject(href string) (key, name string, err error) {
 	}
 	// Workloads
 	if strings.Contains(href, "/workloads/") {
-		if ptrToStr(p.Workloads[href].Hostname) != "" {
+		if PtrToVal(p.Workloads[href].Hostname) != "" {
 			return "workload", *p.Workloads[href].Hostname, nil
 		}
-		return "workload", ptrToStr(p.Workloads[href].Name), nil
+		return "workload", PtrToVal(p.Workloads[href].Name), nil
 	}
 
 	return "nil", "nil", fmt.Errorf("object not found")

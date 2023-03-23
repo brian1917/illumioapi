@@ -90,7 +90,7 @@ func (p *PCE) UpdateService(service Service) (APIResponse, error) {
 func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 
 	// Create a string for Windows Services
-	for _, ws := range ptrToSlice(s.WindowsServices) {
+	for _, ws := range PtrToVal(s.WindowsServices) {
 		var svcSlice []string
 		if ws.Port != 0 && ws.Protocol != 0 {
 			if ws.ToPort != 0 {
@@ -112,7 +112,7 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 	}
 
 	// Process Service Ports
-	for _, sp := range ptrToSlice(s.ServicePorts) {
+	for _, sp := range PtrToVal(s.ServicePorts) {
 		var svcSlice []string
 		if sp.Port != 0 && sp.Protocol != 0 {
 			if sp.ToPort != 0 {
@@ -138,7 +138,7 @@ func (s *Service) ToExplorer() ([]IncludeOrExclude, []IncludeOrExclude) {
 	excludes := []IncludeOrExclude{}
 
 	// Process WindowsServices
-	for _, ws := range ptrToSlice(s.WindowsServices) {
+	for _, ws := range PtrToVal(s.WindowsServices) {
 		include := IncludeOrExclude{}
 		exclude := IncludeOrExclude{}
 		check := false
@@ -174,7 +174,7 @@ func (s *Service) ToExplorer() ([]IncludeOrExclude, []IncludeOrExclude) {
 	}
 
 	// Service Ports
-	for _, s := range ptrToSlice(s.ServicePorts) {
+	for _, s := range PtrToVal(s.ServicePorts) {
 		include := IncludeOrExclude{}
 		exclude := IncludeOrExclude{}
 		check := false

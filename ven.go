@@ -145,7 +145,7 @@ func (p *PCE) GetVenByHostname(hostname string) (VEN, APIResponse, error) {
 		return VEN{}, a, err
 	}
 	for _, ven := range p.VENsSlice {
-		if ptrToStr(ven.Hostname) == hostname {
+		if PtrToVal(ven.Hostname) == hostname {
 			return ven, a, nil
 		}
 	}
