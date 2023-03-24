@@ -30,7 +30,7 @@ func (p *PCE) GetLabelDimensions(queryParameters map[string]string) (labelDimens
 	api, err = p.GetCollection("label_dimensions", false, queryParameters, &labelDimensions)
 	if len(labelDimensions) >= 500 {
 		labelDimensions = nil
-		api, err = p.GetCollection("labels", true, queryParameters, &labelDimensions)
+		api, err = p.GetCollection("label_dimensions", true, queryParameters, &labelDimensions)
 	}
 	return labelDimensions, api, err
 }
