@@ -44,7 +44,7 @@ func (p *PCE) ProvisionCS(cs ChangeSubset, comment string) (api APIResponse, err
 	if err != nil {
 		return APIResponse{}, err
 	}
-	api, err = p.Post("/sec_policy", &provision, &struct{}{})
+	api, err = p.Post("sec_policy", &provision, &struct{}{})
 	return api, err
 }
 
