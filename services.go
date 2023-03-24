@@ -55,10 +55,10 @@ func (p *PCE) GetServices(queryParameters map[string]string, pStatus string) (ap
 	if pStatus != "active" && pStatus != "draft" {
 		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", false, queryParameters, &p.ServicesSlice)
+	api, err = p.GetCollection("sec_policy/"+pStatus+"/services", false, queryParameters, &p.ServicesSlice)
 	if len(p.ServicesSlice) >= 500 {
 		p.ServicesSlice = nil
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/services", true, queryParameters, &p.ServicesSlice)
+		api, err = p.GetCollection("sec_policy/"+pStatus+"/services", true, queryParameters, &p.ServicesSlice)
 	}
 	p.Services = make(map[string]Service)
 	for _, s := range p.ServicesSlice {

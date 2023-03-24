@@ -35,9 +35,9 @@ func (p *PCE) GetVirtualServers(queryParameters map[string]string, pStatus strin
 	if pStatus != "active" && pStatus != "draft" {
 		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_servers", false, queryParameters, &p.VirtualServersSlice)
+	api, err = p.GetCollection("sec_policy/"+pStatus+"/virtual_servers", false, queryParameters, &p.VirtualServersSlice)
 	if len(p.VirtualServersSlice) >= 500 {
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/virtual_servers", true, queryParameters, &p.VirtualServersSlice)
+		api, err = p.GetCollection("sec_policy/"+pStatus+"/virtual_servers", true, queryParameters, &p.VirtualServersSlice)
 	}
 	p.VirtualServers = make(map[string]VirtualServer)
 	for _, v := range p.VirtualServersSlice {

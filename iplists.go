@@ -47,10 +47,10 @@ func (p *PCE) GetIPLists(queryParameters map[string]string, pStatus string) (api
 	if pStatus != "active" && pStatus != "draft" {
 		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/ip_lists", false, queryParameters, &p.IPListsSlice)
+	api, err = p.GetCollection("sec_policy/"+pStatus+"/ip_lists", false, queryParameters, &p.IPListsSlice)
 	if len(p.IPListsSlice) >= 500 {
 		p.IPListsSlice = nil
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/ip_lists", true, queryParameters, &p.IPListsSlice)
+		api, err = p.GetCollection("sec_policy/"+pStatus+"/ip_lists", true, queryParameters, &p.IPListsSlice)
 	}
 	p.IPLists = make(map[string]IPList)
 	for _, ipl := range p.IPListsSlice {

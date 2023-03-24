@@ -44,10 +44,10 @@ func (p *PCE) GetLabelGroups(queryParameters map[string]string, pStatus string) 
 	if pStatus != "active" && pStatus != "draft" {
 		return api, fmt.Errorf("invalid pStatus")
 	}
-	api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", false, queryParameters, &p.LabelGroupsSlice)
+	api, err = p.GetCollection("sec_policy/"+pStatus+"/label_groups", false, queryParameters, &p.LabelGroupsSlice)
 	if len(p.LabelGroupsSlice) >= 500 {
 		p.LabelGroupsSlice = nil
-		api, err = p.GetCollection("/sec_policy/"+pStatus+"/label_groups", true, queryParameters, &p.LabelGroupsSlice)
+		api, err = p.GetCollection("sec_policy/"+pStatus+"/label_groups", true, queryParameters, &p.LabelGroupsSlice)
 	}
 	p.LabelGroups = make(map[string]LabelGroup)
 	for _, lg := range p.LabelGroupsSlice {

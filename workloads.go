@@ -257,7 +257,7 @@ func (p *PCE) IncreaseTrafficUpdateRate(wklds []Workload) (APIResponse, error) {
 	inc := IncreaseTrafficUpdateReq{Workloads: t}
 
 	// Run the post. There is no response so just use a any empty struct
-	api, err := p.Post("/workloads/set_flow_reporting_frequency", &inc, &IncreaseTrafficUpdateReq{})
+	api, err := p.Post("workloads/set_flow_reporting_frequency", &inc, &IncreaseTrafficUpdateReq{})
 
 	return api, err
 }

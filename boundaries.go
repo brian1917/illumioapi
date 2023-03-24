@@ -45,7 +45,7 @@ func (p *PCE) GetEnforcementBoundaryByHref(href string) (eb EnforcementBoundary,
 
 // CreateEnforcementBoundary creates a new enforcement boundary in the Illumio PCE
 func (p *PCE) CreateEnforcementBoundary(eb EnforcementBoundary) (createdEB EnforcementBoundary, api APIResponse, err error) {
-	api, err = p.Post("/sec_policy/draft/enforcement_boundaries", &eb, &createdEB)
+	api, err = p.Post("sec_policy/draft/enforcement_boundaries", &eb, &createdEB)
 	return createdEB, api, err
 }
 
