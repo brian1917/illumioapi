@@ -21,6 +21,8 @@ type PCE struct {
 	Version                          Version
 	Labels                           map[string]Label // Labels can be looked up by href or concatenated key and value (no character between key and value)
 	LabelsSlice                      []Label
+	LabelDimensions                  map[string]LabelDimension // LabelDimensions can be looked up by href or key
+	LabelDimensionsSlice             []LabelDimension
 	LabelGroups                      map[string]LabelGroup // Label Groups can be looked up by href or name
 	LabelGroupsSlice                 []LabelGroup
 	IPLists                          map[string]IPList // IP Lists can be looked up by href or name
