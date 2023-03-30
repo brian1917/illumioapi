@@ -74,6 +74,7 @@ func (p *PCE) GetVens(queryParameters map[string]string) (api APIResponse, err e
 		p.VENsSlice = nil
 		api, err = p.GetCollection("vens", true, queryParameters, &p.VENsSlice)
 	}
+	p.VENs = make(map[string]VEN)
 	for _, v := range p.VENsSlice {
 		p.VENs[v.Href] = v
 		if v.Name != nil {
