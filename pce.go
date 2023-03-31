@@ -54,6 +54,7 @@ type PCE struct {
 // LoadInput tells the p.Load method what objects to load
 type LoadInput struct {
 	ProvisionStatus             string // Must be draft or active. Blank value is draft
+	LabelDimensions             bool
 	Labels                      bool
 	LabelGroups                 bool
 	IPLists                     bool
@@ -102,6 +103,15 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		apiResps["GetLabelGroups"] = a
 		if err != nil {
 			return apiResps, fmt.Errorf("getting label groups - %s", err)
+		}
+	}
+
+	// Label Dimensions
+	if l.LabelDimensions {
+		a, err = p.GetLabelDimensions(nil)
+		apiResps["GetLabelDimensions"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting label dimensions - %s", err)
 		}
 	}
 
@@ -206,6 +216,10 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 	}
 
 	return apiResps, nil
+}
+
+func (p *PCE) LoadPCEMultiThread(LoadInput) {
+
 }
 
 // FindObject takes an href and returns what it is and the name
