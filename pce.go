@@ -70,10 +70,188 @@ type LoadInput struct {
 	ContainerWorkloads          bool
 	ContainerWorkloadProfiles   bool
 	EnforcementBoundaries       bool
+	Version                     bool
 }
 
-// Load fills the PCE object maps
-func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
+// Load gets the objects specified in the LoadInput
+func (p *PCE) Load(l LoadInput, multiThread bool) (apiResps map[string]APIResponse, err error) {
+	if multiThread {
+		return p.loadMulti((l))
+	}
+	return p.loadSingle(l)
+}
+
+// loadMulti does multi-threaded GET APIs based on the LoadInput.
+func (p *PCE) loadMulti(l LoadInput) (apiResps map[string]APIResponse, err error) {
+	// Check provisionStatus
+	provisionStatus := strings.ToLower(l.ProvisionStatus)
+	if provisionStatus == "" {
+		provisionStatus = "draft"
+	}
+	if provisionStatus != "draft" && provisionStatus != "active" {
+		return apiResps, fmt.Errorf("provisionStatus must be draft or active")
+	}
+
+	type channelResp struct {
+		api    APIResponse
+		method string
+		err    error
+	}
+
+	c := make(chan channelResp)
+
+	apiResps = make(map[string]APIResponse)
+
+	numAPICalls := 0
+
+	// Labels
+	if l.Labels {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetLabels(nil)
+			c <- channelResp{api: apiResp, method: "GetLabels", err: err}
+		}(p)
+	}
+
+	// Label Groups
+	if l.LabelGroups {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetLabelGroups(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetLabelGroups", err: err}
+		}(p)
+	}
+
+	// Label Dimensions
+	if l.LabelDimensions {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetLabelDimensions(nil)
+			c <- channelResp{api: apiResp, method: "GetLabelDimensions", err: err}
+		}(p)
+	}
+
+	// IP Lists
+	if l.IPLists {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetIPLists(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetIPLists", err: err}
+		}(p)
+	}
+
+	// Workloads
+	if l.Workloads {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetWklds(l.WorkloadsQueryParameters)
+			c <- channelResp{api: apiResp, method: "GetWklds", err: err}
+		}(p)
+	}
+
+	// Services
+	if l.Services {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetServices(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetServices", err: err}
+		}(p)
+	}
+
+	// Virtual Services
+	if l.VirtualServices {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetVirtualServices(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetVirtualServices", err: err}
+		}(p)
+	}
+
+	// Virtual Servers
+	if l.VirtualServers {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetVirtualServers(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetVirtualServers", err: err}
+		}(p)
+	}
+
+	// Rulesets
+	if l.RuleSets {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetRulesets(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetRulesets", err: err}
+		}(p)
+	}
+
+	// Consuming Security Principals
+	if l.ConsumingSecurityPrincipals {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetADUserGroups(nil)
+			c <- channelResp{api: apiResp, method: "GetADUserGroups", err: err}
+		}(p)
+	}
+
+	// VENs
+	if l.VENs {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetVens(nil)
+			c <- channelResp{api: apiResp, method: "GetVens", err: err}
+		}(p)
+	}
+
+	// Container Clusters
+	if l.ContainerClusters {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetContainerClusters(nil)
+			c <- channelResp{api: apiResp, method: "GetContainerClusters", err: err}
+		}(p)
+	}
+
+	// Container Workloads
+	if l.ContainerWorkloads {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetContainerWklds(nil)
+			c <- channelResp{api: apiResp, method: "GetContainerWklds", err: err}
+		}(p)
+	}
+
+	// Enforcement Boundaries
+	if l.EnforcementBoundaries {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetEnforcementBoundaries(nil, provisionStatus)
+			c <- channelResp{api: apiResp, method: "GetEnforcementBoundaries", err: err}
+		}(p)
+	}
+
+	// Version
+	if l.Version {
+		numAPICalls++
+		go func(p *PCE) {
+			_, apiResp, err := p.GetVersion()
+			c <- channelResp{api: apiResp, method: "GetVersion", err: err}
+		}(p)
+	}
+
+	for i := 0; i <= numAPICalls-1; i++ {
+		x := <-c
+		apiResps[x.method] = x.api
+		if x.err != nil {
+			return nil, err
+		}
+	}
+
+	return apiResps, nil
+}
+
+// loadSingle does single-threaded GET APIs based on the LoadInput.
+func (p *PCE) loadSingle(l LoadInput) (map[string]APIResponse, error) {
 
 	var err error
 	var a APIResponse
@@ -215,11 +393,16 @@ func (p *PCE) Load(l LoadInput) (map[string]APIResponse, error) {
 		}
 	}
 
+	// Version
+	if l.Version {
+		_, a, err = p.GetVersion()
+		apiResps["GetVersion"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting version - %s", err)
+		}
+	}
+
 	return apiResps, nil
-}
-
-func (p *PCE) LoadPCEMultiThread(LoadInput) {
-
 }
 
 // FindObject takes an href and returns what it is and the name
