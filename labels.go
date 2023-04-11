@@ -3,6 +3,8 @@ package illumioapi
 import (
 	"fmt"
 	"strings"
+
+	"gonum.org/v1/gonum/stat/combin"
 )
 
 // A Label represents an Illumio Label.
@@ -116,62 +118,37 @@ func (p *PCE) UpdateLabel(label Label) (APIResponse, error) {
 	return api, err
 }
 
-// Credit for function to mxschmitt/golang-combinations
-// All returns all combinations for a given string array.
-// This is essentially a powerset of the given set except that the empty set is disregarded.
-func combinations[T any](set []T) (subsets [][]T) {
-	length := uint(len(set))
-
-	// Go through all possible combinations of objects
-	// from 1 (only first object in subset) to 2^length (all objects in subset)
-	for subsetBits := 1; subsetBits < (1 << length); subsetBits++ {
-		var subset []T
-
-		for object := uint(0); object < length; object++ {
-			// checks if object is contained in subset
-			// by checking if bit 'object' is set in subsetBits
-			if (subsetBits>>object)&1 == 1 {
-				// add object to subset
-				subset = append(subset, set[object])
-			}
-		}
-		// add subset to subsets
-		subsets = append(subsets, subset)
-	}
-	return subsets
-}
-
 // LabelsToRuleStructure takes a slice of labels and returns a slice of slices for how the labels would be organized as read by the PCE rule processing.
 // For example {"A-ERP", "A-CRM", "E-PROD"} will return [{"A-ERP, E-PROD"}. {"A-CRM", "E-PROD"}]
-func LabelsToRuleStructure(labels []Label) ([][]Label, error) {
-	// Get all the unique keys
-	keys := make(map[string]bool)
-	for _, l := range labels {
-		if l.Key == "" {
-			return nil, fmt.Errorf("labels must have a key")
+func LabelsToRuleStructure(labels []Label) (results [][]Label, err error) {
+
+	// Create some maps
+	intToLabelMap := make(map[int]Label)
+	uniqueKeys := make(map[string]bool)
+
+	for i, l := range labels {
+		if l.Key == "" || l.Value == "" {
+			return results, fmt.Errorf("labels must have a key and value")
 		}
-		keys[l.Key] = true
+		intToLabelMap[i] = l
+		uniqueKeys[l.Key] = true
 	}
 
-	// Get all combinations
-	allCombinations := combinations(labels)
+	intSets := combin.Combinations(len(labels), len(uniqueKeys))
 
-	// Create the keep list
-	keep := [][]Label{}
-entryLoop:
-	for _, entry := range allCombinations {
-		// Check to make sure only one of each label type
-		labelKeyChecker := make(map[string]bool)
-		for _, member := range entry {
-			if _, exists := labelKeyChecker[member.Key]; exists {
-				continue entryLoop
+INSET:
+	for _, intSet := range intSets {
+		coveredKeys := make(map[string]bool)
+		entry := []Label{}
+		for _, int := range intSet {
+			entry = append(entry, intToLabelMap[int])
+			if coveredKeys[intToLabelMap[int].Key] {
+				continue INSET
 			}
-			labelKeyChecker[member.Key] = true
+			coveredKeys[intToLabelMap[int].Key] = true
 		}
-		// Check to make sure all label types
-		if len(labelKeyChecker) == len(keys) {
-			keep = append(keep, entry)
-		}
+		results = append(results, entry)
 	}
-	return keep, nil
+
+	return results, nil
 }
