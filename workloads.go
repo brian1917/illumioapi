@@ -783,6 +783,15 @@ func (w *Workload) GetIPWithDefaultGW() string {
 	return "NA"
 }
 
+func (w *Workload) GetIsPWithDefaultGW() (ipAddresses []string) {
+	for _, i := range PtrToVal(w.Interfaces) {
+		if i.DefaultGatewayAddress != "" {
+			ipAddresses = append(ipAddresses, i.Address)
+		}
+	}
+	return ipAddresses
+}
+
 // GetNetMaskWithDefaultGW returns the netmask of the ip address that has the default gateway
 // If the workload does not have a default gateway (many unmanaged workloads), it will return "NA"
 func (w *Workload) GetNetMaskWithDefaultGW() string {
