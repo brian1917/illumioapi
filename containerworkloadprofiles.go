@@ -33,9 +33,9 @@ func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, contai
 		api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", true, queryParameters, &p.ContainerWorkloadProfilesSlice)
 	}
 	for _, c := range p.ContainerWorkloadProfilesSlice {
-		p.ContainerWorkloadProfiles[c.Href] = c
+		p.ContainerWorkloadProfiles = map[string]ContainerWorkloadProfile{c.Href: c}
 		if c.Name != nil {
-			p.ContainerWorkloadProfiles[*c.Name] = c
+			p.ContainerWorkloadProfiles = map[string]ContainerWorkloadProfile{*c.Name: c}
 		}
 	}
 	return api, err
