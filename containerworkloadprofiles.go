@@ -32,9 +32,11 @@ func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, contai
 		p.ContainerWorkloadProfilesSlice = nil
 		api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", true, queryParameters, &p.ContainerWorkloadProfilesSlice)
 	}
+	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 	for _, c := range p.ContainerWorkloadProfilesSlice {
+		p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 		p.ContainerWorkloadProfiles[c.Href] = c
-		if c.Name != nil {
+		if PtrToVal(c.Name) != "" {
 			p.ContainerWorkloadProfiles[*c.Name] = c
 		}
 	}
