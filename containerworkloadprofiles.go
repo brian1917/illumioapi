@@ -27,6 +27,7 @@ type ContainerWorkloadProfile struct {
 // The first API call to the PCE does not use the async option.
 // If the slice length is >=500, it re-runs with async.
 func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, containerClusterID string) (api APIResponse, err error) {
+	p.ContainerWorkloadProfilesSlice = nil
 	api, err = p.GetCollection("container_clusters/"+containerClusterID+"/container_workload_profiles", false, queryParameters, &p.ContainerWorkloadProfilesSlice)
 	if len(p.ContainerWorkloadProfilesSlice) >= 500 {
 		p.ContainerWorkloadProfilesSlice = nil
@@ -34,7 +35,6 @@ func (p *PCE) GetContainerWkldProfiles(queryParameters map[string]string, contai
 	}
 	p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 	for _, c := range p.ContainerWorkloadProfilesSlice {
-		p.ContainerWorkloadProfiles = make(map[string]ContainerWorkloadProfile)
 		p.ContainerWorkloadProfiles[c.Href] = c
 		if PtrToVal(c.Name) != "" {
 			p.ContainerWorkloadProfiles[*c.Name] = c
