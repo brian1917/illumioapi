@@ -184,6 +184,12 @@ func (p *PCE) GetWklds(queryParameters map[string]string) (api APIResponse, err 
 		api, err = p.GetCollection("workloads", true, queryParameters, &p.WorkloadsSlice)
 	}
 	// Load the PCE with the returned workloads
+	p.loadWkldMaps()
+	return api, err
+}
+
+// loadWkldMaps takes the p.WorkloadSlices and populates p.Workloads
+func (p *PCE) loadWkldMaps() {
 	p.Workloads = make(map[string]Workload)
 	for _, w := range p.WorkloadsSlice {
 		p.Workloads[w.Href] = w
@@ -197,7 +203,6 @@ func (p *PCE) GetWklds(queryParameters map[string]string) (api APIResponse, err 
 			p.Workloads[*w.ExternalDataSet+*w.ExternalDataReference] = w
 		}
 	}
-	return api, err
 }
 
 // GetContainerWklds returns a slice of container workloads from the PCE.
@@ -943,4 +948,51 @@ func (p *PCE) WorkloadQueryLabelParameter(labelSlices [][]string) (queryParamete
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(outer, ",")), nil
+}
+
+// Get workloads by href list
+// Entries that do not contain "/orgs/" will be skipped.
+// Single makes individual calls for each workload
+func (p *PCE) GetWkldsByHrefList(hrefs []string, single bool) (apiResps []APIResponse, err error) {
+	var wklds []Workload
+
+	// Process single
+	if single {
+		for _, href := range hrefs {
+			// Skip non-hrefs
+			if !strings.Contains(href, "/orgs/") {
+				continue
+			}
+			// Get the wkld
+			wkld, api, err := p.GetWkldByHref(href)
+			if err != nil {
+				return nil, err
+			}
+			apiResps = append(apiResps, api)
+			wklds = append(wklds, wkld)
+		}
+	} else {
+		// Create a map for lookup
+		hrefMap := make(map[string]bool)
+		for _, href := range hrefs {
+			hrefMap[href] = true
+		}
+		api, err := p.GetWklds(nil)
+		if err != nil {
+			return nil, err
+		}
+		apiResps = append(apiResps, api)
+		for _, w := range p.WorkloadsSlice {
+			if hrefMap[w.Href] {
+				wklds = append(wklds, w)
+			}
+		}
+	}
+
+	// Clear the PCE and set the maps
+	p.WorkloadsSlice = wklds
+	p.loadWkldMaps()
+
+	return apiResps, nil
+
 }
