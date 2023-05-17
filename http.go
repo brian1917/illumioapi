@@ -5,13 +5,36 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var Verbose bool
+
+func init() {
+	if strings.ToLower(os.Getenv("ILLUMIOAPI_VERBOSE")) == "true" {
+		Verbose = true
+	}
+}
+
+// verboseLog prints a message to stdout if the ILLUMIOAPI_VERBOSE env variable is set to "true"
+func verboseLog(m string) {
+	if !Verbose {
+		return
+	}
+	fmt.Printf("%s [ILLUMIOAPI VERBOSE] - %s\r\n", time.Now().Format("2006-01-02 15:04:05 "), m)
+}
+
+// verboseLogf prints a message to stdout using string formatting if the ILLUMIOAPI_VERBOSE env variable is set to "true"
+func verboseLogf(format string, a ...any) {
+	verboseLog(fmt.Sprintf(format, a...))
+}
 
 // APIResponse contains the information from the response of the API
 type APIResponse struct {
@@ -48,6 +71,8 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 		return APIResponse{}, err
 	}
 	baseURL := "https://" + u.Host + "/api/v2"
+	verboseLogf("httpSetup - base url: %s", baseURL)
+	verboseLogf("httpSetup - async: %t", async)
 
 	// Create body
 	httpBody := bytes.NewBuffer(body)
@@ -86,19 +111,29 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 	}
 
 	// Make HTTP Request
+	verboseLogf("httpSetup - making %s http request to %s", req.Method, req.URL)
 	resp, err := client.Do(req)
 	if err != nil {
 		return APIResponse{}, err
 	}
+	verboseLogf("httpSetup - http status code: %d", resp.StatusCode)
+
+	// Strip base URL for async logging
+	targetResource := strings.TrimPrefix(req.URL.String(), baseURL)
 
 	// Process Async requests
 	if async {
+		verboseLogf("httpSetup - starting async polling process for %s", targetResource)
+		iteration := 0
 		for asyncResults.Status != "done" {
+			iteration++
+			verboseLogf("httpSetup - checking async results for %s - attempt %d", targetResource, iteration)
 			asyncResults, err = p.asyncPoll(baseURL, resp)
 			if err != nil {
 				return APIResponse{}, err
 			}
 		}
+		verboseLog("httpSetup - async polling done")
 
 		finalReq, err := http.NewRequest("GET", baseURL+asyncResults.Result.Href, httpBody)
 		if err != nil {
@@ -110,10 +145,13 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 		finalReq.Header.Set("Content-Type", "application/json")
 
 		// Make HTTP Request
+		verboseLogf("httpSetup - making http request to download async results from %s for %s", finalReq.URL.String(), targetResource)
 		resp, err = client.Do(finalReq)
 		if err != nil {
 			return APIResponse{}, err
 		}
+		verboseLogf("httpSetup - http status code: %d", resp.StatusCode)
+
 	}
 
 	// Process response
@@ -171,17 +209,21 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 
 	// Wait for recommended time from Retry-After
 	wait, err := strconv.Atoi(origResp.Header.Get("Retry-After"))
+	verboseLogf("asyncPoll - Retry-After: %d", wait)
 	if err != nil {
 		return asyncResults, err
 	}
 	duration := time.Duration(wait) * time.Second
+	verboseLog("sleeping for Retry-After period")
 	time.Sleep(duration)
 
 	// Check if the data is ready
+	verboseLogf("asyncPoll - making http request to %s", pollReq.URL.String())
 	pollResp, err := client.Do(pollReq)
 	if err != nil {
 		return asyncResults, err
 	}
+	verboseLogf("http status code: %d", pollResp.StatusCode)
 
 	// Process Response
 	data, err := io.ReadAll(pollResp.Body)
