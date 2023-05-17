@@ -214,7 +214,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 		return asyncResults, err
 	}
 	duration := time.Duration(wait) * time.Second
-	verboseLog("sleeping for Retry-After period")
+	verboseLog("asyncPoll - sleeping for Retry-After period")
 	time.Sleep(duration)
 
 	// Check if the data is ready
