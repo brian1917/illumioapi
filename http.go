@@ -199,6 +199,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 	client.Transport = httpTransport
 
 	pollReq, err := http.NewRequest("GET", baseURL+origResp.Header.Get("Location"), nil)
+	verboseLogf("asyncPoll - pollReq.UR.String(): %s", pollReq.URL.String())
 	if err != nil {
 		return asyncResults, err
 	}
@@ -215,6 +216,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 	}
 	duration := time.Duration(wait) * time.Second
 	verboseLog("asyncPoll - sleeping for Retry-After period")
+	verboseLogf("asyncPoll - duration.Seconds(): %d", int(duration.Seconds()))
 	time.Sleep(duration)
 
 	// Check if the data is ready
@@ -223,7 +225,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 	if err != nil {
 		return asyncResults, err
 	}
-	verboseLogf("http status code: %d", pollResp.StatusCode)
+	verboseLogf("asyncPoll - http status code: %d", pollResp.StatusCode)
 
 	// Process Response
 	data, err := io.ReadAll(pollResp.Body)
