@@ -22,6 +22,7 @@ type Service struct {
 	DeletedBy             *Href             `json:"deleted_by,omitempty"`
 	UpdatedAt             string            `json:"updated_at,omitempty"`
 	UpdatedBy             *Href             `json:"updated_by,omitempty"`
+	RiskDetails           *RiskDetail       `json:"risk_details,omitempty"`
 }
 
 // ServicePort represent port and protocol information for a non-Windows service
@@ -43,6 +44,16 @@ type WindowsService struct {
 	Protocol    int    `json:"proto,omitempty"`
 	ServiceName string `json:"service_name,omitempty"`
 	ToPort      int    `json:"to_port,omitempty"`
+}
+
+type RiskDetail struct {
+	Ransomware *Ransomware `json:"ransomware,omitempty"`
+}
+
+type Ransomware struct {
+	Category    string   `json:"category,omitempty"`
+	Severity    string   `json:"severity,omitempty"`
+	OsPlatforms []string `json:"os_platforms,omitempty"`
 }
 
 // GetServices returns a slice of IP lists from the PCE. pStatus must be "draft" or "active".
