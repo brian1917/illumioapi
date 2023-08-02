@@ -1,5 +1,7 @@
 package illumioapi
 
+import "errors"
+
 // CompatibilityReport is available in idle workloads.
 // A CompatibilityReport is never created or updated.
 type CompatibilityReport struct {
@@ -33,6 +35,21 @@ type QualifyTest struct {
 
 // GetCompatibilityReport returns the compatibility report for a VEN
 func (p *PCE) GetCompatibilityReport(w Workload) (cr CompatibilityReport, api APIResponse, err error) {
-	api, err = p.GetHref(w.Agent.Href+"/compatibility_report", &cr)
+	// Start with a blank href
+	href := ""
+
+	// If the VEN is not nil and it has a VEN href, use that
+	if w.VEN != nil && w.VEN.Href != "" {
+		href = w.VEN.Href
+	} else if w.Agent != nil && w.Agent.Href != "" {
+		href = w.Agent.Href
+	}
+
+	// If the href is still blank, return an error
+	if href == "" {
+		return cr, api, errors.New("no ven or agent href")
+	}
+
+	api, err = p.GetHref(href+"/compatibility_report", &cr)
 	return cr, api, err
 }
