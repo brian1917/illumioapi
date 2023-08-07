@@ -491,7 +491,6 @@ func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery As
 		t.QueryName = Ptr("")
 	}
 	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
-	fmt.Println(api.RespBody)
 	return asyncQuery, api, err
 }
 
