@@ -173,9 +173,8 @@ type UploadFlowResults struct {
 	TotalFlowsInCSV int
 }
 
-// GetTrafficAnalysis gets flow data from Explorer.
-func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
-
+// buildTrafficAnalysisRequest is an internal function that builds the traffic query function
+func buildTrafficAnalysisRequest(q TrafficQuery) (TrafficAnalysisRequest, error) {
 	// Includes
 
 	// Create the two Include slices using make so JSON is marshaled with empty arrays and not null values to meet Illumio API spec.
@@ -213,7 +212,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 							if n != 0 {
 								v = "destination"
 							}
-							return nil, APIResponse{}, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
+							return TrafficAnalysisRequest{}, fmt.Errorf("provided %s include is not label, workload, iplist, or ip address", v)
 						}
 						insideInc = append(insideInc, IncludeOrExclude{IPAddress: &IPAddress{Value: a}})
 					}
@@ -252,7 +251,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 				if n != 0 {
 					v = "destination"
 				}
-				return nil, APIResponse{}, fmt.Errorf("provided %s excludes are not of the same type", v)
+				return TrafficAnalysisRequest{}, fmt.Errorf("provided %s excludes are not of the same type", v)
 			}
 
 			// Add to the exclude
@@ -269,7 +268,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 					if n != 0 {
 						v = "destination"
 					}
-					return nil, APIResponse{}, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
+					return TrafficAnalysisRequest{}, fmt.Errorf("provided %s exclude is not label, workload, iplist, or ip address", v)
 				}
 				*exclTargets[n] = append(*exclTargets[n], IncludeOrExclude{IPAddress: &IPAddress{Value: exclude}})
 			}
@@ -343,10 +342,26 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 		EndDate:         q.EndTime,
 		MaxResults:      q.MaxFLows}
 
+	return traffic, nil
+
+}
+
+// GetTrafficAnalysis gets flow data from Explorer.
+func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnalysis, api APIResponse, err error) {
+
+	// Build the traffic query object
+	traffic, err := buildTrafficAnalysisRequest(q)
+	if err != nil {
+		return nil, APIResponse{}, err
+	}
+
+	// Get the PCE Version
 	_, api, err = p.GetVersion()
 	if err != nil {
 		return nil, api, err
 	}
+
+	// Adjust the ExcludeWorkloads from IP List Query
 	if p.Version.Major > 19 {
 		traffic.ExcludeWorkloadsFromIPListQuery = &q.ExcludeWorkloadsFromIPListQuery
 	} else {
@@ -359,6 +374,35 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 	}
 
 	return p.CreateTrafficRequest(traffic)
+}
+
+// GetTrafficAnalysisCsv gets flow data from Explorer in CSV Format.
+func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery) (returnedTraffic [][]string, api APIResponse, err error) {
+
+	// Get the version
+	if p.Version.Major == 0 {
+		_, api, err := p.GetVersion()
+		if err != nil {
+			return nil, api, fmt.Errorf("error getting version - %s. api response is from get version", err)
+		}
+	}
+
+	if p.Version.Major < 21 || (p.Version.Major == 21 && p.Version.Minor < 2) {
+		return returnedTraffic, APIResponse{}, fmt.Errorf("pce version does not support csv queries")
+	}
+	verboseLogf("GetTrafficAnalysisCsv - pce version: %s", p.Version.LongDisplay)
+
+	traffic, err := buildTrafficAnalysisRequest(q)
+	if err != nil {
+		return nil, APIResponse{}, err
+	}
+
+	// We are going to edit it here so we can omit if necessary
+	if strings.ToLower(q.QueryOperator) == "or" || strings.ToLower(q.QueryOperator) == "and" {
+		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
+	}
+
+	return p.CreateTrafficRequestCsv(traffic)
 }
 
 // CreateTrafficRequest makes a traffic request and waits for the results
@@ -376,6 +420,7 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		// Clear the query name
 		t.QueryName = nil
 		// Run the API
+		verboseLog("CreateTrafficRequest - using old api endpoint due to PCE version: /traffic_flows/traffic_analysis_queries")
 		api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
 		return returnedTraffic, api, err
 	}
@@ -387,14 +432,53 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 
 	// Check queries
 	for {
-		asyncQueries, api, err := p.GetAsyncQueries(nil)
+		var aq AsyncTrafficQuery
+		verboseLog("CreateTrafficRequest - using new aysnc traffic api")
+		api, err = p.GetHref(asyncQuery.Href, &aq)
 		if err != nil {
 			return nil, api, err
 		}
-		for _, aq := range asyncQueries {
-			if aq.Href == asyncQuery.Href && aq.Status == "completed" {
-				return p.GetAsyncQueryResults(aq)
-			}
+		verboseLogf("CreateTrafficRequest - aq.href: %s; aq.Status: %s", aq.Href, aq.Status)
+		if aq.Href == asyncQuery.Href && aq.Status == "completed" {
+			verboseLog("CreateTrafficRequest - getting async results json...")
+			return p.GetAsyncQueryResults(aq)
+		}
+		time.Sleep(3 * time.Second)
+	}
+}
+
+// CreateTrafficRequest makes a traffic request and waits for the results
+func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest) (returnedTraffic [][]string, api APIResponse, err error) {
+	// Get the version
+	if p.Version.Major == 0 {
+		_, api, err := p.GetVersion()
+		if err != nil {
+			return nil, api, fmt.Errorf("error getting version - %s. api response is from get version", err)
+		}
+	}
+
+	// If the version is less than 21.2, use the old api endpoint
+	if p.Version.Major < 21 || (p.Version.Major == 21 && p.Version.Minor < 2) {
+		return returnedTraffic, api, fmt.Errorf("pce version does not support querying csv results")
+	}
+
+	asyncQuery, api, err := p.CreateAsyncTrafficRequest(t)
+	if err != nil {
+		return returnedTraffic, api, err
+	}
+
+	// Check queries
+	for {
+		var aq AsyncTrafficQuery
+		verboseLog("CreateTrafficRequestCsv - using new aysnc traffic api")
+		api, err = p.GetHref(asyncQuery.Href, &aq)
+		if err != nil {
+			return nil, api, err
+		}
+		verboseLogf("aq.href: %s; aq.Status: %s", aq.Href, aq.Status)
+		if aq.Href == asyncQuery.Href && aq.Status == "completed" {
+			verboseLog("CreateTrafficRequestCsv - getting async results csv")
+			return p.GetAsyncQueryResultsCsv(aq)
 		}
 		time.Sleep(3 * time.Second)
 	}
@@ -407,6 +491,7 @@ func (p *PCE) CreateAsyncTrafficRequest(t TrafficAnalysisRequest) (asyncQuery As
 		t.QueryName = Ptr("")
 	}
 	api, err = p.Post("traffic_flows/async_queries", &t, &asyncQuery)
+	fmt.Println(api.RespBody)
 	return asyncQuery, api, err
 }
 
@@ -420,6 +505,34 @@ func (p *PCE) GetAsyncQueryResults(aq AsyncTrafficQuery) (returnedTraffic []Traf
 	result := strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org))
 	api, err = p.GetCollectionHeaders(result, false, nil, map[string]string{"Accept": "application/json"}, &returnedTraffic)
 	return returnedTraffic, api, err
+}
+
+func (p *PCE) GetAsyncQueryResultsCsv(aq AsyncTrafficQuery) (csvData [][]string, api APIResponse, err error) {
+	result := strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org))
+	api, err = p.GetCollection(result, false, nil, nil)
+	if api.StatusCode < 200 || api.StatusCode > 299 {
+		return csvData, api, fmt.Errorf("api status code %d returned", api.StatusCode)
+	}
+	if err != nil {
+		return csvData, api, err
+	}
+
+	reader := csv.NewReader(strings.NewReader(api.RespBody))
+	// Iterate through CSV entries
+	for {
+		// Read the line
+		line, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, api, err
+		}
+		// Append
+		csvData = append(csvData, line)
+	}
+
+	return csvData, api, nil
 }
 
 // UploadTraffic uploads a csv to the PCE with traffic flows.
