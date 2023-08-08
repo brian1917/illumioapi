@@ -71,7 +71,7 @@ type IPAddress struct {
 // TrafficAnalysis represents the response from the explorer API
 type TrafficAnalysis struct {
 	Dst            *Dst            `json:"dst"`
-	NumConnections int             `json:"num_connections"`
+	NumConnections float64         `json:"num_connections"`
 	PolicyDecision string          `json:"policy_decision"`
 	ExpSrv         *ExpSrv         `json:"service"`
 	Src            *Src            `json:"src"`
@@ -683,7 +683,7 @@ func createExplorerMapKey(entry TrafficAnalysis) string {
 	if entry.Dst.Workload != nil {
 		key = key + PtrToVal(entry.Dst.Workload.Hostname)
 	}
-	key = key + strconv.Itoa(entry.ExpSrv.Port) + entry.ExpSrv.Process + strconv.Itoa(entry.ExpSrv.Proto) + entry.ExpSrv.User + entry.ExpSrv.WindowsService + strconv.Itoa(entry.NumConnections) + entry.PolicyDecision + entry.Src.FQDN + entry.Src.IP
+	key = key + strconv.Itoa(entry.ExpSrv.Port) + entry.ExpSrv.Process + strconv.Itoa(entry.ExpSrv.Proto) + entry.ExpSrv.User + entry.ExpSrv.WindowsService + strconv.Itoa(int(entry.NumConnections)) + entry.PolicyDecision + entry.Src.FQDN + entry.Src.IP
 	if entry.Src.Workload != nil {
 		key = key + PtrToVal(entry.Src.Workload.Hostname)
 	}
