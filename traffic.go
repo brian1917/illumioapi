@@ -373,7 +373,18 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
 	}
 
-	return p.CreateTrafficRequest(traffic)
+	returnedTraffic, api, err = p.CreateTrafficRequest(traffic)
+	if err != nil {
+		return returnedTraffic, api, err
+	}
+	trafficBytes, err := json.Marshal(traffic)
+	if err != nil {
+		return returnedTraffic, api, err
+	}
+	api.ReqBody = string(trafficBytes)
+	fmt.Println("hi")
+
+	return returnedTraffic, api, err
 }
 
 // GetTrafficAnalysisCsv gets flow data from Explorer in CSV Format.
@@ -402,7 +413,19 @@ func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery) (returnedTraffic [][]string,
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
 	}
 
-	return p.CreateTrafficRequestCsv(traffic)
+	returnedTraffic, api, err = p.CreateTrafficRequestCsv(traffic)
+	if err != nil {
+		return returnedTraffic, api, err
+	}
+	trafficBytes, err := json.Marshal(traffic)
+	if err != nil {
+		return returnedTraffic, api, err
+	}
+	api.ReqBody = string(trafficBytes)
+	fmt.Println("hi")
+
+	return returnedTraffic, api, err
+
 }
 
 // CreateTrafficRequest makes a traffic request and waits for the results
