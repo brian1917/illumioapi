@@ -382,7 +382,6 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 		return returnedTraffic, api, err
 	}
 	api.ReqBody = string(trafficBytes)
-	fmt.Println("hi")
 
 	return returnedTraffic, api, err
 }
@@ -422,7 +421,6 @@ func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery) (returnedTraffic [][]string,
 		return returnedTraffic, api, err
 	}
 	api.ReqBody = string(trafficBytes)
-	fmt.Println("hi")
 
 	return returnedTraffic, api, err
 
