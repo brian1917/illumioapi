@@ -27,19 +27,19 @@ type Service struct {
 
 // ServicePort represent port and protocol information for a non-Windows service
 type ServicePort struct {
-	IcmpCode int `json:"icmp_code,omitempty"`
-	IcmpType int `json:"icmp_type,omitempty"`
-	ID       int `json:"id,omitempty"`
-	Port     int `json:"port,omitempty"`
-	Protocol int `json:"proto,omitempty"`
-	ToPort   int `json:"to_port,omitempty"`
+	IcmpCode int  `json:"icmp_code,omitempty"`
+	IcmpType int  `json:"icmp_type,omitempty"`
+	ID       int  `json:"id,omitempty"`
+	Port     *int `json:"port,omitempty"` // Pointer for 0 value
+	Protocol int  `json:"proto,omitempty"`
+	ToPort   int  `json:"to_port,omitempty"`
 }
 
 // WindowsService represents port, protocol, and process information for a Windows service
 type WindowsService struct {
 	IcmpCode    int    `json:"icmp_code,omitempty"`
 	IcmpType    int    `json:"icmp_type,omitempty"`
-	Port        int    `json:"port,omitempty"`
+	Port        *int   `json:"port,omitempty"` // Pointer for 0 value
 	ProcessName string `json:"process_name,omitempty"`
 	Protocol    int    `json:"proto,omitempty"`
 	ServiceName string `json:"service_name,omitempty"`
@@ -103,7 +103,7 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 	// Create a string for Windows Services
 	for _, ws := range PtrToVal(s.WindowsServices) {
 		var svcSlice []string
-		if ws.Port != 0 && ws.Protocol != 0 {
+		if PtrToVal(ws.Port) != 0 && ws.Protocol != 0 {
 			if ws.ToPort != 0 {
 				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", ws.Port, ws.ToPort, ProtocolList()[ws.Protocol]))
 			} else {
@@ -125,7 +125,7 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 	// Process Service Ports
 	for _, sp := range PtrToVal(s.ServicePorts) {
 		var svcSlice []string
-		if sp.Port != 0 && sp.Protocol != 0 {
+		if PtrToVal(sp.Port) != 0 && sp.Protocol != 0 {
 			if sp.ToPort != 0 {
 				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", sp.Port, sp.ToPort, ProtocolList()[sp.Protocol]))
 			} else {
@@ -134,7 +134,7 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 		}
 		if sp.IcmpCode != 0 && sp.IcmpType != 0 {
 			svcSlice = append(svcSlice, fmt.Sprintf("%d/%d %s", sp.IcmpType, sp.IcmpCode, ProtocolList()[sp.Protocol]))
-		} else if sp.Port == 0 && sp.Protocol != 0 {
+		} else if PtrToVal(sp.Port) == 0 && sp.Protocol != 0 {
 			svcSlice = append(svcSlice, ProtocolList()[sp.Protocol])
 		}
 		servicePorts = append(servicePorts, strings.Join(svcSlice, " "))
@@ -153,9 +153,9 @@ func (s *Service) ToExplorer() ([]IncludeOrExclude, []IncludeOrExclude) {
 		include := IncludeOrExclude{}
 		exclude := IncludeOrExclude{}
 		check := false
-		if ws.Port != 0 {
-			include.Port = ws.Port
-			exclude.Port = ws.Port
+		if PtrToVal(ws.Port) != 0 {
+			include.Port = PtrToVal(ws.Port)
+			exclude.Port = PtrToVal(ws.Port)
 			check = true
 		}
 		if ws.ToPort != 0 {
@@ -189,9 +189,9 @@ func (s *Service) ToExplorer() ([]IncludeOrExclude, []IncludeOrExclude) {
 		include := IncludeOrExclude{}
 		exclude := IncludeOrExclude{}
 		check := false
-		if s.Port != 0 {
-			include.Port = s.Port
-			exclude.Port = s.Port
+		if PtrToVal(s.Port) != 0 {
+			include.Port = PtrToVal(s.Port)
+			exclude.Port = PtrToVal(s.Port)
 			check = true
 		}
 		if s.ToPort != 0 {
