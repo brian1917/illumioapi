@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // A VirtualService represents a Virtual Service in the Illumio PCE
@@ -157,7 +158,7 @@ func (p *PCE) CreateServiceBinding(serviceBindings []ServiceBinding) (createdSer
 
 // BulkVS takes a bulk action on an array of workloads.
 // Method must be create, update, or delete
-func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResponse, error) {
+func (p *PCE) BulkVS(virtualServices []VirtualService, method string, stdoutLogs bool) ([]APIResponse, error) {
 	var apiResps []APIResponse
 	var err error
 
@@ -195,6 +196,9 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 
 	// Figure out how many API calls we need to make
 	numAPICalls := int(math.Ceil(float64(len(virtualServices)) / 1000))
+	if stdoutLogs {
+		fmt.Printf("%s [INFO] - Bulk API actions happen in 1,000 virtual service chunks. %d %s calls will be required to process the %d workloads.\r\n", time.Now().Format("2006-01-02 15:04:05 "), numAPICalls, method, len(virtualServices))
+	}
 
 	// Build the array to be passed to the API
 	apiArrays := [][]VirtualService{}
@@ -209,7 +213,7 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 	}
 
 	// Call the API for each array
-	for _, apiArray := range apiArrays {
+	for i, apiArray := range apiArrays {
 		vsJSON, err := json.Marshal(apiArray)
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk vs error - %s", err)
@@ -217,8 +221,10 @@ func (p *PCE) BulkVS(virtualServices []VirtualService, method string) ([]APIResp
 
 		api, err := p.httpReq("PUT", apiURL.String(), vsJSON, false, map[string]string{"Content-Type": "application/json"})
 		api.ReqBody = string(vsJSON)
-
 		apiResps = append(apiResps, api)
+		if stdoutLogs {
+			fmt.Printf("%s [INFO] - API Call %d of %d - complete - status code %d.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, api.StatusCode)
+		}
 
 		if err != nil {
 			return apiResps, fmt.Errorf("bulk vs error - %s", err)
@@ -256,4 +262,18 @@ func (vs *VirtualService) Sanitize() {
 func (vs *VirtualService) SetActive() VirtualService {
 	vs.Href = strings.ReplaceAll(vs.Href, "draft", "active")
 	return *vs
+}
+
+// GetLabelByKey returns the label object based on the provided key and label map
+// A blank label is return if the label key is not used on the workload
+func (vs *VirtualService) GetLabelByKey(key string, labelMap map[string]Label) Label {
+	if vs.Labels == nil {
+		return Label{}
+	}
+	for _, l := range *vs.Labels {
+		if strings.EqualFold(labelMap[l.Href].Key, key) {
+			return labelMap[l.Href]
+		}
+	}
+	return Label{}
 }
