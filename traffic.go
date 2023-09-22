@@ -395,12 +395,20 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		}
 	}
 
+	// Get the string version of the query
+	jsonBytes, err := json.Marshal(t)
+	if err != nil {
+		return nil, api, fmt.Errorf("marshaling traffic query - %s", err)
+	}
+	queryBody := string(jsonBytes)
+
 	// If the version is less than 21.2, use the old api endpoint
 	if p.Version.Major < 21 || (p.Version.Major == 21 && p.Version.Minor < 2) {
 		// Clear the query name
 		t.QueryName = nil
 		// Run the API
 		api, err = p.Post("/traffic_flows/traffic_analysis_queries", &t, &returnedTraffic)
+		api.ReqBody = queryBody
 		return returnedTraffic, api, err
 	}
 
@@ -417,7 +425,9 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 		}
 		for _, aq := range asyncQueries {
 			if aq.Href == asyncQuery.Href && aq.Status == "completed" {
-				return p.GetAsyncQueryResults(aq)
+				traffic, api, err := p.GetAsyncQueryResults(aq)
+				api.ReqBody = queryBody
+				return traffic, api, err
 			}
 		}
 		time.Sleep(3 * time.Second)
