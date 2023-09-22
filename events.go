@@ -7,14 +7,15 @@ import (
 // Event represents an auditable event in the Illumio PCE
 // Events cannot be created or updated.
 type Event struct {
-	Href           string           `json:"href"`
-	Timestamp      time.Time        `json:"timestamp"`
-	PceFqdn        string           `json:"pce_fqdn"`
-	EventCreatedBy *EventCreatedBy  `json:"created_by"`
-	EventType      string           `json:"event_type"`
-	Status         string           `json:"status"`
-	Severity       string           `json:"severity"`
-	Notifications  *[]Notifications `json:"notifications"`
+	Href            string             `json:"href"`
+	Timestamp       time.Time          `json:"timestamp"`
+	PceFqdn         string             `json:"pce_fqdn"`
+	EventCreatedBy  *EventCreatedBy    `json:"created_by"`
+	EventType       string             `json:"event_type"`
+	Status          string             `json:"status"`
+	Severity        string             `json:"severity"`
+	Notifications   *[]Notifications   `json:"notifications"`
+	ResourceChanges *[]ResourceChanges `json:"resource_changes,omitempty"`
 }
 
 // EventCreatedBy is who created the event
@@ -42,6 +43,18 @@ type Info struct {
 	APIEndpoint string `json:"api_endpoint"`
 	APIMethod   string `json:"api_method"`
 	SrcIP       string `json:"src_ip"`
+	VEN         *VEN   `json:"ven,omitempty"`
+	Agent       *Agent `json:"agent,omitempty"`
+}
+
+type ResourceChanges struct {
+	UUID       string   `json:"uuid,omitempty"`
+	Resource   Resource `json:"resource,omitempty"`
+	ChangeType string   `json:"change_type,omitempty"`
+}
+
+type Resource struct {
+	Workload Workload `json:"workload,omitempty"`
 }
 
 // GetEvents returns a slice of events from the PCE.
