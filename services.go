@@ -127,9 +127,9 @@ func (s *Service) ParseService() (windowsServices, servicePorts []string) {
 		var svcSlice []string
 		if PtrToVal(sp.Port) != 0 && sp.Protocol != 0 {
 			if sp.ToPort != 0 {
-				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", sp.Port, sp.ToPort, ProtocolList()[sp.Protocol]))
+				svcSlice = append(svcSlice, fmt.Sprintf("%d-%d %s", PtrToVal(sp.Port), sp.ToPort, ProtocolList()[sp.Protocol]))
 			} else {
-				svcSlice = append(svcSlice, fmt.Sprintf("%d %s", sp.Port, ProtocolList()[sp.Protocol]))
+				svcSlice = append(svcSlice, fmt.Sprintf("%d %s", PtrToVal(sp.Port), ProtocolList()[sp.Protocol]))
 			}
 		}
 		if sp.IcmpCode != 0 && sp.IcmpType != 0 {
