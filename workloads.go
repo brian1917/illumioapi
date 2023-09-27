@@ -37,6 +37,7 @@ type Workload struct {
 	DataCenterZone        *string               `json:"data_center_zone,omitempty"`
 	Namespace             *string               `json:"namespace,omitempty"` // Only used in Container Workloads
 	VulnerabilitySummary  *VulnerabilitySummary `json:"vulnerability_summary,omitempty"`
+	RiskSummary           *RiskSummary          `json:"risk_summary,omitempty"`
 	ExternalDataReference *string               `json:"external_data_reference,omitempty"`
 	ExternalDataSet       *string               `json:"external_data_set,omitempty"`
 	CreatedAt             string                `json:"created_at,omitempty"`
@@ -90,6 +91,16 @@ type VulnerabilitySummary struct {
 type VulnerablePortWideExposure struct {
 	Any    bool `json:"any"`
 	IPList bool `json:"ip_list"`
+}
+
+type WkldRansomware struct {
+	WorkloadExposureSeverity    string    `json:"workload_exposure_severity,omitempty"`
+	RansomwareProtectionPercent float64   `json:"ransomware_protection_percent,omitempty"`
+	LastUpdatedAt               time.Time `json:"last_updated_at,omitempty"`
+}
+
+type RiskSummary struct {
+	Ransomware WkldRansomware `json:"ransomware,omitempty"`
 }
 
 // An Agent is an Agent on a Workload
