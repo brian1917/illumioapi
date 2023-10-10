@@ -443,6 +443,8 @@ func (w *Workload) SanitizeBulkUpdate() {
 	w.UpdatedBy = nil
 	w.Services = nil
 	w.VulnerabilitySummary = nil
+	w.RiskSummary = nil
+	w.VulnerabilitySummary = nil
 
 	// Managed workloads
 	if w.GetMode() != "unmanaged" {
