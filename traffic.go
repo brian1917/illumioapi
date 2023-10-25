@@ -157,6 +157,7 @@ type AsyncTrafficQuery struct {
 	Result          string                  `json:"result,omitempty"`        // Result download URI, availble only if status is completed
 	Status          string                  `json:"status"`                  // Current query status
 	UpdatedAt       string                  `json:"updated_at,omitempty"`    // Timestamp in UTC when this async query was last updated.
+	Rules           string                  `json:"rules,omitempty"`
 }
 
 // FlowUploadResp is the response from the traffic upload API
@@ -387,7 +388,7 @@ func (p *PCE) GetTrafficAnalysis(q TrafficQuery) (returnedTraffic []TrafficAnaly
 }
 
 // GetTrafficAnalysisCsv gets flow data from Explorer in CSV Format.
-func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery) (returnedTraffic [][]string, api APIResponse, err error) {
+func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery, draftResults bool) (returnedTraffic [][]string, api APIResponse, err error) {
 
 	// Get the version
 	if p.Version.Major == 0 {
@@ -412,7 +413,7 @@ func (p *PCE) GetTrafficAnalysisCsv(q TrafficQuery) (returnedTraffic [][]string,
 		traffic.SourcesDestinationsQueryOp = strings.ToLower(q.QueryOperator)
 	}
 
-	returnedTraffic, api, err = p.CreateTrafficRequestCsv(traffic)
+	returnedTraffic, api, err = p.CreateTrafficRequestCsv(traffic, draftResults)
 	if err != nil {
 		return returnedTraffic, api, err
 	}
@@ -469,7 +470,7 @@ func (p *PCE) CreateTrafficRequest(t TrafficAnalysisRequest) (returnedTraffic []
 }
 
 // CreateTrafficRequest makes a traffic request and waits for the results
-func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest) (returnedTraffic [][]string, api APIResponse, err error) {
+func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest, draftResults bool) (returnedTraffic [][]string, api APIResponse, err error) {
 	// Get the version
 	if p.Version.Major == 0 {
 		_, api, err := p.GetVersion()
@@ -489,6 +490,7 @@ func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest) (returnedTraffic
 	}
 
 	// Check queries
+	draftResultsRequested := false
 	for {
 		var aq AsyncTrafficQuery
 		verboseLog("CreateTrafficRequestCsv - using new aysnc traffic api")
@@ -497,9 +499,23 @@ func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest) (returnedTraffic
 			return nil, api, err
 		}
 		verboseLogf("aq.href: %s; aq.Status: %s", aq.Href, aq.Status)
+
 		if aq.Href == asyncQuery.Href && aq.Status == "completed" {
-			verboseLog("CreateTrafficRequestCsv - getting async results csv")
-			return p.GetAsyncQueryResultsCsv(aq)
+			if draftResults && !draftResultsRequested {
+				type placeholderObject struct {
+					Href string
+				}
+				resultHref := strings.Replace(aq.Result, "download", "", -1)
+				emptyObject := placeholderObject{Href: fmt.Sprintf("%supdate_rules?label_based_rules=false&offset=0&limit=200000", resultHref)}
+				a, _ := p.Put(&emptyObject)
+				fmt.Printf("draft status code: %d\r\n", a.StatusCode)
+				fmt.Printf("draft body: %s\r\n", a.RespBody)
+				draftResultsRequested = true
+			}
+			if aq.Rules == "completed" || !draftResults {
+				verboseLog("CreateTrafficRequestCsv - getting async results csv")
+				return p.GetAsyncQueryResultsCsv(aq, draftResults)
+			}
 		}
 		time.Sleep(3 * time.Second)
 	}
@@ -527,9 +543,13 @@ func (p *PCE) GetAsyncQueryResults(aq AsyncTrafficQuery) (returnedTraffic []Traf
 	return returnedTraffic, api, err
 }
 
-func (p *PCE) GetAsyncQueryResultsCsv(aq AsyncTrafficQuery) (csvData [][]string, api APIResponse, err error) {
+func (p *PCE) GetAsyncQueryResultsCsv(aq AsyncTrafficQuery, draftPolicy bool) (csvData [][]string, api APIResponse, err error) {
 	result := strings.TrimPrefix(aq.Result, fmt.Sprintf("/orgs/%d/", p.Org))
-	api, err = p.GetCollection(result, false, nil, nil)
+	qp := make(map[string]string)
+	if draftPolicy {
+		qp["include_draft_policy_in_csv"] = "true"
+	}
+	api, err = p.GetCollection(result, false, qp, nil)
 	if api.StatusCode < 200 || api.StatusCode > 299 {
 		return csvData, api, fmt.Errorf("api status code %d returned", api.StatusCode)
 	}
