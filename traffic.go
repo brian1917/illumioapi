@@ -507,9 +507,7 @@ func (p *PCE) CreateTrafficRequestCsv(t TrafficAnalysisRequest, draftResults boo
 				}
 				resultHref := strings.Replace(aq.Result, "download", "", -1)
 				emptyObject := placeholderObject{Href: fmt.Sprintf("%supdate_rules?label_based_rules=false&offset=0&limit=200000", resultHref)}
-				a, _ := p.Put(&emptyObject)
-				fmt.Printf("draft status code: %d\r\n", a.StatusCode)
-				fmt.Printf("draft body: %s\r\n", a.RespBody)
+				p.Put(&emptyObject)
 				draftResultsRequested = true
 			}
 			if aq.Rules == "completed" || !draftResults {
