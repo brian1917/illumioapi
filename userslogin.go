@@ -54,7 +54,7 @@ type APIKey struct {
 
 // getAuthToken is a private method that produces a temporary auth token for a valid username (email) and password.
 // The pce instance must have a FQDN and port
-func (p *PCE) getAuthToken(username, password string) (Authentication, APIResponse, error) {
+func (p *PCE) getAuthToken(username, password, loginServer string) (Authentication, APIResponse, error) {
 
 	var api APIResponse
 	var err error
@@ -72,6 +72,8 @@ func (p *PCE) getAuthToken(username, password string) (Authentication, APIRespon
 	// If there is an env variable set, use that
 	if os.Getenv("ILLUMIO_LOGIN_SERVER") != "" {
 		fqdn = os.Getenv("ILLUMIO_LOGIN_SERVER")
+	} else if loginServer != "" {
+		fqdn = loginServer
 	}
 
 	apiURL, err := url.Parse("https://" + fqdn + ":" + strconv.Itoa(p.Port) + "/api/v2/login_users/authenticate")
@@ -179,12 +181,12 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 // Login authenticates to the PCE.
 // Login will populate the User, Key, and Org fields in the PCE instance.
 // Login will use a temporary session token that expires after 10 minutes.
-// The ILLUMIO_LOGIN_SERVER environment variable can be used for specifying a login server
-func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error) {
+// Login server is usually be "". Specify when needed. You can also use ILLUMIO_LOGIN_SERVER environment variable.
+func (p *PCE) Login(user, password, loginServer string) (UserLogin, []APIResponse, error) {
 
 	var apiResps []APIResponse
 
-	auth, a, err := p.getAuthToken(user, password)
+	auth, a, err := p.getAuthToken(user, password, loginServer)
 	apiResps = append(apiResps, a)
 	if err != nil {
 		return UserLogin{}, apiResps, fmt.Errorf("error - Authenticating to PCE - %s", err)
@@ -204,10 +206,10 @@ func (p *PCE) Login(user, password string) (UserLogin, []APIResponse, error) {
 // LoginAPIKey authenticates to the PCE.
 // Login will populate the User, Key, and Org fields in the PCE instance.
 // LoginAPIKey will create a permanent API Key with the provided name and description fields.
-// The ILLUMIO_LOGIN_SERVER environment variable can be used for specifying a login server.
-func (p *PCE) LoginAPIKey(user, password, name, desc string) (UserLogin, []APIResponse, error) {
+// Login server is usually be "". Specify when needed. You can also use ILLUMIO_LOGIN_SERVER environment variable.
+func (p *PCE) LoginAPIKey(user, password, name, desc, loginServer string) (UserLogin, []APIResponse, error) {
 
-	login, a, err := p.Login(user, password)
+	login, a, err := p.Login(user, password, loginServer)
 	if err != nil {
 		return login, a, fmt.Errorf("LoginAPIKey - %s", err)
 	}
