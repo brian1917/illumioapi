@@ -9,6 +9,7 @@ import (
 type PairingProfile struct {
 	Href                  string   `json:"href,omitempty"`
 	Name                  string   `json:"name,omitempty"`
+	VenType               string   `json:"ven_type,omitempty"`
 	Description           *string  `json:"description,omitempty"`
 	IsDefault             *bool    `json:"is_default,omitempty"`
 	Enabled               *bool    `json:"enabled"`
