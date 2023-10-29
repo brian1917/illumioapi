@@ -12,19 +12,19 @@ type PairingProfile struct {
 	VenType               string   `json:"ven_type,omitempty"`
 	Description           *string  `json:"description,omitempty"`
 	IsDefault             *bool    `json:"is_default,omitempty"`
-	Enabled               *bool    `json:"enabled"`
+	Enabled               *bool    `json:"enabled,omitempty"`
 	Mode                  string   `json:"mode,omitempty"`
 	VisibilityLevel       string   `json:"visibility_level,omitempty"`
 	Labels                *[]Label `json:"labels,omitempty"`
 	AllowedUsesPerKey     string   `json:"allowed_uses_per_key,omitempty"`
-	LogTraffic            *bool    `json:"log_traffic"`
-	AppLabelLock          *bool    `json:"app_label_lock"`
-	EnvLabelLock          *bool    `json:"env_label_lock"`
-	LocLabelLock          *bool    `json:"loc_label_lock"`
-	RoleLabelLock         *bool    `json:"role_label_lock"`
-	ModeLock              *bool    `json:"mode_lock"`
-	VisibilityLevelLock   *bool    `json:"visibility_level_lock"`
-	LogTrafficLock        *bool    `json:"log_traffic_lock"`
+	LogTraffic            *bool    `json:"log_traffic,omitempty"`
+	AppLabelLock          *bool    `json:"app_label_lock,omitempty"`
+	EnvLabelLock          *bool    `json:"env_label_lock,omitempty"`
+	LocLabelLock          *bool    `json:"loc_label_lock,omitempty"`
+	RoleLabelLock         *bool    `json:"role_label_lock,omitempty"`
+	ModeLock              *bool    `json:"mode_lock,omitempty"`
+	VisibilityLevelLock   *bool    `json:"visibility_level_lock,omitempty"`
+	LogTrafficLock        *bool    `json:"log_traffic_lock,omitempty"`
 	KeyLifespan           string   `json:"key_lifespan,omitempty"`
 	TotalUseCount         int      `json:"total_use_count,omitempty"`
 	ExternalDataReference *string  `json:"external_data_reference,omitempty"`
