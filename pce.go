@@ -49,6 +49,12 @@ type PCE struct {
 	ContainerWorkloadProfilesSlice   []ContainerWorkloadProfile
 	EnforcementBoundaries            map[string]EnforcementBoundary
 	EnforcementBoundariesSlice       []EnforcementBoundary
+	PermissionsSlice                 []Permission
+	Permissions                      map[string]Permission
+	AuthSecurityPrincipalsSlices     []AuthSecurityPrincipal
+	AuthSecurityPrincipals           map[string]AuthSecurityPrincipal
+	Roles                            map[string]Role
+	RolesSlice                       []Role
 }
 
 // LoadInput tells the p.Load method what objects to load
@@ -71,6 +77,9 @@ type LoadInput struct {
 	ContainerWorkloadProfiles   bool
 	EnforcementBoundaries       bool
 	Version                     bool
+	AuthSecurityPrincipals      bool
+	Permissions                 bool
+	Roles                       bool
 }
 
 // Load gets the objects specified in the LoadInput
@@ -227,6 +236,29 @@ func (p *PCE) loadMulti(l LoadInput) (apiResps map[string]APIResponse, err error
 		go func(p *PCE) {
 			apiResp, err := p.GetEnforcementBoundaries(nil, provisionStatus)
 			c <- channelResp{api: apiResp, method: "GetEnforcementBoundaries", err: err}
+		}(p)
+	}
+
+	if l.AuthSecurityPrincipals {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetAuthSecurityPrincipal(nil)
+			c <- channelResp{api: apiResp, method: "GetAuthSecurityPrincipal", err: err}
+		}(p)
+	}
+
+	if l.Permissions {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetPermissions(nil)
+			c <- channelResp{api: apiResp, method: "GetPermissions", err: err}
+		}(p)
+	}
+	if l.Roles {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetRoles(nil)
+			c <- channelResp{api: apiResp, method: "GetRoles", err: err}
 		}(p)
 	}
 
