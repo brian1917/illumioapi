@@ -425,6 +425,28 @@ func (p *PCE) loadSingle(l LoadInput) (map[string]APIResponse, error) {
 		}
 	}
 
+	if l.Roles {
+		a, err = p.GetRoles(nil)
+		apiResps["GetRoles"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting all roles - %s", err)
+		}
+	}
+	if l.Permissions {
+		a, err = p.GetPermissions(nil)
+		apiResps["GetPermissions"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting all permissions - %s", err)
+		}
+	}
+	if l.AuthSecurityPrincipals {
+		a, err = p.GetAuthSecurityPrincipal(nil)
+		apiResps["GetAuthSecurityPrincipal"] = a
+		if err != nil {
+			return apiResps, fmt.Errorf("getting all auth sec principals - %s", err)
+		}
+	}
+
 	// Version
 	if l.Version {
 		_, a, err = p.GetVersion()
