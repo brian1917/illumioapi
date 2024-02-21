@@ -110,6 +110,7 @@ func (p *PCE) UpdatePermission(permission Permission) (APIResponse, error) {
 		Href:                  permission.Href,
 		Scope:                 permission.Scope,
 		AuthSecurityPrincipal: permission.AuthSecurityPrincipal,
+		Role:                  permission.Role,
 	}
 	api, err := p.Put(&updatedPermission)
 	return api, err
