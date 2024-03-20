@@ -14,6 +14,7 @@ type ConsumerOrProvider struct {
 	VirtualServer  *VirtualServer  `json:"virtual_server,omitempty"`
 	VirtualService *VirtualService `json:"virtual_service,omitempty"`
 	Workload       *Workload       `json:"workload,omitempty"`
+	Exclusion      *bool           `json:"exclusion,omitempty"`
 }
 
 // Actors are part of consumer or providers for rules and boundaries.
