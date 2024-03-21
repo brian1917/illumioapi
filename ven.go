@@ -3,6 +3,7 @@ package illumioapi
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ type VEN struct {
 	ContainerCluster *ContainerCluster `json:"container_cluster,omitempty"`
 	VenType          string            `json:"ven_type,omitempty"`
 	Conditions       *[]Condition      `json:"conditions,omitempty"`
+	LastHeartBeatAt  string            `json:"last_heartbeat_at,omitempty"`
 }
 
 // A condition is used by the VEN
@@ -151,4 +153,64 @@ func (p *PCE) GetVenByHostname(hostname string) (VEN, APIResponse, error) {
 		}
 	}
 	return VEN{}, a, nil
+}
+
+// HoursSinceLastHeartBeat returns the hours since the last beat.
+// -1 is returned for unmanaged workloads or when it cannot be calculated.
+func (v *VEN) HoursSinceLastHeartBeat() float64 {
+	t, err := time.Parse(time.RFC3339, v.LastHeartBeatAt)
+	if err != nil {
+		return -1
+	}
+	return time.Now().UTC().Sub(t).Hours()
+}
+
+// VensUnpair unpairs workloads. There is no limit to the length of []Workloads. The method
+// chunks the API calls into groups of 1,000 to conform to the Illumio API.
+func (p *PCE) VensUnpair(vens []VEN, restore string) ([]APIResponse, error) {
+	// Build the payload
+	var targetVENs []VEN
+	for _, v := range vens {
+		targetVENs = append(targetVENs, VEN{Href: v.Href})
+	}
+
+	// Build the API URL
+	apiURL, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/vens/unpair")
+	if err != nil {
+		return nil, fmt.Errorf("unpair error - %s", err)
+	}
+
+	// Figure out how many API calls we need to make
+	numAPICalls := int(math.Ceil(float64(len(targetVENs)) / 1000))
+
+	// Build the array to be passed to the API
+	apiArrays := [][]VEN{}
+	for i := 0; i < numAPICalls; i++ {
+		// Get 1,000 elements if this is not the last array
+		if (i + 1) != numAPICalls {
+			apiArrays = append(apiArrays, targetVENs[i*1000:(1+i)*1000])
+			// Get the rest on the last array
+		} else {
+			apiArrays = append(apiArrays, targetVENs[i*1000:])
+		}
+	}
+
+	// Call the API for each array
+	var apiResps []APIResponse
+	for _, apiArray := range apiArrays {
+		// Marshal the payload
+		unpair := Unpair{FirewallRestore: restore, VENS: apiArray}
+		payload, err := json.Marshal(unpair)
+		if err != nil {
+			return nil, fmt.Errorf("unpair error - %s", err)
+		}
+		// Make the API call and append the response to the results
+		api, err := p.httpReq("PUT", apiURL.String(), payload, false, map[string]string{"Content-Type": "application/json"})
+		api.ReqBody = string(payload)
+		apiResps = append(apiResps, api)
+		if err != nil {
+			return apiResps, fmt.Errorf("unpair error - %s", err)
+		}
+	}
+	return apiResps, nil
 }
