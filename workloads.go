@@ -162,8 +162,10 @@ type AgentHealthErrors struct {
 
 // Unpair is the payload for using the API to unpair workloads.
 type Unpair struct {
-	Workloads      []Workload `json:"workloads"`
-	IPTableRestore string     `json:"ip_table_restore"`
+	Workloads       []Workload `json:"workloads,omitempty"`        // Legacy workload endpoint
+	IPTableRestore  string     `json:"ip_table_restore,omitempty"` // Legacy workload endpoint
+	VENS            []VEN      `json:"vens,omitempty"`             // New VEN endpoint
+	FirewallRestore string     `json:"firewall_restore,omitempty"` // New VEN endpoint
 }
 
 // BulkResponse is the data structure for the bulk response API
@@ -730,8 +732,7 @@ func (p *PCE) WorkloadUpgrade(wkldHref, targetVersion string) (APIResponse, erro
 
 // WorkloadsUnpair unpairs workloads. There is no limit to the length of []Workloads. The method
 // chunks the API calls into groups of 1,000 to conform to the Illumio API.
-func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIResponse, error) {
-
+func (p *PCE) WorkloadsUnpair(wklds []Workload, restore string) ([]APIResponse, error) {
 	// Build the payload
 	var targetWklds []Workload
 	for _, w := range wklds {
@@ -763,7 +764,7 @@ func (p *PCE) WorkloadsUnpair(wklds []Workload, ipTablesRestore string) ([]APIRe
 	var apiResps []APIResponse
 	for _, apiArray := range apiArrays {
 		// Marshal the payload
-		unpair := Unpair{IPTableRestore: ipTablesRestore, Workloads: apiArray}
+		unpair := Unpair{IPTableRestore: restore, Workloads: apiArray}
 		payload, err := json.Marshal(unpair)
 		if err != nil {
 			return nil, fmt.Errorf("unpair error - %s", err)
