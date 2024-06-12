@@ -253,8 +253,8 @@ func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, headers ma
 	// If the status code is 429, try 3 times
 	for api.StatusCode == 429 {
 		// If we have already tried 3 times, exit
-		if retry > 2 {
-			return api, errors.New("received three 429 errors with 30 second pauses between attempts")
+		if retry > 6 {
+			return api, errors.New("received 6 429 errors with 30 second pauses between attempts")
 		}
 		// Increment the retry counter and sleep for 30 seconds
 		retry++
