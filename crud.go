@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // GetHref returns the Illumio object with a specific href
@@ -37,6 +39,22 @@ func (p *PCE) GetCollection(endpoint string, async bool, queryParameters map[str
 
 // GetCollectionHeaders returns a collection of Illumio objects and allows for customizing headers of HTTP request
 func (p *PCE) GetCollectionHeaders(endpoint string, async bool, queryParameters, headers map[string]string, response interface{}) (APIResponse, error) {
+
+	// Set the JSON file name in case needed
+	fileName := fmt.Sprintf("%s-%s.json", p.FriendlyName, strings.Replace(endpoint, "/", "_", -1))
+
+	// Get from local file if option set
+	if os.Getenv("WORKLOADER_READ_LOCAL") == "true" {
+		// Read the JSON response from a file
+		fileData, err := os.ReadFile(fileName)
+		if err != nil {
+			return APIResponse{}, fmt.Errorf("reading %s", fileName)
+		}
+		// Unmarshal response to struct and return
+		json.Unmarshal(fileData, &response)
+		return APIResponse{RespBody: string(fileData), StatusCode: 200}, nil
+	}
+
 	// Build the API URL
 	url, err := url.Parse("https://" + p.cleanFQDN() + ":" + strconv.Itoa(p.Port) + "/api/v2/orgs/" + strconv.Itoa(p.Org) + "/" + endpoint)
 	if err != nil {
@@ -58,6 +76,16 @@ func (p *PCE) GetCollectionHeaders(endpoint string, async bool, queryParameters,
 
 	// Unmarshal response to struct and return
 	json.Unmarshal([]byte(api.RespBody), &response)
+
+	// Write local file if set
+	if os.Getenv("WORKLOADER_WRITE_LOCAL") == "true" {
+		// Write the JSON response to a file
+		err = os.WriteFile(fileName, []byte(api.RespBody), 0644)
+		if err != nil {
+			return api, fmt.Errorf("writing %s", fileName)
+		}
+
+	}
 
 	return api, nil
 
