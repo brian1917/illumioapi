@@ -55,6 +55,8 @@ type PCE struct {
 	AuthSecurityPrincipals           map[string]AuthSecurityPrincipal
 	Roles                            map[string]Role
 	RolesSlice                       []Role
+	NetworkDevice                    map[string]NetworkDevice
+	NetworkDeviceSlice               []NetworkDevice
 }
 
 // LoadInput tells the p.Load method what objects to load
@@ -80,6 +82,7 @@ type LoadInput struct {
 	AuthSecurityPrincipals      bool
 	Permissions                 bool
 	Roles                       bool
+	NetworkDevice               bool
 }
 
 // Load gets the objects specified in the LoadInput
@@ -259,6 +262,13 @@ func (p *PCE) loadMulti(l LoadInput) (apiResps map[string]APIResponse, err error
 		go func(p *PCE) {
 			apiResp, err := p.GetRoles(nil)
 			c <- channelResp{api: apiResp, method: "GetRoles", err: err}
+		}(p)
+	}
+	if l.NetworkDevice {
+		numAPICalls++
+		go func(p *PCE) {
+			apiResp, err := p.GetNetworkDeviceSlide(nil)
+			c <- channelResp{api: apiResp, method: "GetNetworkDeviceSlide", err: err}
 		}(p)
 	}
 
