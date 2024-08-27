@@ -153,6 +153,7 @@ func (p *PCE) login(authToken string) (UserLogin, APIResponse, error) {
 	if err != nil {
 		return login, response, fmt.Errorf("login error - %s", err)
 	}
+	defer resp.Body.Close()
 
 	// Process response
 	data, err := io.ReadAll(resp.Body)
