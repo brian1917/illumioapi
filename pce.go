@@ -267,7 +267,7 @@ func (p *PCE) loadMulti(l LoadInput) (apiResps map[string]APIResponse, err error
 	if l.NetworkDevice {
 		numAPICalls++
 		go func(p *PCE) {
-			apiResp, err := p.GetNetworkDeviceSlide(nil)
+			apiResp, err := p.GetNetworkDeviceSlice(nil)
 			c <- channelResp{api: apiResp, method: "GetNetworkDeviceSlide", err: err}
 		}(p)
 	}
