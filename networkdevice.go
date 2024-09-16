@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// NetworkDevice is the data structure for all NEN Switch Objects.
 type NetworkDevice struct {
 	Href                  string `json:"href,omitempty"`
 	SupportedEndpointType string `json:"supported_endpoint_type,omitempty"`
@@ -29,6 +30,7 @@ type NetworkDevice struct {
 	NetworkEndpoints []NetworkEndpoint
 }
 
+// NetworkEndpoint is the data structure for for a NEN Switch object that builds switch ACLs(JSON object too).
 type NetworkEndpoint struct {
 	Href   string `json:"href,omitempty"`
 	Config struct {
@@ -56,7 +58,7 @@ type NetworkDeviceACLRequest struct {
 	ListNetworkDevices []NetDevice `json:"network_devices"`
 }
 
-// GetNetworkDeviceSlice returns a slice of NetworkDevices(NEN siwtches) from the PCE as well as the Network Endpoints for each NetworkDevice.
+// GetNetworkDeviceSlice -returns a slice of NetworkDevices(NEN siwtches) from the PCE as well as the Network Endpoints for each NetworkDevice.
 // queryParameters can be used for filtering in the form of ["parameter"]="value".
 // Currently Not putting async call if greater than 500.
 func (p *PCE) GetNetworkDeviceSlice(queryParameters map[string]string) (api APIResponse, err error) {
@@ -67,6 +69,8 @@ func (p *PCE) GetNetworkDeviceSlice(queryParameters map[string]string) (api APIR
 	if err != nil {
 		return api, err
 	}
+
+	//Cycle through the slide of devices to create a map of the devices using HREF and NAME as keys.
 	for index, s := range p.NetworkDeviceSlice {
 		var netendpoint []NetworkEndpoint
 		api, err = p.GetCollection(strings.TrimPrefix(s.Href, fmt.Sprintf("/orgs/%d/", p.Org))+"/network_endpoints", false, map[string]string{}, &netendpoint)
