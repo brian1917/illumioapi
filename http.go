@@ -101,6 +101,10 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 		return APIResponse{}, err
 	}
 
+	if os.Getenv("FORCE_ASYNC") == "true" {
+		async = true
+	}
+
 	// Set basic authentication and headers
 	req.SetBasicAuth(p.User, p.Key)
 	for k, v := range headers {
@@ -116,6 +120,7 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 	if err != nil {
 		return APIResponse{}, err
 	}
+	defer resp.Body.Close()
 	verboseLogf("httpSetup - http status code: %d", resp.StatusCode)
 
 	// Strip base URL for async logging
@@ -150,6 +155,7 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 		if err != nil {
 			return APIResponse{}, err
 		}
+		defer resp.Body.Close()
 		verboseLogf("httpSetup - http status code: %d", resp.StatusCode)
 
 	}
@@ -225,6 +231,7 @@ func (p *PCE) asyncPoll(baseURL string, origResp *http.Response) (asyncResults a
 	if err != nil {
 		return asyncResults, err
 	}
+	defer pollResp.Body.Close()
 	verboseLogf("asyncPoll - http status code: %d", pollResp.StatusCode)
 
 	// Process Response
@@ -253,8 +260,8 @@ func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, headers ma
 	// If the status code is 429, try 3 times
 	for api.StatusCode == 429 {
 		// If we have already tried 3 times, exit
-		if retry > 2 {
-			return api, errors.New("received three 429 errors with 30 second pauses between attempts")
+		if retry > 6 {
+			return api, errors.New("received 6 429 errors with 30 second pauses between attempts")
 		}
 		// Increment the retry counter and sleep for 30 seconds
 		retry++
