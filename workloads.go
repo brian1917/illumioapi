@@ -112,6 +112,7 @@ type Agent struct {
 	SecureConnect *SecureConnect `json:"secure_connect,omitempty"`
 	Status        *Status        `json:"status,omitempty"`
 	Hostname      string         `json:"hostname,omitempty"` // Added this for events
+	Type          *string        `json:"type,omitempty"`
 }
 
 // Config represents the Configuration of an Agent on a Workload
