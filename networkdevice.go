@@ -7,6 +7,7 @@ import (
 )
 
 type NetworkEndpointRequest struct {
+	Href   string `json:"href,omitempty"`
 	Config struct {
 		EndpointType      string `json:"endpoint_type"`
 		Name              string `json:"name"`
@@ -54,7 +55,8 @@ type NetworkDevice struct {
 	NetworkEnforcementNode                      struct {
 		Href string `json:"href,omitempty"`
 	} `json:"network_enforcement_node,omitempty"`
-	NetworkEndpoints []NetworkEndpoint
+	NetworkEndpoint      map[string]NetworkEndpoint
+	NetworkEndpointSlice []NetworkEndpoint
 }
 
 // NetworkEndpoint is the data structure for for a NEN Switch object that builds switch ACLs(JSON object too).
@@ -87,16 +89,16 @@ type NetworkDeviceACLRequest struct {
 
 // NetworkEnforcementNode - Data Structure for the NEN and all its capabilities.
 type NetworkEnforcementNode struct {
-	Href              string          `json:"href"`
-	Hostname          string          `json:"hostname"`
-	PublicIP          string          `json:"public_ip"`
-	Name              string          `json:"name"`
-	SoftwareVersion   string          `json:"software_version"`
-	LastStatusAt      time.Time       `json:"last_status_at"`
-	UptimeSeconds     int             `json:"uptime_seconds"`
-	NetworkDevices    []NetworkDevice `json:"network_devices"`
-	NetworkDevicesMap map[string]NetworkDevice
-	SupportedDevices  []struct {
+	Href               string          `json:"href"`
+	Hostname           string          `json:"hostname"`
+	PublicIP           string          `json:"public_ip"`
+	Name               string          `json:"name"`
+	SoftwareVersion    string          `json:"software_version"`
+	LastStatusAt       time.Time       `json:"last_status_at"`
+	UptimeSeconds      int             `json:"uptime_seconds"`
+	NetworkDeviceSlice []NetworkDevice `json:"network_devices"`
+	NetworkDevice      map[string]NetworkDevice
+	SupportedDevices   []struct {
 		DeviceType    string `json:"device_type"`
 		Manufacturers []struct {
 			Manufacturer string `json:"manufacturer"`
@@ -136,26 +138,34 @@ func (p *PCE) GetNetworkEnforcementNodeSlice(queryParameters map[string]string) 
 
 	//Cycle through the slide of devices to create a map of the devices using HREF and NAME as keys.
 	for index, nen := range p.NetworkEnforcementNodeSlice {
-		var netdevice NetworkDevice
-		var netendpoint []NetworkEndpoint
 
 		//make sure to initialize the NetworkDeviceMap.
-		p.NetworkEnforcementNodeSlice[index].NetworkDevicesMap = make(map[string]NetworkDevice)
-		for index2, nd := range nen.NetworkDevices {
+		p.NetworkEnforcementNodeSlice[index].NetworkDevice = make(map[string]NetworkDevice)
+		for index2, nd := range nen.NetworkDeviceSlice {
+			//remember to initialize these variables
+			var netdevice NetworkDevice
+			var netendpointslice []NetworkEndpoint
 			//Get all the data for the NetworkDevices....NetworkEnforcementNode only provides HREF
 			p.GetNetworkDevice(nd.Href, &netdevice)
 
+			if netdevice.NetworkEndpoint == nil {
+				netdevice.NetworkEndpoint = make(map[string]NetworkEndpoint)
+			}
+
 			//Get the endpoints for the NetworkDevice and add to NetworkDevice
-			p.GetNetworkEndpoint(nd.Href, &netendpoint)
-			netdevice.NetworkEndpoints = netendpoint
+			p.GetNetworkEndpoint(nd.Href, &netendpointslice)
+			netdevice.NetworkEndpointSlice = netendpointslice
+			for _, ne := range netendpointslice {
+				netdevice.NetworkEndpoint[ne.Href] = ne
+				netdevice.NetworkEndpoint[ne.Config.Name] = ne
+				netdevice.NetworkEndpoint[ne.Workloads[0].Href] = ne
+			}
 
 			//Overwrite NEN's NetworkDevices and create a map.
-			p.NetworkEnforcementNodeSlice[index].NetworkDevices[index2] = netdevice
-			p.NetworkEnforcementNodeSlice[index].NetworkDevicesMap[netdevice.Href] = netdevice
-			p.NetworkEnforcementNodeSlice[index].NetworkDevicesMap[netdevice.Config.Name] = netdevice
-
+			p.NetworkEnforcementNodeSlice[index].NetworkDeviceSlice[index2] = netdevice
+			p.NetworkEnforcementNodeSlice[index].NetworkDevice[netdevice.Href] = netdevice
+			p.NetworkEnforcementNodeSlice[index].NetworkDevice[netdevice.Config.Name] = netdevice
 		}
-
 		p.NetworkEnforcementNode[nen.Href] = p.NetworkEnforcementNodeSlice[index]
 		p.NetworkEnforcementNode[nen.Hostname] = p.NetworkEnforcementNodeSlice[index]
 	}
@@ -214,8 +224,18 @@ func (nen *NetworkEnforcementNode) AddNetworkDevice(p *PCE, ndAdd NetworkDeviceR
 // AddNetworkEndpoint - Adds different UMWL onto a NEN Switch so that ACLs can be created for that UMWL.
 func (nd *NetworkDevice) AddNetworkEndpoint(p *PCE, neAdd *NetworkEndpointRequest) (api APIResponse, err error) {
 
-	var tmpne NetworkEndpoint
-	api, err = p.Post(strings.TrimPrefix(nd.Href, fmt.Sprintf("/orgs/%d/", p.Org))+"/network_endpoints", neAdd, &tmpne)
+	api, err = p.Post(strings.TrimPrefix(nd.Href, fmt.Sprintf("/orgs/%d/", p.Org))+"/network_endpoints", neAdd, NetworkEndpoint{})
+	if err != nil {
+		return api, err
+	}
+
+	return api, err
+}
+
+// AddNetworkEndpoint - Adds different UMWL onto a NEN Switch so that ACLs can be created for that UMWL.
+func (p *PCE) UpdateNetworkEndpoint(neAdd *NetworkEndpointRequest) (api APIResponse, err error) {
+
+	api, err = p.Put(neAdd)
 	if err != nil {
 		return api, err
 	}
