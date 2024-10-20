@@ -82,7 +82,6 @@ type LoadInput struct {
 	AuthSecurityPrincipals      bool
 	Permissions                 bool
 	Roles                       bool
-	NetworkDevice               bool
 	NetworkEnforcementNode      bool
 }
 
