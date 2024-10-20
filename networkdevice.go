@@ -26,12 +26,12 @@ type NetworkDeviceRequest struct {
 	Manufacturer string `json:"manufacturer"`
 	Model        string `json:"model"`
 	IPAddress    string `json:"ip_address"`
-	// Credentials  struct {
-	// 	Type     string `json:"type"`
-	// 	Port     int    `json:"port"`
-	// 	Username string `json:"username"`
-	// 	Password string `json:"password"`
-	// } `json:"credentials"`
+	Credentials  struct {
+		Type     string `json:"type"`
+		Port     int    `json:"port"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+	} `json:"credentials"`
 }
 
 // NetworkDevice is the data structure for all NEN Switch Objects.
