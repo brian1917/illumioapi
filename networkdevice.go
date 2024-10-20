@@ -159,8 +159,8 @@ func (p *PCE) GetNetworkEnforcementNodeSlice(queryParameters map[string]string) 
 				netdevice.NetworkEndpoint[ne.Href] = ne
 				netdevice.NetworkEndpoint[ne.Config.Name] = ne
 				if len(ne.Workloads) > 0 {
-				netdevice.NetworkEndpoint[ne.Workloads[0].Href] = ne
-			}
+					netdevice.NetworkEndpoint[ne.Workloads[0].Href] = ne
+				}
 			}
 
 			//Overwrite NEN's NetworkDevices and create a map.
