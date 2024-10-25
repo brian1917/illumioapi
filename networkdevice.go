@@ -212,6 +212,21 @@ func (nd *NetworkDevice) RequestNetworkDeviceACL(p *PCE) (api APIResponse, err e
 	return api, err
 }
 
+// RequestNetworkDeviceApplied - will tell the NEN that the policy already pulled was applied
+// Network Device.
+func (nd *NetworkDevice) RequestNetworkDeviceApplied(p *PCE) (api APIResponse, err error) {
+
+	var requestNd = NetworkDeviceACLRequest{ListNetworkDevices: []NetDevice{{Href: nd.Href}}}
+
+	var tmp interface{}
+	api, err = p.Post("/network_devices/multi_enforcement_instructions_applied", requestNd, &tmp)
+	if err != nil {
+		return api, err
+	}
+
+	return api, err
+}
+
 // AddNetworkDevice - Adds a Switch on the NEN so UMWL can be placed on it to build ACLs for the UMWL
 func (nen *NetworkEnforcementNode) AddNetworkDevice(p *PCE, ndAdd NetworkDeviceRequest, tmpnd *NetworkDevice) (api APIResponse, err error) {
 
