@@ -59,7 +59,7 @@ type NetworkDevice struct {
 	NetworkEndpointSlice []NetworkEndpoint
 }
 
-// NetworkEndpoint is the data structure for for a NEN Switch object that builds switch ACLs(JSON object too).
+// NetworkEndpoint is the data structure for for a NEN Switch port object that builds switch ACLs(JSON object too).
 type NetworkEndpoint struct {
 	Href   string `json:"href,omitempty"`
 	Config struct {
