@@ -1011,3 +1011,13 @@ func (p *PCE) GetWkldsByHrefList(hrefs []string, single bool) (apiResps []APIRes
 	return apiResps, nil
 
 }
+
+func (w *Workload) IsNENManaged() bool {
+	if w.Agent != nil && w.Agent.Type != nil && *w.Agent.Type == "NetworkEnforcementNode" {
+		return true
+	}
+	if w.VEN != nil && w.VEN.Name != nil && strings.Contains(*w.VEN.Name, "Illumio Network Enforcement Node") {
+		return true
+	}
+	return false
+}
