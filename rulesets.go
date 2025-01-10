@@ -7,12 +7,14 @@ import (
 
 // RuleSet - more info to follow
 type RuleSet struct {
-	Href                  string           `json:"href,omitempty"`
-	Name                  string           `json:"name,omitempty"`
-	Description           *string          `json:"description,omitempty"`
-	Scopes                *[][]Scopes      `json:"scopes,omitempty"`
-	Enabled               *bool            `json:"enabled,omitempty"`
-	Rules                 *[]Rule          `json:"rules,omitempty"`
+	Href                  string      `json:"href,omitempty"`
+	Name                  string      `json:"name,omitempty"`
+	Description           *string     `json:"description,omitempty"`
+	Scopes                *[][]Scopes `json:"scopes,omitempty"`
+	Enabled               *bool       `json:"enabled,omitempty"`
+	Rules                 *[]Rule     `json:"rules,omitempty"`
+	DenyRules             *[]Rule     `json:"deny_rules,omitempty"`
+	AllRules              []Rule
 	IPTablesRules         *[]IPTablesRules `json:"ip_tables_rules,omitempty"`
 	ExternalDataReference *string          `json:"external_data_reference,omitempty"`
 	ExternalDataSet       *string          `json:"external_data_set,omitempty"`
@@ -33,6 +35,7 @@ type Scopes struct {
 
 // Rule - more info to follow
 type Rule struct {
+	RuleType                    string                         `json:"-"`
 	Href                        string                         `json:"href,omitempty"`
 	Description                 *string                        `json:"description,omitempty"`
 	Enabled                     *bool                          `json:"enabled,omitempty"`
@@ -40,6 +43,7 @@ type Rule struct {
 	Providers                   *[]ConsumerOrProvider          `json:"providers,omitempty"`
 	ConsumingSecurityPrincipals *[]ConsumingSecurityPrincipals `json:"consuming_security_principals,omitempty"`
 	IngressServices             *[]IngressServices             `json:"ingress_services,omitempty"`
+	Override                    *bool                          `json:"override,omitempty"`
 	SecConnect                  *bool                          `json:"sec_connect,omitempty"`
 	Stateless                   *bool                          `json:"stateless,omitempty"`
 	MachineAuth                 *bool                          `json:"machine_auth,omitempty"`
@@ -99,12 +103,35 @@ func (p *PCE) GetRulesets(queryParameters map[string]string, pStatus string) (ap
 		p.RuleSetsSlice = nil
 		api, err = p.GetCollection("sec_policy/"+pStatus+"/rule_sets", true, queryParameters, &p.RuleSetsSlice)
 	}
+	// Populate the AllRules slice for each ruleset
+	for i, rs := range p.RuleSetsSlice {
+		p.RuleSetsSlice[i] = rs.PopulateAllRules()
+	}
 	p.RuleSets = make(map[string]RuleSet)
 	for _, rs := range p.RuleSetsSlice {
 		p.RuleSets[rs.Href] = rs
 		p.RuleSets[rs.Name] = rs
 	}
+
 	return api, err
+}
+
+func (rs *RuleSet) PopulateAllRules() RuleSet {
+	// Iterate through allow rules, add the rule type, and populate to AllRules
+	for _, rule := range *rs.Rules {
+		rule.RuleType = "allow"
+		rs.AllRules = append(rs.AllRules, rule)
+	}
+	// Iterate through deny rules, add the rule type, and populate to AllRules
+	for _, rule := range *rs.DenyRules {
+		rule.RuleType = "deny"
+		if rule.Override != nil && *rule.Override {
+			rule.RuleType = "override_deny"
+		}
+		rs.AllRules = append(rs.AllRules, rule)
+	}
+
+	return *rs
 }
 
 // CreateRuleSet creates a new ruleset in the PCE.
@@ -114,9 +141,20 @@ func (p *PCE) CreateRuleset(rs RuleSet) (createdRS RuleSet, api APIResponse, err
 }
 
 // CreateRule creates a new rule in the PCE.
+// Rule type must be allow or deny.
+// For backwards compatibility, if rule.type is not populated, it defaults to allow rule
 func (p *PCE) CreateRule(rulesetHref string, rule Rule) (createdRule Rule, api APIResponse, err error) {
-	api, err = p.Post(strings.TrimPrefix(rulesetHref, fmt.Sprintf("/orgs/%d/", p.Org))+"/sec_rules", &rule, &createdRule)
-	return createdRule, api, err
+	if strings.ToLower(rule.RuleType) == "allow" || rule.RuleType == "" {
+		rule.Allow()
+		api, err = p.Post(strings.TrimPrefix(rulesetHref, fmt.Sprintf("/orgs/%d/", p.Org))+"/sec_rules", &rule, &createdRule)
+		return createdRule, api, err
+	}
+	if strings.ToLower(rule.RuleType) == "deny" {
+		rule.Deny()
+		api, err = p.Post(strings.TrimPrefix(rulesetHref, fmt.Sprintf("/orgs/%d/", p.Org))+"/deny_rules", &rule, &createdRule)
+		return createdRule, api, err
+	}
+	return createdRule, api, fmt.Errorf("%s is an invalid rule type. must be allow or deny", rule.RuleType)
 }
 
 // UpdateRuleset updates an existing ruleset in the PCE.
@@ -146,6 +184,12 @@ func (p *PCE) UpdateRule(rule Rule) (APIResponse, error) {
 	rule.UpdatedAt = ""
 	rule.UpdatedBy = nil
 
+	if strings.Contains(rule.Href, "deny_rules") {
+		rule.Deny()
+	} else {
+		rule.Allow()
+	}
+
 	return p.Put(&rule)
 }
 
@@ -166,4 +210,22 @@ func (r *Rule) GetRulesetHref() string {
 	x := strings.Split(r.Href, "/")
 	x = x[:len(x)-2]
 	return strings.Join(x, "/")
+}
+
+// Removes any parameters specific to denies
+func (r *Rule) Allow() {
+	r.Override = nil
+}
+
+// Removes any parameters specific to denies
+func (r *Rule) Deny() {
+	r.SecConnect = nil
+	r.ConsumingSecurityPrincipals = nil
+	r.MachineAuth = nil
+	r.Stateless = nil
+	r.UnscopedConsumers = nil
+	r.ResolveLabelsAs = nil
+	r.UseWorkloadSubnets = nil
+	r.ExternalDataReference = nil
+	r.ExternalDataSet = nil
 }
