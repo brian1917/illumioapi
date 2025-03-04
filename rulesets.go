@@ -7,14 +7,14 @@ import (
 
 // RuleSet - more info to follow
 type RuleSet struct {
-	Href                  string      `json:"href,omitempty"`
-	Name                  string      `json:"name,omitempty"`
-	Description           *string     `json:"description,omitempty"`
-	Scopes                *[][]Scopes `json:"scopes,omitempty"`
-	Enabled               *bool       `json:"enabled,omitempty"`
-	Rules                 *[]Rule     `json:"rules,omitempty"`
-	DenyRules             *[]Rule     `json:"deny_rules,omitempty"`
-	AllRules              []Rule
+	Href                  string           `json:"href,omitempty"`
+	Name                  string           `json:"name,omitempty"`
+	Description           *string          `json:"description,omitempty"`
+	Scopes                *[][]Scopes      `json:"scopes,omitempty"`
+	Enabled               *bool            `json:"enabled,omitempty"`
+	Rules                 *[]Rule          `json:"rules,omitempty"`
+	DenyRules             *[]Rule          `json:"deny_rules,omitempty"`
+	AllRules              []Rule           `json:"-"`
 	IPTablesRules         *[]IPTablesRules `json:"ip_tables_rules,omitempty"`
 	ExternalDataReference *string          `json:"external_data_reference,omitempty"`
 	ExternalDataSet       *string          `json:"external_data_set,omitempty"`
