@@ -12,6 +12,12 @@ type ContainerCluster struct {
 	Online           *bool   `json:"online,omitempty"`
 	KubelinkVersion  string  `json:"kubelink_version,omitempty"`
 	PceFqdn          string  `json:"pce_fqdn,omitempty"`
+	Nodes            *[]Node `json:"nodes,omitempty"`
+}
+
+type Node struct {
+	Name      string `json:"name,omitempty"`
+	PodSubnet string `json:"pod_subnet,omitempty"`
 }
 
 // GetContainerClusters returns a slice of ContainerCluster in the PCE.
