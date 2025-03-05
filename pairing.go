@@ -26,7 +26,7 @@ type PairingProfile struct {
 	VisibilityLevelLock   *bool    `json:"visibility_level_lock,omitempty"`
 	LogTrafficLock        *bool    `json:"log_traffic_lock,omitempty"`
 	KeyLifespan           string   `json:"key_lifespan,omitempty"`
-	TotalUseCount         int      `json:"total_use_count,omitempty"`
+	TotalUseCount         *int     `json:"total_use_count,omitempty"`
 	ExternalDataReference *string  `json:"external_data_reference,omitempty"`
 	ExternalDataSet       *string  `json:"external_data_set,omitempty"`
 	LastPairingAt         string   `json:"last_pairing_at,omitempty"`
@@ -64,4 +64,21 @@ func (p *PCE) CreatePairingProfile(pairingProfile PairingProfile) (createdPairin
 func (p *PCE) CreatePairingKey(pairingProfile PairingProfile) (pairingKey PairingKey, api APIResponse, err error) {
 	api, err = p.Post(strings.TrimPrefix(pairingProfile.Href, fmt.Sprintf("/orgs/%d/", p.Org))+"/pairing_key", &struct{}{}, &pairingKey)
 	return pairingKey, api, err
+}
+
+func (p *PCE) UpdatePairingProfile(pairingProfile PairingProfile) (APIResponse, error) {
+
+	// Adjust fields
+	pairingProfile.UpdatedAt = ""
+	pairingProfile.UpdatedBy = nil
+	pairingProfile.CreatedAt = ""
+	pairingProfile.CreatedBy = nil
+	pairingProfile.LastPairingAt = ""
+	pairingProfile.TotalUseCount = nil
+	pairingProfile.VenType = ""
+	pairingProfile.IsDefault = nil
+
+	// Update
+	api, err := p.Put(&pairingProfile)
+	return api, err
 }
