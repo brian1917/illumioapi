@@ -118,12 +118,12 @@ func (p *PCE) GetRulesets(queryParameters map[string]string, pStatus string) (ap
 
 func (rs *RuleSet) PopulateAllRules() RuleSet {
 	// Iterate through allow rules, add the rule type, and populate to AllRules
-	for _, rule := range *rs.Rules {
+	for _, rule := range PtrToVal(rs.Rules) {
 		rule.RuleType = "allow"
 		rs.AllRules = append(rs.AllRules, rule)
 	}
 	// Iterate through deny rules, add the rule type, and populate to AllRules
-	for _, rule := range *rs.DenyRules {
+	for _, rule := range PtrToVal(rs.DenyRules) {
 		rule.RuleType = "deny"
 		if rule.Override != nil && *rule.Override {
 			rule.RuleType = "override_deny"
