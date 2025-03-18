@@ -31,6 +31,7 @@ type RuleSet struct {
 type Scopes struct {
 	Label      *Label      `json:"label,omitempty"`
 	LabelGroup *LabelGroup `json:"label_group,omitempty"`
+	Exclusion  *bool       `json:"exclusion,omitempty"`
 }
 
 // Rule - more info to follow
