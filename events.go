@@ -20,7 +20,8 @@ type Event struct {
 
 // EventCreatedBy is who created the event
 type EventCreatedBy struct {
-	Agent            Agent            `json:"agent"`
+	Agent            *Agent           `json:"agent"`
+	VEN              *VEN             `json:"ven"` // VEN is optional, used for events created by VENs
 	User             UserLogin        `json:"user"`
 	ContainerCluster ContainerCluster `json:"container_cluster"`
 	System           System           `json:"system,omitempty"`
@@ -54,7 +55,9 @@ type ResourceChanges struct {
 }
 
 type Resource struct {
-	Workload Workload `json:"workload,omitempty"`
+	Workload *Workload `json:"workload,omitempty"`
+	VEN      *VEN      `json:"ven,omitempty"`
+	Agent    *Agent    `json:"agent,omitempty"`
 }
 
 // GetEvents returns a slice of events from the PCE.
