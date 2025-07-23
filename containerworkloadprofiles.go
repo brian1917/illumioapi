@@ -90,6 +90,9 @@ func (c *ContainerWorkloadProfile) GetLabelByKey(key string) string {
 		if len(PtrToVal(l.Restriction)) > 0 {
 			return ""
 		}
+		if l.Assignment == nil {
+			return ""
+		}
 		return l.Assignment.Value
 	}
 	return ""
