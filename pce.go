@@ -57,6 +57,7 @@ type PCE struct {
 	RolesSlice                       []Role
 	NetworkEnforcementNode           map[string]NetworkEnforcementNode
 	NetworkEnforcementNodeSlice      []NetworkEnforcementNode
+	SecPolicySlice                   []SecPolicy
 }
 
 // LoadInput tells the p.Load method what objects to load
