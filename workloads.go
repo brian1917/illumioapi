@@ -927,7 +927,7 @@ func (w *Workload) HoursSinceLastPolicyAAppliedAt() float64 {
 	if w.GetMode() == "unmanaged" {
 		return -9999
 	}
-	t, err := time.Parse(time.RFC3339, w.Agent.Status.LastHeartbeatOn)
+	t, err := time.Parse(time.RFC3339, w.Agent.Status.SecurityPolicyAppliedAt)
 	if err != nil {
 		return -9999
 	}
