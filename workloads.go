@@ -921,6 +921,19 @@ func (w *Workload) HoursSinceLastHeartBeat() float64 {
 	return time.Now().UTC().Sub(t).Hours()
 }
 
+// HoursSinceLastHeartBeat returns the hours since the last beat.
+// -9999 is returned for unmanaged workloads or when it cannot be calculated.
+func (w *Workload) HoursSinceLastPolicyAAppliedAt() float64 {
+	if w.GetMode() == "unmanaged" {
+		return -9999
+	}
+	t, err := time.Parse(time.RFC3339, w.Agent.Status.LastHeartbeatOn)
+	if err != nil {
+		return -9999
+	}
+	return time.Now().UTC().Sub(t).Hours()
+}
+
 // WorkloadQueryLabelParameter takes [][]string (example for after parsing a CSV). The first slice must be the label key headers (e.g., role, app, env, bu, etc.)
 // Returns the query parameter for those labels.
 // Each inner slice is an "AND" query
