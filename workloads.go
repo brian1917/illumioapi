@@ -58,6 +58,7 @@ type Interface struct {
 	FriendlyName          string `json:"friendly_name,omitempty"`
 	LinkState             string `json:"link_state,omitempty"`
 	Name                  string `json:"name,omitempty"`
+    NetworkName           string `json:"network.name,omitempty"`
 }
 
 // OpenServicePorts represents open ports for a service running on a workload
