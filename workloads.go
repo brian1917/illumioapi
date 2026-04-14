@@ -53,12 +53,13 @@ type Workload struct {
 // An Interface represent the network interface of a workload
 // An interface can never be updated or created
 type Interface struct {
-	Name                  string `json:"name,omitempty"`
-	FriendlyName          string `json:"friendly_name,omitempty"`
-	Address               string `json:"address,omitempty"`
-	CidrBlock             *int   `json:"cidr_block,omitempty"` // Pointer to handle /0 vs. no Cidr provided
-	DefaultGatewayAddress string `json:"default_gateway_address,omitempty"`
-	LinkState             string `json:"link_state,omitempty"`
+	Name                  string   `json:"name,omitempty"`
+	FriendlyName          string   `json:"friendly_name,omitempty"`
+	Address               string   `json:"address,omitempty"`
+	CidrBlock             *int     `json:"cidr_block,omitempty"` // Pointer to handle /0 vs. no Cidr provided
+	DefaultGatewayAddress string   `json:"default_gateway_address,omitempty"`
+	LinkState             string   `json:"link_state,omitempty"`
+	Network               *Network `json:"network,omitempty"`
 }
 
 // WkldServices represent the Services running on a Workload
