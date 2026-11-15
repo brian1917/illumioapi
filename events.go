@@ -78,17 +78,24 @@ func (p *PCE) GetEvents(queryParameters map[string]string) (events []Event, api 
 }
 
 func (e *Event) PopulateCreatedBy() {
-	if e.EventCreatedBy.Agent.Href != "" {
-		e.EventCreatedBy.Href = e.EventCreatedBy.Agent.Href
-		e.EventCreatedBy.Name = e.EventCreatedBy.Agent.Hostname
-	} else if e.EventCreatedBy.User.Href != "" {
-		e.EventCreatedBy.Href = e.EventCreatedBy.User.Href
-		e.EventCreatedBy.Name = e.EventCreatedBy.User.Username
-	} else if e.EventCreatedBy.ContainerCluster.Href != "" {
-		e.EventCreatedBy.Href = e.EventCreatedBy.ContainerCluster.Href
-		e.EventCreatedBy.Name = e.EventCreatedBy.ContainerCluster.Name
+	if e.EventCreatedBy == nil {
+		e.EventCreatedBy = &EventCreatedBy{}
+	}
+	cb := e.EventCreatedBy
+	if cb.VEN != nil && cb.VEN.Href != "" {
+		cb.Href = cb.VEN.Href
+		cb.Name = PtrToVal(cb.VEN.Hostname)
+	} else if cb.Agent != nil && cb.Agent.Href != "" {
+		cb.Href = cb.Agent.Href
+		cb.Name = cb.Agent.Hostname
+	} else if cb.User.Href != "" {
+		cb.Href = cb.User.Href
+		cb.Name = cb.User.Username
+	} else if cb.ContainerCluster.Href != "" {
+		cb.Href = cb.ContainerCluster.Href
+		cb.Name = cb.ContainerCluster.Name
 	} else {
-		e.EventCreatedBy.Href = "system"
-		e.EventCreatedBy.Name = "system"
+		cb.Href = "system"
+		cb.Name = "system"
 	}
 }
