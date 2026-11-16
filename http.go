@@ -44,6 +44,18 @@ type APIResponse struct {
 	Request    *http.Request
 	ReqBody    string
 	Warnings   []string
+	// RequestID is the PCE's X-Request-Id response header, used by Illumio support to trace a request server-side.
+	RequestID string
+	// RetryLog holds one entry per failed attempt made before this response, oldest first. Empty if the call succeeded on the first try.
+	RetryLog []RetryAttempt
+}
+
+// RetryAttempt records a single failed attempt that was retried by httpReq.
+type RetryAttempt struct {
+	Attempt    int
+	StatusCode int
+	RequestID  string
+	Err        string
 }
 
 // Unexported struct for handling the asyncResults
@@ -172,6 +184,7 @@ func (p *PCE) httpSetup(action, apiURL string, body []byte, async bool, headers 
 	response.StatusCode = resp.StatusCode
 	response.Header = resp.Header
 	response.Request = resp.Request
+	response.RequestID = resp.Header.Get("X-Request-Id")
 
 	// Check for a 200 response code
 	if strconv.Itoa(resp.StatusCode)[0:1] != "2" {
@@ -256,21 +269,40 @@ func (p *PCE) httpReq(action, apiURL string, body []byte, async bool, headers ma
 	// Make initial http call
 	api, err := p.httpSetup(action, apiURL, body, async, headers)
 	retry := 0
+	var retryLog []RetryAttempt
 
-	// If the status code is 429, try 3 times
-	for api.StatusCode == 429 {
-		// If we have already tried 3 times, exit
+	// Retry on 429 (rate limit), 5xx (server error), or a transport-level error with no response at all
+	for isRetryableFailure(api, err) {
+		// If we have already tried 6 times, exit
 		if retry > 6 {
-			return api, errors.New("received 6 429 errors with 30 second pauses between attempts")
+			api.RetryLog = retryLog
+			return api, fmt.Errorf("received 6 errors with 30 second pauses between attempts - last status code %d", api.StatusCode)
 		}
-		// Increment the retry counter and sleep for 30 seconds
+		// Record this failed attempt before retrying
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
 		retry++
+		retryLog = append(retryLog, RetryAttempt{Attempt: retry, StatusCode: api.StatusCode, RequestID: api.RequestID, Err: errMsg})
+		// Sleep for 30 seconds
 		time.Sleep(30 * time.Second)
 		// Retry the API call
 		api, err = p.httpSetup(action, apiURL, body, async, headers)
 	}
-	// Return once response code isn't 429
+	// Attach the retry history, if any, to the final response
+	api.RetryLog = retryLog
+	// Return once response is successful or a non-retryable failure
 	return api, err
+}
+
+// isRetryableFailure determines if an API response/error should trigger a retry:
+// 429, 5xx, or a transport-level error with no HTTP response at all.
+func isRetryableFailure(api APIResponse, err error) bool {
+	if api.StatusCode == 429 || api.StatusCode >= 500 {
+		return true
+	}
+	return api.StatusCode == 0 && err != nil
 }
 
 // cleanFQDN cleans up the provided PCE FQDN in case of common errors
