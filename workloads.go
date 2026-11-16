@@ -388,11 +388,16 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 		}
 	}
 
-	// Call the API for each array
+	// Call the API for each array. A failure on one batch (e.g., a proxy timeout) does not
+	// stop the remaining batches from being sent - all batch errors are collected and
+	// returned together once every batch has been attempted.
+	var batchErrs []string
 	for i, apiArray := range apiArrays {
 		workloadsJSON, err := json.Marshal(apiArray)
 		if err != nil {
-			return apiResps, fmt.Errorf("bulk workload error - %s", err)
+			apiResps = append(apiResps, APIResponse{})
+			batchErrs = append(batchErrs, fmt.Sprintf("batch %d of %d - %s", i+1, numAPICalls, err))
+			continue
 		}
 
 		api, err := p.httpReq("PUT", apiURL.String(), workloadsJSON, false, map[string]string{"Content-Type": "application/json"})
@@ -425,9 +430,15 @@ func (p *PCE) BulkWorkload(workloads []Workload, method string, stdoutLogs bool)
 		apiResps = append(apiResps, api)
 
 		if err != nil {
-			return apiResps, fmt.Errorf("bulk workload error - %s", err)
+			if stdoutLogs {
+				fmt.Printf("%s [ERROR] - API Call %d of %d - %s - continuing with remaining batches.\r\n", time.Now().Format("2006-01-02 15:04:05 "), i+1, numAPICalls, err)
+			}
+			batchErrs = append(batchErrs, fmt.Sprintf("batch %d of %d - %s", i+1, numAPICalls, err))
 		}
+	}
 
+	if len(batchErrs) > 0 {
+		return apiResps, fmt.Errorf("bulk workload error(s) - %d of %d batches failed - %s", len(batchErrs), numAPICalls, strings.Join(batchErrs, "; "))
 	}
 
 	return apiResps, nil
