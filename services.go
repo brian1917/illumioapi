@@ -8,7 +8,7 @@ import (
 // Service represent a service in the PCE
 type Service struct {
 	Href                  string            `json:"href,omitempty"`
-	Name                  string            `json:"name"`
+	Name                  string            `json:"name,omitempty"`
 	Description           string            `json:"description,omitempty"`
 	ProcessName           string            `json:"process_name,omitempty"`
 	ServicePorts          *[]ServicePort    `json:"service_ports,omitempty"`
